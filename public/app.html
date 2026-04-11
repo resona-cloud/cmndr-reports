@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Peak Flow — CMNDR</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+      --text: #1a1a18; --text2: #6b6b67; --text3: #9c9a92;
+      --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+      --success: #1D9E75; --warning: #EF9F27; --danger: #E24B4A; --info: #378ADD;
+      --radius-md: 8px; --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+        --text: #e8e6de; --text2: #9c9a92; --text3: #6b6b67;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px; min-height: 100vh; background: var(--bg);
+      border-right: 0.5px solid var(--border);
+      padding: 20px 16px 24px;
+      position: fixed; top: 0; left: 0; overflow-y: auto;
+      display: flex; flex-direction: column; z-index: 10;
+    }
+    .main { margin-left: 240px; margin-right: 280px; min-height: 100vh; transition: margin-right .15s; }
+    .main.no-panel { margin-right: 0; }
+
+    .logo { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 24px; }
+    .logo em { font-style: normal; color: var(--text); }
+
+    .nav-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin: 0 8px 6px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px; border-radius: var(--radius-md);
+      cursor: pointer; font-size: 13px; color: var(--text2);
+      margin-bottom: 1px; transition: background .1s, color .1s; user-select: none;
+    }
+    .nav-item:hover { background: var(--bg2); color: var(--text); }
+    .nav-item.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+    .nav-icon { opacity: .65; flex-shrink: 0; }
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    .sidebar-sep { height: 0.5px; background: var(--border); margin: 16px 0; }
+    .sidebar-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+
+    .range-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .range-btn { font-size: 12px; padding: 6px 8px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; text-align: center; transition: all .12s; }
+    .range-btn:hover { color: var(--text); }
+    .range-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+    .sidebar-footer { margin-top: auto; padding-top: 20px; }
+    .client-chip { display: flex; align-items: center; gap: 9px; background: var(--bg2); border-radius: var(--radius-md); padding: 9px 10px; }
+    .chip-av { width: 28px; height: 28px; border-radius: 50%; background: var(--info); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .chip-name { font-size: 12px; font-weight: 500; }
+    .chip-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+    .signout-btn { display: none; width: 100%; margin-top: 8px; padding: 7px 10px; background: none; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text3); font-size: 12px; cursor: pointer; text-align: left; transition: background .1s, color .1s; }
+    .signout-btn:hover { background: var(--bg2); color: var(--text); }
+
+    /* ── Pages ── */
+    .page { display: none; }
+    .page.active { display: block; }
+    #page-overview { height: 100vh; overflow: hidden; }
+    #overview-frame { width: 100%; height: 100%; border: none; display: block; }
+
+    .page-inner { padding: 28px 32px 60px; max-width: 880px; }
+    .page-head { margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .page-title { font-size: 19px; font-weight: 500; }
+    .page-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
+    .reload-btn { font-size: 11px; padding: 5px 12px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; }
+    .reload-btn:hover { color: var(--text); }
+
+    /* ── Section label ── */
+    .sec-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin: 22px 0 10px; }
+
+    /* ── KPI grid ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+    .kpi { background: var(--bg); border-radius: var(--radius-md); padding: 13px 14px; border: 0.5px solid var(--border); }
+    .kpi-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .kpi-val { font-size: 21px; font-weight: 500; line-height: 1.1; }
+    .kpi-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+    /* ── Card ── */
+    .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 10px; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .card-title { font-size: 13px; font-weight: 500; }
+
+    /* ── Explain button + panel ── */
+    .explain-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 0.5px solid #b5d4f4; background: transparent; color: var(--info); cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; transition: background .1s; flex-shrink: 0; }
+    .explain-btn:hover { background: #E6F1FB; }
+    .explain-panel { display: none; background: #f0f7ff; border: 0.5px solid #b5d4f4; border-radius: var(--radius-md); padding: 14px; margin-top: 14px; }
+    .explain-panel.open { display: block; }
+    .explain-lbl { font-size: 10px; font-weight: 600; color: var(--info); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; }
+    .explain-txt { font-size: 13px; line-height: 1.7; }
+
+    /* ── Bar chart ── */
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-row:last-child { margin-bottom: 0; }
+    .bar-lbl { font-size: 11px; color: var(--text2); min-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; background: var(--bg2); border-radius: 4px; height: 14px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width .7s ease; }
+    .bar-val { font-size: 11px; font-weight: 500; min-width: 60px; text-align: right; }
+
+    /* ── Table rows ── */
+    .trow { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 0.5px solid var(--border); gap: 8px; }
+    .trow:last-child { border: none; padding-bottom: 0; }
+    .trow-main { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .trow-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .trow-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+    /* ── Badges ── */
+    .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+    .b-done { background: #E1F5EE; color: #085041; }
+    .b-prog { background: #E6F1FB; color: #0C447C; }
+    .b-hi { background: #FAECE7; color: #712B13; }
+    .b-med { background: #FAEEDA; color: #633806; }
+    .b-lo { background: #f0f0ee; color: #6b6b67; border: 0.5px solid #e0e0de; }
+    .b-overdue { background: #FCEBEB; color: #791F1F; }
+    .b-paid { background: #E1F5EE; color: #085041; }
+    .b-sent { background: #E6F1FB; color: #0C447C; }
+
+    /* ── Tech rows ── */
+    .tech-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+    .tech-row:last-child { border: none; padding-bottom: 0; }
+    .tech-av { width: 30px; height: 30px; border-radius: 50%; background: #E6F1FB; color: #0C447C; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .tech-name { font-size: 13px; font-weight: 500; }
+    .tech-meta { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .util-track { flex: 1; background: var(--bg2); border-radius: 4px; height: 4px; margin-top: 5px; }
+    .util-fill { height: 4px; border-radius: 4px; }
+    .util-pct { font-size: 12px; font-weight: 500; min-width: 36px; text-align: right; }
+
+    /* ── Alert rows ── */
+    .a-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+    .a-row:last-child { border: none; padding-bottom: 0; }
+    .a-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .d-critical { background: var(--danger); }
+    .d-warning { background: var(--warning); }
+    .d-info { background: var(--info); }
+
+    /* ── Recommended Actions panel ── */
+    .rec-panel { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px; }
+    .rec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .rec-title { font-size: 13px; font-weight: 500; }
+    .rec-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+    .rec-item { border-top: 0.5px solid var(--border); padding: 14px 0 4px; }
+    .rec-item-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+    .rec-item-title { font-size: 13px; font-weight: 500; flex: 1; }
+    .rec-item-desc { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 10px; }
+    .rec-btns { display: flex; gap: 6px; }
+    .btn-approve { font-size: 11px; padding: 5px 14px; border-radius: 6px; border: none; background: var(--success); color: #fff; cursor: pointer; font-weight: 500; transition: opacity .12s; }
+    .btn-approve:hover { opacity: .85; }
+    .btn-defer { font-size: 11px; padding: 5px 14px; border-radius: 6px; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; }
+    .btn-defer:hover { color: var(--text); }
+    .rec-status { font-size: 11px; font-weight: 500; }
+    .status-approved { color: var(--success); }
+    .status-deferred { color: var(--text3); }
+
+    /* ── Skeleton ── */
+    .skel { background: var(--bg2); border-radius: 4px; height: 13px; margin: 5px 0; animation: pulse 1.4s ease-in-out infinite; }
+    .empty { font-size: 13px; color: var(--text2); padding: 6px 0; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+    /* ── Strategy Panel ── */
+    .strategy-panel {
+      width: 280px; position: fixed; top: 0; right: 0;
+      height: 100vh; overflow-y: auto;
+      background: var(--bg2); border-left: 0.5px solid var(--border);
+      padding: 20px 18px 40px; z-index: 10;
+      display: none;
+    }
+    .strategy-panel.visible { display: block; }
+
+    .sp-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+    .sp-course-name { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+    .sp-milestone { font-size: 15px; font-weight: 500; line-height: 1.35; color: var(--text); margin-bottom: 9px; }
+    .sp-status { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 10px; background: #FAEEDA; color: #633806; margin-bottom: 12px; }
+    .sp-prog-track { background: var(--bg3); border-radius: 4px; height: 5px; margin-bottom: 5px; overflow: hidden; }
+    .sp-prog-fill { height: 5px; border-radius: 4px; background: #EF9F27; transition: width .7s ease; }
+    .sp-prog-text { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+    .sp-next-lbl { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+    .sp-next-val { font-size: 12px; color: var(--text2); line-height: 1.4; }
+    .sp-sep { height: 0.5px; background: var(--border); margin: 16px 0; }
+    .sp-focus { font-size: 13px; line-height: 1.65; color: var(--text); }
+    .sp-notes { font-size: 12px; line-height: 1.7; color: var(--text2); }
+    .sp-notes p + p { margin-top: 10px; }
+    .sp-loading { display: flex; flex-direction: column; gap: 6px; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; margin-right: 0 !important; }
+      .strategy-panel { position: static; width: 100%; height: auto; border-left: none; border-top: 0.5px solid var(--border); display: none; }
+      .strategy-panel.visible { display: block; }
+    }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; }
+    .toast.show { opacity: 1; }
+
+    /* ── Celebration banner ── */
+    .celebration { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: linear-gradient(135deg, #1D9E75, #1481a3); color: #fff; padding: 11px 20px; display: none; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .celebration.visible { display: flex; }
+    .celeb-icon { font-size: 20px; flex-shrink: 0; }
+    .celeb-text { flex: 1; font-size: 13px; line-height: 1.4; }
+    .celeb-title { font-weight: 600; margin-bottom: 2px; }
+    .celeb-sub { opacity: .85; font-size: 12px; }
+    .celeb-close { font-size: 18px; cursor: pointer; opacity: .8; padding: 4px; flex-shrink: 0; }
+    .celeb-close:hover { opacity: 1; }
+
+    /* ── Overview layout with messages panel ── */
+    #page-overview { display: flex; height: 100vh; overflow: hidden; }
+    #overview-frame { flex: 1; border: none; min-width: 0; }
+    .msg-panel { width: 280px; flex-shrink: 0; background: var(--bg); border-left: 0.5px solid var(--border); display: flex; flex-direction: column; }
+    .msg-panel-head { padding: 14px 14px 10px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .msg-panel-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+    .goal-banner { font-size: 12px; padding: 7px 9px; background: rgba(55,138,221,0.07); border: 0.5px solid rgba(55,138,221,0.2); border-radius: var(--radius-md); color: var(--text); line-height: 1.4; }
+    .goal-banner-lbl { font-size: 10px; font-weight: 600; color: var(--info); margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
+    .goal-edit-btn { font-size: 10px; padding: 1px 6px; border-radius: 4px; border: 0.5px solid rgba(55,138,221,0.3); background: none; color: var(--info); cursor: pointer; }
+    .goal-edit-form { margin-top: 6px; display: none; }
+    .goal-edit-form.visible { display: block; }
+    .goal-edit-input { width: 100%; font-size: 12px; padding: 5px 7px; border: 0.5px solid var(--border2); border-radius: var(--radius-md); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; resize: none; }
+    .goal-edit-input:focus { border-color: var(--info); }
+    .goal-save-btn { margin-top: 5px; font-size: 11px; padding: 4px 12px; border-radius: var(--radius-md); border: none; background: var(--info); color: #fff; cursor: pointer; }
+    .health-badge { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; }
+    .health-score { font-weight: 600; font-size: 13px; }
+    .health-label { color: var(--text3); }
+    .msg-thread { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+    .msg-bubble { max-width: 88%; font-size: 12px; line-height: 1.5; }
+    .msg-bubble.from-client { align-self: flex-start; }
+    .msg-bubble.from-resona { align-self: flex-end; }
+    .msg-content { padding: 7px 10px; border-radius: var(--radius-md); }
+    .msg-bubble.from-client .msg-content { background: var(--bg2); border: 0.5px solid var(--border); }
+    .msg-bubble.from-resona .msg-content { background: var(--info); color: #fff; }
+    .msg-meta { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .msg-bubble.from-resona .msg-meta { text-align: right; }
+    .msg-empty { font-size: 12px; color: var(--text3); text-align: center; padding: 20px 10px; }
+    .msg-compose { padding: 10px 12px; border-top: 0.5px solid var(--border); flex-shrink: 0; }
+    .msg-input { width: 100%; resize: none; font-size: 12px; padding: 7px 9px; border: 0.5px solid var(--border2); border-radius: var(--radius-md); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; line-height: 1.4; }
+    .msg-input:focus { border-color: var(--info); }
+    .msg-send-btn { width: 100%; margin-top: 5px; padding: 6px; border-radius: var(--radius-md); border: none; background: var(--info); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: opacity .12s; }
+    .msg-send-btn:hover { opacity: .85; }
+    .msg-send-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Strategy panel notes ── */
+    .sp-note-item { font-size: 12px; color: var(--text2); padding: 6px 8px; background: var(--bg); border-radius: var(--radius-md); border: 0.5px solid var(--border); margin-bottom: 4px; line-height: 1.5; }
+    .sp-note-item.pinned { border-left: 2px solid var(--warning); }
+    .sp-note-form { margin-top: 8px; }
+    .sp-note-textarea { width: 100%; resize: none; font-size: 12px; padding: 6px 8px; border: 0.5px solid var(--border2); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
+    .sp-note-textarea:focus { border-color: var(--info); }
+    .sp-note-row { display: flex; gap: 6px; margin-top: 5px; align-items: center; }
+    .sp-note-pin { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .sp-note-save { font-size: 11px; padding: 4px 12px; border-radius: var(--radius-md); border: none; background: var(--info); color: #fff; cursor: pointer; margin-left: auto; }
+    .sp-add-note-btn { width: 100%; margin-top: 6px; padding: 5px 8px; font-size: 11px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: none; color: var(--text3); cursor: pointer; text-align: left; }
+    .sp-add-note-btn:hover { color: var(--text); background: var(--bg); }
+
+    /* ── History page ── */
+    .snap-grid { display: grid; gap: 8px; }
+    .snap-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+    .snap-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
+    .snap-label { font-size: 13px; font-weight: 500; }
+    .snap-page { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--bg2); color: var(--text3); font-weight: 500; flex-shrink: 0; }
+    .snap-time { font-size: 11px; color: var(--text3); }
+    .snap-summary { font-size: 12px; color: var(--text2); line-height: 1.65; }
+    .snap-kpis { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+    .snap-kpi { font-size: 11px; color: var(--text2); }
+    .snap-kpi strong { color: var(--text); }
+
+    /* ── Welcome overlay ── */
+    .welcome-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:flex; align-items:center; justify-content:center; }
+    .welcome-overlay.hidden { display:none; }
+    .welcome-card { background:var(--bg); border-radius:var(--radius-lg); padding:36px 32px; max-width:440px; width:calc(100% - 32px); border:0.5px solid var(--border); box-shadow:0 12px 40px rgba(0,0,0,.15); }
+    .wc-program { font-size:11px; font-weight:600; color:var(--info); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+    .welcome-card h2 { font-size:20px; font-weight:500; margin:0 0 4px; }
+    .welcome-card .wc-sub { font-size:13px; color:var(--text3); margin:0 0 20px; }
+    .welcome-bullets { list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:10px; }
+    .welcome-bullets li { font-size:13px; color:var(--text2); display:flex; align-items:flex-start; gap:10px; line-height:1.5; }
+    .welcome-bullets li::before { content:'→'; color:var(--info); flex-shrink:0; margin-top:1px; }
+    .welcome-cta { width:100%; padding:11px; border-radius:var(--radius-md); background:var(--info); color:#fff; font-size:14px; font-weight:500; border:none; cursor:pointer; transition:opacity .15s; }
+    .welcome-cta:hover { opacity:.85; }
+
+    /* ── Notification bell ── */
+    .notif-bell-wrap { position:fixed; top:14px; right:14px; z-index:90; }
+    .notif-bell-btn { width:34px; height:34px; border-radius:50%; background:var(--bg); border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); transition:background .15s; position:relative; }
+    .notif-bell-btn:hover { background:var(--bg2); }
+    .notif-badge { position:absolute; top:-3px; right:-3px; min-width:16px; height:16px; border-radius:8px; background:#E24B4A; color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; pointer-events:none; }
+    .notif-dd { position:absolute; top:40px; right:0; width:340px; max-height:460px; background:var(--bg); border:0.5px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 8px 32px rgba(0,0,0,.15); overflow-y:auto; display:none; }
+    .notif-dd.open { display:block; }
+    .notif-dd-head { display:flex; justify-content:space-between; align-items:center; padding:11px 14px; border-bottom:0.5px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:1; }
+    .notif-dd-title { font-size:12px; font-weight:600; }
+    .notif-dd-mark { font-size:11px; color:var(--info); cursor:pointer; }
+    .notif-dd-mark:hover { opacity:.7; }
+    .notif-nitem { display:flex; gap:10px; padding:10px 14px; border-bottom:0.5px solid var(--border); cursor:pointer; border-left:3px solid transparent; transition:background .1s; }
+    .notif-nitem:hover { background:var(--bg2); }
+    .notif-nitem.unread { background:var(--bg2); }
+    .notif-nitem.type-info.unread { border-left-color:var(--info); }
+    .notif-nitem.type-warning.unread { border-left-color:var(--warning); }
+    .notif-nitem.type-alert.unread { border-left-color:var(--danger); }
+    .notif-nitem.type-success.unread { border-left-color:var(--success); }
+    .notif-nitem-title { font-size:12px; font-weight:500; }
+    .notif-nitem-body { font-size:12px; color:var(--text3); margin-top:2px; line-height:1.4; }
+    .notif-nitem-time { font-size:10px; color:var(--text3); margin-top:4px; }
+    .notif-dd-empty { padding:24px; text-align:center; font-size:13px; color:var(--text3); }
+
+    /* ── Action history collapsible ── */
+    .act-hist-section { margin-top:20px; }
+    .act-hist-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:500; color:var(--text2); padding:8px 0; border-top:0.5px solid var(--border); user-select:none; }
+    .act-hist-toggle:hover { color:var(--text); }
+    .act-hist-arrow { transition:transform .2s; display:flex; }
+    .act-hist-body { display:none; margin-top:8px; }
+    .act-hist-body.open { display:block; }
+    .act-hist-row { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:var(--radius-md); border:0.5px solid var(--border); margin-bottom:4px; background:var(--bg2); }
+    .act-decision { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; flex-shrink:0; text-transform:capitalize; }
+    .act-decision.approved { background:#1D9E7520; color:#1D9E75; }
+    .act-decision.deferred { background:#EF9F2720; color:#EF9F27; }
+    .act-hist-title { flex:1; font-size:12px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .act-hist-date { font-size:10px; color:var(--text3); flex-shrink:0; }
+
+    /* ── Ask Claude ── */
+    .ask-section { margin-top:24px; border-top:0.5px solid var(--border); padding-top:16px; }
+    .ask-lbl { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .ask-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .ask-chip { font-size:11px; padding:4px 10px; border-radius:20px; border:0.5px solid var(--border2); background:var(--bg2); color:var(--text2); cursor:pointer; transition:background .1s, color .1s, border-color .1s; white-space:nowrap; }
+    .ask-chip:hover { background:var(--info); color:#fff; border-color:var(--info); }
+    .ask-thread { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; max-height:280px; overflow-y:auto; }
+    .ask-q { font-size:12px; padding:8px 12px; border-radius:var(--radius-md); background:var(--bg2); color:var(--text3); }
+    .ask-a { font-size:12px; padding:10px 12px; border-radius:var(--radius-md); border:0.5px solid var(--info)40; color:var(--text); line-height:1.6; }
+    .ask-a-lbl { font-size:10px; font-weight:600; color:var(--info); margin-bottom:4px; }
+    .ask-thinking { font-size:12px; color:var(--text3); font-style:italic; padding:8px 0; }
+    .ask-form { display:flex; gap:8px; }
+    .ask-input { flex:1; font-size:12px; padding:8px 10px; border:0.5px solid var(--border2); border-radius:var(--radius-md); background:var(--bg2); color:var(--text); font-family:inherit; outline:none; }
+    .ask-input:focus { border-color:var(--info); }
+    .ask-submit { font-size:12px; padding:8px 14px; border-radius:var(--radius-md); background:var(--info); color:#fff; border:none; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .ask-submit:disabled { opacity:.4; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">CMNDR <em>Reports</em></div>
+
+  <div class="nav-lbl">Pages</div>
+
+  <div class="nav-item active" data-page="overview" onclick="nav('overview')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+    Overview
+  </div>
+  <div class="nav-item" data-page="operations" onclick="nav('operations')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L2 4.5v6l5.5 3 5.5-3v-6L7.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M7.5 1.5v13M2 4.5l5.5 3 5.5-3" stroke="currentColor" stroke-width="1.2"/></svg>
+    Operations
+  </div>
+  <div class="nav-item" data-page="marketing" onclick="nav('marketing')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 7 8.5 9.5 13 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 3.5h2.5v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Marketing
+  </div>
+  <div class="nav-item" data-page="finance" onclick="nav('finance')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="3.5" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 6.5h12" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 9.5h2M8.5 9.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Finance
+  </div>
+  <div class="nav-item" data-page="optimization" onclick="nav('optimization')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.5v2M7.5 11.5v2M1.5 7.5h2M11.5 7.5h2M3.4 3.4l1.4 1.4M10.2 10.2l1.4 1.4M3.4 11.6l1.4-1.4M10.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Optimization
+  </div>
+  <div class="nav-item" data-page="history" onclick="nav('history')">
+    <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12z" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 4.5v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    History
+  </div>
+
+  <div class="sidebar-sep"></div>
+
+  <div>
+    <div class="sidebar-lbl">Date range</div>
+    <div class="range-grid">
+      <button class="range-btn active" data-range="7d" onclick="setRange('7d')">7 days</button>
+      <button class="range-btn" data-range="30d" onclick="setRange('30d')">30 days</button>
+      <button class="range-btn" data-range="mtd" onclick="setRange('mtd')">Month</button>
+      <button class="range-btn" data-range="qtd" onclick="setRange('qtd')">Quarter</button>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="client-chip">
+      <div class="chip-av">PF</div>
+      <div>
+        <div class="chip-name">Loading…</div>
+        <div class="chip-sub">—</div>
+      </div>
+    </div>
+    <button class="signout-btn" id="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- Notification bell (shown for client users) -->
+<div class="notif-bell-wrap" id="notif-bell-wrap" style="display:none">
+  <button class="notif-bell-btn" onclick="toggleNotifDD()" aria-label="Notifications">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a4.5 4.5 0 00-4.5 4.5v2.25L1.5 10h12l-1.5-1.75V6a4.5 4.5 0 00-4.5-4.5zM6 11.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="notif-badge" id="notif-badge" style="display:none">0</div>
+  </button>
+  <div class="notif-dd" id="notif-dd">
+    <div class="notif-dd-head">
+      <span class="notif-dd-title">Notifications</span>
+      <span class="notif-dd-mark" onclick="markAllNotifRead()">Mark all read</span>
+    </div>
+    <div id="notif-dd-list"><div class="notif-dd-empty">No notifications</div></div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Overview: iframe + messages panel -->
+  <div class="page active" id="page-overview">
+    <iframe id="overview-frame" title="Overview"></iframe>
+    <div class="msg-panel" id="msg-panel">
+      <div class="msg-panel-head">
+        <div class="msg-panel-lbl">Client goal</div>
+        <div class="goal-banner" id="goal-banner">
+          <div class="goal-banner-lbl">
+            <span>Goal</span>
+            <button class="goal-edit-btn" id="goal-edit-btn" style="display:none" onclick="toggleGoalEdit()">Edit</button>
+          </div>
+          <div id="goal-text" style="color:var(--text3)">Loading…</div>
+          <div class="goal-edit-form" id="goal-edit-form">
+            <textarea class="goal-edit-input" id="goal-input" rows="2" placeholder="State the client's primary goal…"></textarea>
+            <button class="goal-save-btn" onclick="saveGoal()">Save goal</button>
+          </div>
+        </div>
+        <div class="health-badge" id="health-badge" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 7l1 3.5L6 8.5 3 10.5l1-3.5L1 4.5h3.5L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+          <span class="health-score" id="health-score">—</span>
+          <span class="health-label" id="health-label">Health score</span>
+        </div>
+        <div class="msg-panel-lbl" style="margin-top:10px">Messages</div>
+      </div>
+      <div class="msg-thread" id="msg-thread">
+        <div class="msg-empty">No messages yet</div>
+      </div>
+      <div class="msg-compose">
+        <textarea class="msg-input" id="msg-input" rows="2" placeholder="Send a message to your advisor…"></textarea>
+        <button class="msg-send-btn" id="msg-send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operations -->
+  <div class="page" id="page-operations">
+    <div class="page-inner">
+      <div class="page-head">
+        <div><div class="page-title">Operations</div><div class="page-meta" id="ops-meta">Loading...</div></div>
+        <button class="reload-btn" onclick="loadPage('operations',true)">Refresh</button>
+      </div>
+      <div id="ops-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+        </div>
+      </div>
+      <div class="sec-label">Recommended actions</div>
+      <div class="rec-panel" id="ops-actions"><div class="skel"></div><div class="skel" style="width:75%"></div></div>
+      <div id="ops-hist"></div>
+      <div id="ops-ask"></div>
+    </div>
+  </div>
+
+  <!-- Marketing -->
+  <div class="page" id="page-marketing">
+    <div class="page-inner">
+      <div class="page-head">
+        <div><div class="page-title">Marketing</div><div class="page-meta" id="mkt-meta">Loading...</div></div>
+        <button class="reload-btn" onclick="loadPage('marketing',true)">Refresh</button>
+      </div>
+      <div id="mkt-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+        </div>
+      </div>
+      <div class="sec-label">Recommended actions</div>
+      <div class="rec-panel" id="mkt-actions"><div class="skel"></div><div class="skel" style="width:75%"></div></div>
+      <div id="mkt-hist"></div>
+      <div id="mkt-ask"></div>
+    </div>
+  </div>
+
+  <!-- Finance -->
+  <div class="page" id="page-finance">
+    <div class="page-inner">
+      <div class="page-head">
+        <div><div class="page-title">Finance</div><div class="page-meta" id="fin-meta">Loading...</div></div>
+        <button class="reload-btn" onclick="loadPage('finance',true)">Refresh</button>
+      </div>
+      <div id="fin-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+        </div>
+      </div>
+      <div class="sec-label">Recommended actions</div>
+      <div class="rec-panel" id="fin-actions"><div class="skel"></div><div class="skel" style="width:75%"></div></div>
+      <div id="fin-hist"></div>
+      <div id="fin-ask"></div>
+    </div>
+  </div>
+
+  <!-- Optimization -->
+  <div class="page" id="page-optimization">
+    <div class="page-inner">
+      <div class="page-head">
+        <div><div class="page-title">Optimization</div><div class="page-meta" id="opt-meta">Loading...</div></div>
+        <button class="reload-btn" onclick="loadPage('optimization',true)">Refresh</button>
+      </div>
+      <div id="opt-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+          <div class="kpi"><div class="skel" style="width:55%"></div><div class="skel" style="width:35%;height:22px;margin-top:8px;"></div></div>
+        </div>
+      </div>
+      <div class="sec-label">Recommended actions</div>
+      <div class="rec-panel" id="opt-actions"><div class="skel"></div><div class="skel" style="width:75%"></div></div>
+      <div id="opt-hist"></div>
+      <div id="opt-ask"></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="page" id="page-history">
+    <div class="page-inner">
+      <div class="page-head">
+        <div><div class="page-title">Report History</div><div class="page-meta" id="hist-meta">Loading…</div></div>
+        <button class="reload-btn" onclick="loadPage('history',true)">Refresh</button>
+      </div>
+      <div id="hist-body">
+        <div class="skel"></div><div class="skel" style="width:75%"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Celebration banner (fixed top) -->
+<div class="celebration" id="celebration">
+  <div class="celeb-icon">🎉</div>
+  <div class="celeb-text">
+    <div class="celeb-title" id="celeb-title">Milestone complete!</div>
+    <div class="celeb-sub" id="celeb-sub">You've advanced to the next milestone in your program.</div>
+  </div>
+  <div class="celeb-close" onclick="document.getElementById('celebration').classList.remove('visible')">×</div>
+</div>
+
+<div class="strategy-panel" id="strategy-panel">
+  <div class="sp-lbl">Your progress</div>
+  <div class="sp-loading">
+    <div class="skel" style="width:60%"></div>
+    <div class="skel" style="width:80%;height:18px;margin-top:4px;"></div>
+    <div class="skel" style="width:40%;margin-top:4px;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Welcome overlay (client_user first login) -->
+<div class="welcome-overlay hidden" id="welcome-overlay">
+  <div class="welcome-card">
+    <div class="wc-program" id="wc-program">Your program</div>
+    <h2 id="wc-title">Welcome to your Resona dashboard</h2>
+    <p class="wc-sub">Here's what we'll work on together to grow your business:</p>
+    <ul class="welcome-bullets">
+      <li>We analyze your business data across 4 key areas every week</li>
+      <li>Claude AI generates personalized insights and recommended actions for you</li>
+      <li>Your Resona advisor reviews progress and adjusts your roadmap each month</li>
+    </ul>
+    <button class="welcome-cta" onclick="dismissWelcome()">Let's get started</button>
+  </div>
+</div>
+
+<script>
+const API = '/api/pages';
+let CLIENT = 'peak-flow';
+let currentRange = '7d';
+let currentPage = 'overview';
+let USER_ROLE = null;
+let USER_NAME = '';
+const cache = {};
+
+// ── Helpers ──────────────────────────────────────────────────
+function fmt$(n) { return '$' + Math.round(n || 0).toLocaleString(); }
+function initials(name) { return (name || '?').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase(); }
+function utilColor(pct) { return pct >= 85 ? '#E24B4A' : pct >= 70 ? '#EF9F27' : '#1D9E75'; }
+function prioBadge(p) {
+  const m = { high: 'b-hi', medium: 'b-med', low: 'b-lo' };
+  return `<span class="badge ${m[p] || 'b-lo'}">${p || 'low'}</span>`;
+}
+function parseActions(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw !== 'string') return [];
+  // Strip markdown code fences if Claude wrapped the JSON
+  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  try { return JSON.parse(stripped); } catch (e) { return []; }
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+function dateRange(preset) {
+  const now = new Date(), today = now.toISOString().split('T')[0];
+  if (preset === '7d') { const d = new Date(); d.setDate(d.getDate() - 7); return { from: d.toISOString().split('T')[0], to: today }; }
+  if (preset === '30d') { const d = new Date(); d.setDate(d.getDate() - 30); return { from: d.toISOString().split('T')[0], to: today }; }
+  if (preset === 'mtd') { return { from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0], to: today }; }
+  if (preset === 'qtd') { const q = Math.floor(now.getMonth() / 3); return { from: new Date(now.getFullYear(), q * 3, 1).toISOString().split('T')[0], to: today }; }
+  const d = new Date(); d.setDate(d.getDate() - 7); return { from: d.toISOString().split('T')[0], to: today };
+}
+function fmtRange(from, to) {
+  const f = new Date(from).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const t = new Date(to).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return `${f} – ${t}`;
+}
+const pfx = { operations: 'ops', marketing: 'mkt', finance: 'fin', optimization: 'opt', history: 'hist' };
+
+// ── Navigation ───────────────────────────────────────────────
+function nav(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
+  const panel = document.getElementById('strategy-panel');
+  const main = document.querySelector('.main');
+  if (page === 'overview') {
+    panel.classList.remove('visible');
+    main.classList.add('no-panel');
+    updateOverviewFrame();
+    loadOverviewPanel();
+  } else if (page === 'history') {
+    panel.classList.remove('visible');
+    main.classList.add('no-panel');
+    loadPage('history');
+  } else {
+    panel.classList.add('visible');
+    main.classList.remove('no-panel');
+    showPanelSkeleton();
+    loadPage(page);
+  }
+}
+
+function updateOverviewFrame() {
+  document.getElementById('overview-frame').src = `/?client=${CLIENT}&range=${currentRange}`;
+}
+
+function setRange(r) {
+  currentRange = r;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r));
+  Object.keys(cache).forEach(k => delete cache[k]);
+  if (currentPage === 'overview') {
+    updateOverviewFrame();
+  } else {
+    loadPage(currentPage, true);
+  }
+}
+
+// ── Data loading ─────────────────────────────────────────────
+async function loadPage(page, force = false) {
+  if (!force && cache[page]) { renderPage(page, cache[page]); return; }
+  const { from, to } = dateRange(currentRange);
+  try {
+    const res = await fetch(`${API}?page=${page}&client=${CLIENT}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    cache[page] = data;
+    renderPage(page, data);
+  } catch (err) {
+    const meta = document.getElementById(pfx[page] + '-meta');
+    if (meta) meta.textContent = 'Error: ' + err.message;
+    toast('Failed to load ' + page);
+  }
+}
+
+function renderPage(page, data) {
+  if (page === 'history') { renderHistory(data); return; }
+  const meta = document.getElementById(pfx[page] + '-meta');
+  if (meta) meta.textContent = fmtRange(data.from, data.to);
+  if (page === 'operations') renderOperations(data);
+  if (page === 'marketing') renderMarketing(data);
+  if (page === 'finance') renderFinance(data);
+  if (page === 'optimization') renderOptimization(data);
+  renderStrategyPanel(data);
+  if (data.milestone_just_advanced) showCelebration(data.course);
+  // Action history + Ask Claude
+  renderActionHistory(page);
+  renderAskSection(page);
+}
+
+// ── Explain helpers ───────────────────────────────────────────
+function explainBtn(id) {
+  return `<button class="explain-btn" onclick="toggleExplain('${id}')">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Explain this
+  </button>`;
+}
+function explainPanel(id, summary) {
+  return `<div class="explain-panel" id="explain-${id}">
+    <div class="explain-lbl">Claude — AI analysis</div>
+    <div class="explain-txt">${summary || 'No explanation available.'}</div>
+  </div>`;
+}
+function toggleExplain(id) {
+  const el = document.getElementById('explain-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Actions renderer ─────────────────────────────────────────
+function renderActions(containerId, actionsRaw) {
+  const el = document.getElementById(containerId);
+  const actions = parseActions(actionsRaw);
+  if (!actions.length) { el.innerHTML = '<p class="empty">No recommended actions available.</p>'; return; }
+  el.innerHTML = `
+    <div class="rec-head">
+      <div class="rec-title">Recommended Actions</div>
+      <span class="rec-badge">Claude AI · ${actions.length} actions</span>
+    </div>
+    ${actions.map((a, i) => `
+      <div class="rec-item">
+        <div class="rec-item-head">
+          <div class="rec-item-title">${a.title || 'Action'}</div>
+          ${prioBadge(a.priority)}
+        </div>
+        <div class="rec-item-desc">${a.description || ''}</div>
+        <div class="rec-btns" id="rbtn-${containerId}-${i}">
+          <button class="btn-approve" onclick="approveAction('${containerId}',${i})">Approve</button>
+          <button class="btn-defer" onclick="deferAction('${containerId}',${i})">Defer</button>
+        </div>
+      </div>
+    `).join('')}`;
+}
+async function approveAction(cid, i) {
+  const el = document.getElementById(`rbtn-${cid}-${i}`);
+  const titleEl = el?.closest('.rec-item')?.querySelector('.rec-item-title');
+  const descEl = el?.closest('.rec-item')?.querySelector('.rec-item-desc');
+  if (el) el.innerHTML = '<span class="rec-status status-approved">Approving…</span>';
+  try {
+    const r = await fetch('/api/actions', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: CLIENT, action_title: titleEl?.textContent || 'Action', action_desc: descEl?.textContent || '', page: currentPage, decision: 'approved', decided_by: USER_NAME })
+    });
+    const data = await r.json();
+    if (data.executed) {
+      if (el) el.innerHTML = '<span class="rec-status status-approved">⚡ Approved & executing</span>';
+      toast('Action approved & executing');
+    } else {
+      if (el) el.innerHTML = '<span class="rec-status status-approved">✓ Approved — added to task list</span>';
+      toast('Approved — no automation configured yet');
+    }
+  } catch(e) {
+    if (el) el.innerHTML = '<span class="rec-status status-approved">✓ Approved</span>';
+    toast('Action approved');
+  }
+}
+function deferAction(cid, i) {
+  const el = document.getElementById(`rbtn-${cid}-${i}`);
+  const titleEl = el?.closest('.rec-item')?.querySelector('.rec-item-title');
+  if (el) el.innerHTML = '<span class="rec-status status-deferred">Deferred</span>';
+  fetch('/api/actions', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: CLIENT, action_title: titleEl?.textContent || 'Action', page: currentPage, decision: 'deferred', decided_by: USER_NAME })
+  }).catch(() => {});
+}
+
+// ── Bar chart helper ──────────────────────────────────────────
+function barChart(rows) {
+  if (!rows.length) return '<p class="empty">No data available.</p>';
+  const max = Math.max(...rows.map(r => r.val), 1);
+  return rows.map(r => `<div class="bar-row">
+    <span class="bar-lbl" title="${r.label}">${r.label}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.val / max * 100)}%;background:${r.color || '#378ADD'};"></div></div>
+    <span class="bar-val">${r.display}</span>
+  </div>`).join('');
+}
+
+// ── Operations ───────────────────────────────────────────────
+function renderOperations(d) {
+  const jobs = d.jobs || [], techs = d.technicians || [], alerts = d.alerts || [], metrics = d.service_metrics || [];
+  const completed = jobs.filter(j => j.status === 'completed').length;
+  const inprog = jobs.filter(j => j.status === 'in-progress').length;
+  const rev = jobs.filter(j => j.revenue).reduce((a, j) => a + j.revenue, 0);
+  const revJobs = jobs.filter(j => j.revenue);
+  const avg = revJobs.length ? rev / revJobs.length : 0;
+  const rate = jobs.length ? Math.round(completed / jobs.length * 100) : 0;
+  const activeAlerts = alerts.filter(a => !a.resolved);
+
+  const metricsRows = metrics.slice(0, 6).map(m => ({
+    label: m.week_start ? new Date(m.week_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—',
+    val: m.total_revenue || 0,
+    display: fmt$(m.total_revenue || 0),
+    color: '#378ADD'
+  }));
+
+  const techRows = techs.slice(0, 6).map(t => `
+    <div class="tech-row">
+      <div class="tech-av">${initials(t.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="tech-name">${t.name}</div>
+        <div class="tech-meta">${t.specialty || '—'} · ${t.completed_this_week || 0} completed · ${t.active_jobs || 0} active</div>
+        <div class="util-track"><div class="util-fill" style="width:${t.utilization_pct || 0}%;background:${utilColor(t.utilization_pct || 0)};"></div></div>
+      </div>
+      <div class="util-pct" style="color:${utilColor(t.utilization_pct || 0)};">${t.utilization_pct || 0}%</div>
+    </div>`).join('') || '<p class="empty">No technician data.</p>';
+
+  const alertRows = activeAlerts.slice(0, 5).map(a => `
+    <div class="a-row">
+      <div class="a-dot d-${a.type || 'info'}"></div>
+      <div>
+        <div style="font-size:13px;">${a.message || '—'}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">${(a.type || 'info').charAt(0).toUpperCase() + (a.type || 'info').slice(1)} · ${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
+      </div>
+    </div>`).join('') || '<p class="empty">No active alerts.</p>';
+
+  const statusMap = { completed: 'b-done', 'in-progress': 'b-prog', scheduled: 'b-lo', cancelled: 'b-overdue' };
+  const statusLabel = { completed: 'Done', 'in-progress': 'In progress', scheduled: 'Scheduled', cancelled: 'Cancelled' };
+  const jobRows = jobs.slice(0, 8).map(j => `
+    <div class="trow">
+      <div style="flex:1;min-width:0;">
+        <div class="trow-main">${j.title || '—'}</div>
+        <div class="trow-sub">${j.assigned_to || '—'} · ${j.service_type || '—'} · ${j.scheduled_date ? new Date(j.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
+      </div>
+      <div class="trow-right">
+        ${prioBadge(j.priority)}
+        <span class="badge ${statusMap[j.status] || 'b-lo'}">${statusLabel[j.status] || j.status}</span>
+        <span style="font-size:11px;color:var(--text2);min-width:44px;text-align:right;">${j.revenue ? fmt$(j.revenue) : '—'}</span>
+      </div>
+    </div>`).join('') || '<p class="empty">No jobs in this period.</p>';
+
+  document.getElementById('ops-body').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total jobs</div><div class="kpi-val">${jobs.length}</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val" style="color:#1D9E75">${completed}</div><div class="kpi-sub" style="color:#1D9E75">${rate}% rate</div></div>
+      <div class="kpi"><div class="kpi-label">In progress</div><div class="kpi-val" style="color:#185FA5">${inprog}</div><div class="kpi-sub">Active now</div></div>
+      <div class="kpi"><div class="kpi-label">Period revenue</div><div class="kpi-val">${fmt$(rev)}</div><div class="kpi-sub">Completed jobs</div></div>
+      <div class="kpi"><div class="kpi-label">Avg job value</div><div class="kpi-val">${fmt$(avg)}</div><div class="kpi-sub">Per job</div></div>
+      <div class="kpi"><div class="kpi-label">Active alerts</div><div class="kpi-val" style="color:${activeAlerts.length > 0 ? '#E24B4A' : '#1D9E75'}">${activeAlerts.length}</div><div class="kpi-sub">Unresolved</div></div>
+    </div>
+
+    <div class="sec-label">Weekly revenue trend</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Service metrics</div>${explainBtn('ops-metrics')}</div>
+      ${barChart(metricsRows)}
+      ${explainPanel('ops-metrics', d.summary)}
+    </div>
+
+    <div class="sec-label">Technician workload</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Team utilization</div>${explainBtn('ops-techs')}</div>
+      ${techRows}
+      ${explainPanel('ops-techs', d.summary)}
+    </div>
+
+    <div class="sec-label">Jobs in period</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent jobs</div>${explainBtn('ops-jobs')}</div>
+      ${jobRows}
+      ${explainPanel('ops-jobs', d.summary)}
+    </div>
+
+    <div class="sec-label">Active alerts</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">System alerts</div>${explainBtn('ops-alerts')}</div>
+      ${alertRows}
+      ${explainPanel('ops-alerts', d.summary)}
+    </div>`;
+
+  renderActions('ops-actions', d.actions);
+}
+
+// ── Marketing ────────────────────────────────────────────────
+function renderMarketing(d) {
+  const leads = d.leads || [], campaigns = d.campaigns || [];
+  const converted = leads.filter(l => l.status === 'converted').length;
+  const convRate = leads.length ? Math.round(converted / leads.length * 100) : 0;
+  const totalSpend = campaigns.reduce((a, c) => a + (c.spend || 0), 0);
+  const totalRev = campaigns.reduce((a, c) => a + (c.revenue_attributed || 0), 0);
+  const roi = totalSpend ? Math.round((totalRev - totalSpend) / totalSpend * 100) : 0;
+
+  const sourceMap = leads.reduce((a, l) => { a[l.source] = (a[l.source] || 0) + 1; return a; }, {});
+  const sourceRows = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([src, cnt]) => ({
+    label: src || 'Unknown', val: cnt, display: cnt + ' leads', color: '#7F77DD'
+  }));
+
+  const campRows = campaigns.slice(0, 5).map(c => {
+    const campRoi = c.spend ? Math.round((c.revenue_attributed - c.spend) / c.spend * 100) : 0;
+    return { label: c.name || '—', val: c.revenue_attributed || 0, display: (campRoi > 0 ? '+' : '') + campRoi + '% ROI', color: '#1D9E75' };
+  });
+
+  const leadStatusMap = { converted: 'b-done', qualified: 'b-prog', lost: 'b-overdue', new: 'b-lo' };
+  const leadRows = leads.slice(0, 8).map(l => `
+    <div class="trow">
+      <div style="flex:1;min-width:0;">
+        <div class="trow-main">${l.name || '—'}</div>
+        <div class="trow-sub">${l.source || '—'} · ${l.created_at ? new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
+      </div>
+      <div class="trow-right">
+        <span class="badge ${leadStatusMap[l.status] || 'b-lo'}">${l.status || '—'}</span>
+        ${l.value ? `<span style="font-size:11px;color:var(--text2);">${fmt$(l.value)}</span>` : ''}
+      </div>
+    </div>`).join('') || '<p class="empty">No leads in this period.</p>';
+
+  document.getElementById('mkt-body').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total leads</div><div class="kpi-val">${leads.length}</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi"><div class="kpi-label">Converted</div><div class="kpi-val" style="color:#1D9E75">${converted}</div><div class="kpi-sub" style="color:#1D9E75">${convRate}% rate</div></div>
+      <div class="kpi"><div class="kpi-label">Campaign spend</div><div class="kpi-val">${fmt$(totalSpend)}</div><div class="kpi-sub">Total invested</div></div>
+      <div class="kpi"><div class="kpi-label">Revenue attributed</div><div class="kpi-val">${fmt$(totalRev)}</div><div class="kpi-sub">From campaigns</div></div>
+      <div class="kpi"><div class="kpi-label">Blended ROI</div><div class="kpi-val" style="color:${roi >= 0 ? '#1D9E75' : '#E24B4A'}">${roi}%</div><div class="kpi-sub">Spend vs revenue</div></div>
+      <div class="kpi"><div class="kpi-label">Campaigns</div><div class="kpi-val">${campaigns.length}</div><div class="kpi-sub">Active tracked</div></div>
+    </div>
+
+    <div class="sec-label">Lead sources</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Where leads are coming from</div>${explainBtn('mkt-sources')}</div>
+      ${barChart(sourceRows)}
+      ${explainPanel('mkt-sources', d.summary)}
+    </div>
+
+    <div class="sec-label">Campaign performance</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Revenue attributed by campaign</div>${explainBtn('mkt-campaigns')}</div>
+      ${barChart(campRows)}
+      ${explainPanel('mkt-campaigns', d.summary)}
+    </div>
+
+    <div class="sec-label">Lead pipeline</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent leads</div>${explainBtn('mkt-leads')}</div>
+      ${leadRows}
+      ${explainPanel('mkt-leads', d.summary)}
+    </div>`;
+
+  renderActions('mkt-actions', d.actions);
+}
+
+// ── Finance ──────────────────────────────────────────────────
+function renderFinance(d) {
+  const invoices = d.invoices || [], snapshots = d.snapshots || [], totals = d.totals || {};
+  const paid = totals.paid || invoices.filter(i => i.status === 'paid').reduce((a, i) => a + i.amount, 0);
+  const outstanding = totals.outstanding || invoices.filter(i => i.status === 'sent').reduce((a, i) => a + i.amount, 0);
+  const overdue = totals.overdue || invoices.filter(i => i.status === 'overdue').reduce((a, i) => a + i.amount, 0);
+  const total = paid + outstanding + overdue;
+  const collRate = total ? Math.round(paid / total * 100) : 0;
+
+  const snapRows = snapshots.slice(0, 6).map(s => ({
+    label: s.period_start ? new Date(s.period_start).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : '—',
+    val: s.total_revenue || 0,
+    display: fmt$(s.total_revenue || 0),
+    color: '#1D9E75'
+  }));
+
+  const statusBars = [
+    { label: 'Paid', val: paid, display: fmt$(paid), color: '#1D9E75' },
+    { label: 'Outstanding', val: outstanding, display: fmt$(outstanding), color: '#378ADD' },
+    { label: 'Overdue', val: overdue, display: fmt$(overdue), color: '#E24B4A' },
+  ];
+
+  const invStatusMap = { paid: 'b-paid', sent: 'b-sent', overdue: 'b-overdue', draft: 'b-lo' };
+  const invRows = invoices.slice(0, 8).map(inv => `
+    <div class="trow">
+      <div style="flex:1;min-width:0;">
+        <div class="trow-main">${inv.client_name || inv.invoice_number || 'Invoice'}</div>
+        <div class="trow-sub">#${inv.invoice_number || '—'} · ${inv.issued_date ? new Date(inv.issued_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
+      </div>
+      <div class="trow-right">
+        <span class="badge ${invStatusMap[inv.status] || 'b-lo'}">${inv.status || '—'}</span>
+        <span style="font-size:12px;font-weight:500;">${fmt$(inv.amount || 0)}</span>
+      </div>
+    </div>`).join('') || '<p class="empty">No invoices in this period.</p>';
+
+  document.getElementById('fin-body').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Paid revenue</div><div class="kpi-val" style="color:#1D9E75">${fmt$(paid)}</div><div class="kpi-sub">Collected</div></div>
+      <div class="kpi"><div class="kpi-label">Outstanding</div><div class="kpi-val" style="color:#185FA5">${fmt$(outstanding)}</div><div class="kpi-sub">Awaiting payment</div></div>
+      <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val" style="color:${overdue > 0 ? '#E24B4A' : '#1D9E75'}">${fmt$(overdue)}</div><div class="kpi-sub">Past due date</div></div>
+      <div class="kpi"><div class="kpi-label">Total invoiced</div><div class="kpi-val">${fmt$(total)}</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi"><div class="kpi-label">Collection rate</div><div class="kpi-val" style="color:${collRate >= 80 ? '#1D9E75' : '#EF9F27'}">${collRate}%</div><div class="kpi-sub">Paid / total</div></div>
+      <div class="kpi"><div class="kpi-label">Invoice count</div><div class="kpi-val">${invoices.length}</div><div class="kpi-sub">In period</div></div>
+    </div>
+
+    <div class="sec-label">Revenue trend</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Monthly revenue (6 months)</div>${explainBtn('fin-trend')}</div>
+      ${barChart(snapRows)}
+      ${explainPanel('fin-trend', d.summary)}
+    </div>
+
+    <div class="sec-label">Receivables breakdown</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Invoice status overview</div>${explainBtn('fin-status')}</div>
+      ${barChart(statusBars)}
+      ${explainPanel('fin-status', d.summary)}
+    </div>
+
+    <div class="sec-label">Invoice ledger</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent invoices</div>${explainBtn('fin-invoices')}</div>
+      ${invRows}
+      ${explainPanel('fin-invoices', d.summary)}
+    </div>`;
+
+  renderActions('fin-actions', d.actions);
+}
+
+// ── Optimization ─────────────────────────────────────────────
+function renderOptimization(d) {
+  const logs = d.automation_logs || [], aiUsage = d.ai_usage || [], opps = d.opportunities || [], totals = d.totals || {};
+  const runs = logs.length;
+  const successCount = logs.filter(l => l.status === 'success').length;
+  const failedCount = logs.filter(l => l.status === 'failed').length;
+  const successRate = totals.successRate || (runs ? Math.round(successCount / runs * 100) : 0);
+  const totalTokens = totals.totalTokens || aiUsage.reduce((a, l) => a + (l.total_tokens || 0), 0);
+  const totalCost = totals.totalCost || aiUsage.reduce((a, l) => a + (parseFloat(l.cost_usd) || 0), 0);
+  const potSavings = totals.potentialSavings || opps.filter(o => o.status !== 'dismissed').reduce((a, o) => a + (o.estimated_cost_saving || 0), 0);
+
+  const autoBars = [
+    { label: 'Success', val: successCount, display: successCount + ' runs', color: '#1D9E75' },
+    { label: 'Failed', val: failedCount, display: failedCount + ' runs', color: '#E24B4A' },
+    { label: 'Other', val: runs - successCount - failedCount, display: (runs - successCount - failedCount) + ' runs', color: '#9c9a92' },
+  ];
+
+  const cxMap = { low: 'b-done', medium: 'b-med', high: 'b-hi' };
+  const oppRows = opps.slice(0, 8).map(o => `
+    <div class="trow">
+      <div style="flex:1;min-width:0;">
+        <div class="trow-main">${o.title || '—'}</div>
+        <div class="trow-sub">${o.category || '—'} · ${o.complexity || '—'} complexity</div>
+      </div>
+      <div class="trow-right">
+        <span class="badge ${cxMap[o.complexity] || 'b-lo'}">${o.complexity || '—'}</span>
+        <span style="font-size:12px;font-weight:500;color:#1D9E75;">${fmt$(o.estimated_cost_saving || 0)}/yr</span>
+      </div>
+    </div>`).join('') || '<p class="empty">No opportunities identified.</p>';
+
+  const aiRows = aiUsage.slice(0, 6).map(l => `
+    <div class="trow">
+      <div style="flex:1;min-width:0;">
+        <div class="trow-main">${l.feature || l.prompt_type || 'AI call'}</div>
+        <div class="trow-sub">${l.ran_at ? new Date(l.ran_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
+      </div>
+      <div class="trow-right">
+        <span style="font-size:11px;color:var(--text2);">${(l.total_tokens || 0).toLocaleString()} tokens</span>
+        <span style="font-size:11px;color:var(--text2);">$${(parseFloat(l.cost_usd) || 0).toFixed(4)}</span>
+      </div>
+    </div>`).join('') || '<p class="empty">No AI usage logs.</p>';
+
+  document.getElementById('opt-body').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Automation runs</div><div class="kpi-val">${runs}</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi"><div class="kpi-label">Success rate</div><div class="kpi-val" style="color:${successRate >= 80 ? '#1D9E75' : '#EF9F27'}">${successRate}%</div><div class="kpi-sub">Of all runs</div></div>
+      <div class="kpi"><div class="kpi-label">AI tokens</div><div class="kpi-val">${(totalTokens / 1000).toFixed(1)}k</div><div class="kpi-sub">Total used</div></div>
+      <div class="kpi"><div class="kpi-label">AI cost</div><div class="kpi-val">$${totalCost.toFixed(2)}</div><div class="kpi-sub">Total spend</div></div>
+      <div class="kpi"><div class="kpi-label">Opportunities</div><div class="kpi-val">${opps.length}</div><div class="kpi-sub">Identified</div></div>
+      <div class="kpi"><div class="kpi-label">Potential savings</div><div class="kpi-val" style="color:#1D9E75">${fmt$(potSavings)}</div><div class="kpi-sub">Annual estimate</div></div>
+    </div>
+
+    <div class="sec-label">Automation runs</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Run status breakdown</div>${explainBtn('opt-auto')}</div>
+      ${barChart(autoBars)}
+      ${explainPanel('opt-auto', d.summary)}
+    </div>
+
+    <div class="sec-label">Savings opportunities</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Cost savings identified</div>${explainBtn('opt-opps')}</div>
+      ${oppRows}
+      ${explainPanel('opt-opps', d.summary)}
+    </div>
+
+    <div class="sec-label">AI usage log</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent AI activity</div>${explainBtn('opt-ai')}</div>
+      ${aiRows}
+      ${explainPanel('opt-ai', d.summary)}
+    </div>`;
+
+  renderActions('opt-actions', d.actions);
+}
+
+// ── Strategy Panel ───────────────────────────────────────────
+function showPanelSkeleton() {
+  document.getElementById('strategy-panel').innerHTML = `
+    <div class="sp-lbl">Your progress</div>
+    <div class="sp-loading">
+      <div class="skel" style="width:55%"></div>
+      <div class="skel" style="width:75%;height:18px;margin-top:6px;"></div>
+      <div class="skel" style="width:35%;margin-top:6px;"></div>
+      <div class="skel" style="width:100%;height:5px;margin-top:10px;border-radius:4px;"></div>
+      <div class="skel" style="width:45%"></div>
+    </div>
+    <div class="sp-sep"></div>
+    <div class="sp-lbl">This week's focus</div>
+    <div class="sp-loading">
+      <div class="skel"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:70%"></div>
+    </div>
+    <div class="sp-sep"></div>
+    <div class="sp-lbl">Strategy notes</div>
+    <div class="sp-loading">
+      <div class="skel"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:80%"></div>
+      <div class="skel" style="margin-top:8px;"></div><div class="skel" style="width:75%"></div>
+    </div>`;
+}
+
+function formatNotes(text) {
+  if (!text) return '<p>No strategy notes available.</p>';
+  return text.split(/\n\n+/).filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('') || `<p>${text}</p>`;
+}
+
+function renderStrategyPanel(data) {
+  const panel = document.getElementById('strategy-panel');
+  const course = data.course;
+
+  let progressHtml = '';
+  if (course && course.milestone_display) {
+    const pct = course.total_milestones > 0 ? Math.round(course.completed_milestones / course.total_milestones * 100) : 0;
+    progressHtml = `
+      ${course.course_display ? `<div class="sp-course-name">${course.course_display}</div>` : ''}
+      <div class="sp-milestone">${course.milestone_display}</div>
+      <div><span class="sp-status">In Progress</span></div>
+      <div class="sp-prog-track"><div class="sp-prog-fill" style="width:${pct}%;"></div></div>
+      <div class="sp-prog-text">${course.completed_milestones} of ${course.total_milestones} complete</div>
+      ${course.next_milestone_display ? `<div class="sp-next-lbl">Next up</div><div class="sp-next-val">${course.next_milestone_display}</div>` : ''}`;
+  } else {
+    progressHtml = `<div class="sp-course-name" style="color:var(--text2);">No active program</div>`;
+  }
+
+  // Account notes (resona users only)
+  const notes = data.notes || [];
+  const isResona = USER_ROLE && USER_ROLE.startsWith('resona_');
+  let notesHtml = '';
+  if (isResona) {
+    const noteItems = notes.slice(0, 5).map(n => `
+      <div class="sp-note-item${n.pinned ? ' pinned' : ''}">
+        ${n.pinned ? '📌 ' : ''}<strong style="font-size:10px;color:var(--text3)">${n.author_name || 'Resona'}</strong><br>
+        ${n.note}
+      </div>`).join('') || '<div style="font-size:12px;color:var(--text3)">No account notes yet.</div>';
+    notesHtml = `
+      <div class="sp-sep"></div>
+      <div class="sp-lbl">Account notes</div>
+      ${noteItems}
+      <button class="sp-add-note-btn" onclick="toggleNoteForm()">+ Add note</button>
+      <div class="sp-note-form" id="sp-note-form">
+        <textarea class="sp-note-textarea" id="sp-note-text" rows="2" placeholder="Add an account note…"></textarea>
+        <div class="sp-note-row">
+          <label class="sp-note-pin"><input type="checkbox" id="sp-note-pin"> Pin this note</label>
+          <button class="sp-note-save" onclick="saveNote()">Save</button>
+        </div>
+      </div>`;
+  }
+
+  panel.innerHTML = `
+    <div class="sp-lbl">Your progress</div>
+    ${progressHtml}
+    <div class="sp-sep"></div>
+    <div class="sp-lbl">This week's focus</div>
+    <div class="sp-focus">${data.focus || 'No guidance available.'}</div>
+    <div class="sp-sep"></div>
+    <div class="sp-lbl">Strategy notes</div>
+    <div class="sp-notes">${formatNotes(data.strategyNotes)}</div>
+    ${notesHtml}`;
+}
+
+// ── Notes (strategy panel) ────────────────────────────────────
+function toggleNoteForm() {
+  const f = document.getElementById('sp-note-form');
+  if (f) f.style.display = f.style.display === 'block' ? 'none' : 'block';
+}
+
+async function saveNote() {
+  const text = document.getElementById('sp-note-text')?.value?.trim();
+  const pinned = document.getElementById('sp-note-pin')?.checked || false;
+  if (!text) return;
+  try {
+    await fetch(`${API}?action=note`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: CLIENT, author_name: USER_NAME || 'Resona', author_role: USER_ROLE || 'resona_user', note: text, pinned })
+    });
+    toast('Note saved');
+    // Reload current page to refresh notes
+    if (cache[currentPage]) delete cache[currentPage];
+    loadPage(currentPage, true);
+  } catch(e) { toast('Failed to save note'); }
+}
+
+// ── Celebration ───────────────────────────────────────────────
+function showCelebration(course) {
+  const el = document.getElementById('celebration');
+  const titleEl = document.getElementById('celeb-title');
+  const subEl = document.getElementById('celeb-sub');
+  if (!el) return;
+  titleEl.textContent = 'Milestone complete!';
+  subEl.textContent = course?.milestone_display
+    ? `"${course.milestone_display}" is now complete. You're moving to the next milestone.`
+    : "You've advanced to the next milestone in your program.";
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 8000);
+}
+
+// ── Overview panel (goal + messages + health) ─────────────────
+async function loadOverviewPanel() {
+  // Load goal
+  try {
+    const r = await fetch(`/api/goal?client=${CLIENT}`);
+    const { goal } = await r.json();
+    const textEl = document.getElementById('goal-text');
+    const editBtn = document.getElementById('goal-edit-btn');
+    if (textEl) {
+      textEl.textContent = goal?.stated_goal || 'No goal set yet.';
+      textEl.style.color = goal?.stated_goal ? '' : 'var(--text3)';
+    }
+    if (editBtn && USER_ROLE?.startsWith('resona_')) editBtn.style.display = 'inline-block';
+    if (goal?.stated_goal) {
+      const inputEl = document.getElementById('goal-input');
+      if (inputEl) inputEl.value = goal.stated_goal;
+    }
+  } catch(e) {}
+
+  // Load health score
+  try {
+    const r = await fetch(`/api/health?client=${CLIENT}`);
+    const { health } = await r.json();
+    if (health) {
+      const badge = document.getElementById('health-badge');
+      const scoreEl = document.getElementById('health-score');
+      const labelEl = document.getElementById('health-label');
+      if (badge) badge.style.display = 'flex';
+      if (scoreEl) { scoreEl.textContent = health.score + '/100'; scoreEl.style.color = health.color || 'var(--text)'; }
+      if (labelEl) labelEl.textContent = (health.score_label || 'unknown').replace(/_/g, ' ');
+    }
+  } catch(e) {}
+
+  // Load messages
+  loadMessages();
+}
+
+async function loadMessages() {
+  try {
+    const r = await fetch(`${API}?page=messages&client=${CLIENT}`);
+    const { messages } = await r.json();
+    renderMessages(messages || []);
+  } catch(e) {}
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function renderMessages(messages) {
+  const thread = document.getElementById('msg-thread');
+  if (!thread) return;
+  if (!messages.length) {
+    thread.innerHTML = '<div class="msg-empty">No messages yet. Send your advisor a message.</div>';
+    return;
+  }
+  const isResona = r => r === 'resona_admin' || r === 'resona_user';
+  thread.innerHTML = messages.map(m => {
+    const fromResona = isResona(m.sender_role);
+    const cls = fromResona ? 'from-resona' : 'from-client';
+    return `<div class="msg-bubble ${cls}">
+      <div class="msg-content">${m.message || ''}</div>
+      <div class="msg-meta">${m.sender_name || '—'} · ${timeAgo(m.created_at)}</div>
+    </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const btn = document.getElementById('msg-send-btn');
+  const text = input?.value?.trim();
+  if (!text) return;
+  btn.disabled = true;
+  try {
+    await fetch(`${API}?action=message`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: CLIENT,
+        period_label: currentRange,
+        sender_role: USER_ROLE || 'client_user',
+        sender_name: USER_NAME || 'Client',
+        message: text
+      })
+    });
+    input.value = '';
+    await loadMessages();
+  } catch(e) { toast('Failed to send message'); }
+  btn.disabled = false;
+}
+
+// ── Goal editing ──────────────────────────────────────────────
+function toggleGoalEdit() {
+  const form = document.getElementById('goal-edit-form');
+  if (form) form.classList.toggle('visible');
+}
+
+async function saveGoal() {
+  const val = document.getElementById('goal-input')?.value?.trim();
+  if (!val) return;
+  try {
+    await fetch(`/api/goal?client=${CLIENT}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stated_goal: val, set_by: USER_NAME || 'resona' })
+    });
+    const textEl = document.getElementById('goal-text');
+    if (textEl) { textEl.textContent = val; textEl.style.color = ''; }
+    document.getElementById('goal-edit-form')?.classList.remove('visible');
+    toast('Goal saved');
+  } catch(e) { toast('Failed to save goal'); }
+}
+
+// ── History page ──────────────────────────────────────────────
+function renderHistory(data) {
+  const meta = document.getElementById('hist-meta');
+  if (meta) meta.textContent = `${(data.snapshots || []).length} snapshots`;
+  const body = document.getElementById('hist-body');
+  if (!body) return;
+  const snaps = data.snapshots || [];
+  if (!snaps.length) { body.innerHTML = '<p class="empty">No report history yet. Snapshots are saved automatically each time a page loads.</p>'; return; }
+
+  const pageColors = { operations: '#378ADD', marketing: '#7F77DD', finance: '#1D9E75', optimization: '#EF9F27' };
+  body.innerHTML = `<div class="snap-grid">${snaps.map(s => {
+    const kpis = s.snapshot_data?.kpis || {};
+    const page = s.snapshot_data?.page || '—';
+    const kpiPairs = Object.entries(kpis).slice(0, 4).map(([k, v]) =>
+      `<div class="snap-kpi"><strong>${typeof v === 'number' ? (k.includes('Rev') || k.includes('paid') ? '$' + Math.round(v).toLocaleString() : Math.round(v)) : v}</strong> ${k.replace(/([A-Z])/g, ' $1').toLowerCase()}</div>`
+    ).join('');
+    return `<div class="snap-card">
+      <div class="snap-head">
+        <div>
+          <div class="snap-label">${s.period_label || '—'}</div>
+          <div class="snap-time">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+        </div>
+        <span class="snap-page" style="background:${pageColors[page] || 'var(--bg2)'}15;color:${pageColors[page] || 'var(--text3)'}">${page}</span>
+      </div>
+      ${s.ai_summary ? `<div class="snap-summary">${s.ai_summary}</div>` : ''}
+      ${kpiPairs ? `<div class="snap-kpis">${kpiPairs}</div>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── Welcome overlay ───────────────────────────────────────────
+async function checkWelcome() {
+  if (USER_ROLE !== 'client_user') return;
+  try {
+    const r = await fetch(`/api/goal?action=onboarding&client=${CLIENT}`);
+    const { state } = await r.json();
+    if (state && state.welcome_dismissed) return;
+    const overlay = document.getElementById('welcome-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+    // Try to populate course name from any cached data
+    if (cache.operations?.course?.course_display) {
+      const prog = document.getElementById('wc-program');
+      const title = document.getElementById('wc-title');
+      if (prog) prog.textContent = cache.operations.course.course_display;
+      if (title) title.textContent = `Welcome to ${cache.operations.course.course_display}`;
+    }
+  } catch(e) {}
+}
+
+async function dismissWelcome() {
+  document.getElementById('welcome-overlay')?.classList.add('hidden');
+  fetch(`/api/goal?action=onboarding&client=${CLIENT}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+}
+
+// ── Notification bell ─────────────────────────────────────────
+let notifPollTimer = null;
+let notifData = [];
+
+function toggleNotifDD() {
+  const dd = document.getElementById('notif-dd');
+  if (!dd) return;
+  dd.classList.toggle('open');
+  if (dd.classList.contains('open')) loadNotifications();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('notif-bell-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('notif-dd')?.classList.remove('open');
+  }
+});
+
+async function loadNotifications() {
+  try {
+    const r = await fetch(`/api/notifications?client=${CLIENT}`);
+    const { notifications } = await r.json();
+    notifData = notifications || [];
+    renderNotifList();
+    updateNotifBadge();
+  } catch(e) {}
+}
+
+function updateNotifBadge() {
+  const unread = notifData.filter(n => !n.read).length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+  else { badge.style.display = 'none'; }
+}
+
+function renderNotifList() {
+  const list = document.getElementById('notif-dd-list');
+  if (!list) return;
+  if (!notifData.length) { list.innerHTML = '<div class="notif-dd-empty">No notifications</div>'; return; }
+  list.innerHTML = notifData.map(n => `
+    <div class="notif-nitem type-${n.type || 'info'}${!n.read ? ' unread' : ''}" onclick="markNotifRead('${n.id}')">
+      <div style="flex:1;min-width:0;">
+        ${n.title ? `<div class="notif-nitem-title">${n.title}</div>` : ''}
+        <div class="notif-nitem-body">${n.message || '—'}</div>
+        <div class="notif-nitem-time">${n.created_at ? timeAgo(n.created_at) : '—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function markNotifRead(id) {
+  const item = notifData.find(n => n.id === id);
+  if (!item || item.read) return;
+  item.read = true;
+  renderNotifList();
+  updateNotifBadge();
+  fetch(`/api/notifications?id=${id}`, { method: 'PATCH' }).catch(() => {});
+}
+
+async function markAllNotifRead() {
+  notifData.forEach(n => n.read = true);
+  renderNotifList();
+  updateNotifBadge();
+  fetch(`/api/notifications?action=mark_all_read&client=${CLIENT}`, { method: 'PATCH' }).catch(() => {});
+}
+
+function initNotifications() {
+  const bell = document.getElementById('notif-bell-wrap');
+  if (bell) bell.style.display = 'block';
+  loadNotifications();
+  notifPollTimer = setInterval(loadNotifications, 60000);
+}
+
+// ── Action history ─────────────────────────────────────────────
+const actHistState = {};
+
+async function renderActionHistory(page) {
+  const el = document.getElementById(pfx[page] + '-hist');
+  if (!el) return;
+  try {
+    const r = await fetch(`/api/actions?client=${CLIENT}`);
+    const { actions } = await r.json();
+    const pageActions = (actions || []).filter(a => a.page === page);
+    if (!pageActions.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="act-hist-section">
+        <div class="act-hist-toggle" onclick="toggleActHist('${page}')">
+          <div class="act-hist-arrow" id="act-hist-arrow-${page}">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          Action history (${pageActions.length})
+        </div>
+        <div class="act-hist-body" id="act-hist-body-${page}">
+          ${pageActions.slice(0, 10).map(a => `
+            <div class="act-hist-row">
+              <span class="act-decision ${a.decision}">${a.decision}</span>
+              <span class="act-hist-title">${a.action_title}${a.outcome ? ' <span title="Executed via automation" style="color:var(--warning)">⚡</span>' : ''}</span>
+              <span class="act-hist-date">${a.decided_at ? new Date(a.decided_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } catch(e) {}
+}
+
+function toggleActHist(page) {
+  const body = document.getElementById('act-hist-body-' + page);
+  const arrow = document.getElementById('act-hist-arrow-' + page);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (arrow) arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+// ── Ask Claude ─────────────────────────────────────────────────
+const askThreads = {};
+const pageChips = {
+  operations: ["What's causing the most delays?", "How is technician utilization trending?", "Which jobs have the highest revenue?", "What's our completion rate?"],
+  marketing: ["Which lead source converts best?", "What's our best campaign this period?", "How is lead volume trending?", "What's our blended ROI?"],
+  finance: ["What's our biggest payment risk?", "How is collection rate trending?", "Which invoices are most overdue?", "What's our cash position?"],
+  optimization: ["Which automation is failing most?", "Where are we spending most on AI?", "What are top savings opportunities?", "How has success rate trended?"]
+};
+
+function renderAskSection(page) {
+  const el = document.getElementById(pfx[page] + '-ask');
+  if (!el) return;
+  const chips = pageChips[page] || [];
+  el.innerHTML = `
+    <div class="ask-section">
+      <div class="ask-lbl">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 4.5C4.5 3.7 5.1 3 6 3s1.5.7 1.5 1.5c0 1-1.5 1.5-1.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="9.5" r=".5" fill="currentColor"/></svg>
+        Ask Claude about this data
+      </div>
+      <div class="ask-chips">${chips.map(c => `<span class="ask-chip" onclick="askQ('${page}',\`${c}\`)">${c}</span>`).join('')}</div>
+      <div class="ask-thread" id="ask-thread-${page}">${renderAskThread(page)}</div>
+      <div class="ask-form">
+        <input class="ask-input" id="ask-in-${page}" placeholder="Ask a question about this data…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askQ('${page}')}">
+        <button class="ask-submit" id="ask-btn-${page}" onclick="askQ('${page}')">Ask</button>
+      </div>
+    </div>`;
+}
+
+function renderAskThread(page) {
+  const thread = askThreads[page] || [];
+  return thread.map(m => m.role === 'user'
+    ? `<div class="ask-q">${m.content}</div>`
+    : `<div class="ask-a"><div class="ask-a-lbl">Claude</div>${m.content}</div>`
+  ).join('') || '';
+}
+
+async function askQ(page, question) {
+  const inputEl = document.getElementById('ask-in-' + page);
+  const btnEl = document.getElementById('ask-btn-' + page);
+  const threadEl = document.getElementById('ask-thread-' + page);
+  const q = question || inputEl?.value?.trim();
+  if (!q) return;
+  if (inputEl) inputEl.value = '';
+  if (btnEl) btnEl.disabled = true;
+  if (!askThreads[page]) askThreads[page] = [];
+  askThreads[page].push({ role: 'user', content: q });
+  if (threadEl) {
+    threadEl.innerHTML = renderAskThread(page) + '<div class="ask-thinking">Claude is thinking…</div>';
+    threadEl.scrollTop = threadEl.scrollHeight;
+  }
+  try {
+    const ctx = cache[page] ? JSON.stringify(cache[page]).slice(0, 2000) : null;
+    const r = await fetch('/api/ask', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: CLIENT, page, question: q, context_data: ctx })
+    });
+    const { answer, error } = await r.json();
+    askThreads[page].push({ role: 'assistant', content: answer || error || 'No response.' });
+  } catch(e) {
+    askThreads[page].push({ role: 'assistant', content: 'Sorry, something went wrong. Please try again.' });
+  }
+  if (threadEl) { threadEl.innerHTML = renderAskThread(page); threadEl.scrollTop = threadEl.scrollHeight; }
+  if (btnEl) btnEl.disabled = false;
+}
+
+// ── Auth ─────────────────────────────────────────────────────
+let SESSION_TOKEN = null;
+
+function applyBranding(b) {
+  if (!b) return;
+  if (b.accent_color) document.documentElement.style.setProperty('--info', b.accent_color);
+  if (b.company_name) {
+    document.title = b.company_name + ' — CMNDR';
+    const emEl = document.querySelector('.logo em');
+    if (emEl) emEl.textContent = b.company_name;
+  }
+}
+
+async function initAuth() {
+  const token = localStorage.getItem('cmndr_session');
+  if (!token) { window.location.href = '/login'; return; }
+  try {
+    const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) throw new Error('invalid');
+    const { user, profile, branding } = await r.json();
+    SESSION_TOKEN = token;
+    USER_ROLE = profile.role;
+    USER_NAME = profile.full_name || user.email || '';
+    // Lock client to profile (client_viewer/client_user see only their client)
+    const locked = ['client_user', 'client_viewer', 'display'];
+    if (locked.includes(profile.role) && profile.client_id) {
+      CLIENT = profile.client_id;
+    }
+    // Update sidebar user chip
+    document.querySelector('.chip-av').textContent = USER_NAME.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+    document.querySelector('.chip-name').textContent = USER_NAME;
+    document.querySelector('.chip-sub').textContent = profile.role.replace(/_/g, ' ');
+    document.getElementById('signout-btn').style.display = 'block';
+    // Apply white-label branding
+    if (branding) applyBranding(branding);
+  } catch (e) {
+    localStorage.removeItem('cmndr_session');
+    localStorage.removeItem('cmndr_profile');
+    window.location.href = '/login';
+  }
+}
+
+function signOut() {
+  const token = localStorage.getItem('cmndr_session');
+  fetch('/api/auth?action=logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  localStorage.removeItem('cmndr_session');
+  localStorage.removeItem('cmndr_profile');
+  window.location.href = '/login';
+}
+
+// ── Init ─────────────────────────────────────────────────────
+const pathMap = { '/operations': 'operations', '/marketing': 'marketing', '/finance': 'finance', '/optimization': 'optimization' };
+initAuth().then(() => {
+  nav(pathMap[location.pathname] || 'overview');
+  // Notifications: show bell for client roles
+  if (USER_ROLE && !USER_ROLE.startsWith('resona_') && USER_ROLE !== 'display') {
+    initNotifications();
+  }
+  // Welcome overlay: client_user only
+  if (USER_ROLE === 'client_user') {
+    setTimeout(checkWelcome, 800);
+  }
+});
+</script>
+</body>
+</html>

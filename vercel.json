@@ -1,0 +1,28 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/report.js": { "maxDuration": 30 },
+    "api/email.js": { "maxDuration": 30 },
+    "api/pages.js": { "maxDuration": 30 },
+    "api/auth.js": { "maxDuration": 10 },
+    "api/audio.js": { "maxDuration": 30 },
+    "api/goal.js": { "maxDuration": 10 },
+    "api/health.js": { "maxDuration": 30 },
+    "api/onboard.js": { "maxDuration": 30 },
+    "api/notifications.js": { "maxDuration": 10 },
+    "api/ask.js": { "maxDuration": 30 },
+    "api/actions.js": { "maxDuration": 10 },
+    "api/pipeline.js": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/workbench", "destination": "/workbench.html" },
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/operations", "destination": "/app.html" },
+    { "source": "/marketing", "destination": "/app.html" },
+    { "source": "/finance", "destination": "/app.html" },
+    { "source": "/optimization", "destination": "/app.html" },
+    { "source": "/hub", "destination": "/hub.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}

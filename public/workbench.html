@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CMNDR — Report Workbench</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+      --text: #1a1a18; --text2: #6b6b67; --text3: #9c9a92;
+      --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+      --success: #1D9E75; --warning: #EF9F27; --danger: #E24B4A; --info: #378ADD;
+      --radius-md: 8px; --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+        --text: #e8e6de; --text2: #9c9a92; --text3: #6b6b67;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+
+    .sidebar { width: 280px; min-height: 100vh; background: var(--bg); border-right: 0.5px solid var(--border); padding: 24px 20px 20px; position: fixed; top: 0; left: 0; overflow-y: auto; display: flex; flex-direction: column; }
+    .sidebar-footer { margin-top: auto; padding-top: 20px; }
+    .user-chip { display: flex; align-items: center; gap: 9px; background: var(--bg2); border-radius: 8px; padding: 9px 10px; }
+    .user-av { width: 28px; height: 28px; border-radius: 50%; background: var(--info); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .user-name { font-size: 12px; font-weight: 500; }
+    .user-role { font-size: 10px; color: var(--text3); margin-top: 1px; }
+    .signout-btn { display: none; width: 100%; margin-top: 8px; padding: 7px 10px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text3); font-size: 12px; cursor: pointer; text-align: left; transition: background .1s, color .1s; }
+    .signout-btn:hover { background: var(--bg2); color: var(--text); }
+    .main { margin-left: 280px; padding: 24px; min-height: 100vh; }
+
+    .logo { font-size: 13px; font-weight: 500; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 24px; }
+    .logo span { color: var(--text); }
+
+    .sidebar-section { margin-bottom: 24px; }
+    .sidebar-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+
+    select, input[type="date"] { width: 100%; font-size: 13px; padding: 8px 10px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); margin-bottom: 8px; }
+    select:focus, input:focus { outline: none; border-color: var(--info); }
+
+    .range-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+    .range-btn { font-size: 12px; padding: 6px 8px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; text-align: center; }
+    .range-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+    .custom-dates { display: none; gap: 6px; flex-direction: column; margin-bottom: 8px; }
+    .custom-dates.visible { display: flex; }
+    .date-row { display: flex; align-items: center; gap: 6px; }
+    .date-row label { font-size: 11px; color: var(--text2); min-width: 24px; }
+    .date-row input { margin: 0; flex: 1; }
+
+    .action-btn { width: 100%; font-size: 13px; padding: 10px; border-radius: var(--radius-md); border: none; cursor: pointer; font-weight: 500; margin-bottom: 6px; transition: opacity .15s; }
+    .action-btn:hover { opacity: .85; }
+    .action-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-preview { background: var(--text); color: var(--bg); }
+    .btn-send { background: var(--success); color: #fff; }
+    .btn-pdf { background: var(--bg2); color: var(--text); border: 0.5px solid var(--border2) !important; border: none; }
+
+    .status-log { margin-top: 20px; }
+    .log-entry { font-size: 11px; padding: 6px 0; border-bottom: 0.5px solid var(--border); color: var(--text2); display: flex; gap: 8px; align-items: flex-start; }
+    .log-entry:last-child { border: none; }
+    .log-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .log-success { background: var(--success); }
+    .log-error { background: var(--danger); }
+    .log-info { background: var(--info); }
+
+    .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .main-title { font-size: 18px; font-weight: 500; }
+    .main-meta { font-size: 13px; color: var(--text2); margin-top: 2px; }
+    .preview-badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #FAEEDA; color: #633806; font-weight: 500; }
+
+    .preview-frame { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .preview-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
+    .preview-url { font-size: 11px; color: var(--text3); flex: 1; font-family: monospace; }
+    .iframe-wrap { width: 100%; height: 800px; }
+    .iframe-wrap iframe { width: 100%; height: 100%; border: none; }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 500px; color: var(--text3); gap: 12px; }
+    .empty-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--bg2); display: flex; align-items: center; justify-content: center; }
+    .empty-title { font-size: 15px; font-weight: 500; color: var(--text2); }
+    .empty-sub { font-size: 13px; text-align: center; max-width: 260px; }
+
+    .client-pill { display: flex; align-items: center; gap: 8px; background: var(--bg2); border-radius: var(--radius-md); padding: 8px 10px; margin-bottom: 6px; cursor: pointer; border: 0.5px solid transparent; transition: all .15s; }
+    .client-pill:hover { border-color: var(--border2); }
+    .client-pill.active { border-color: var(--info); background: #E6F1FB; }
+    .client-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--info); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+    .client-name { font-size: 12px; font-weight: 500; color: var(--text); }
+    .client-type { font-size: 11px; color: var(--text2); }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 12px; }
+    .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+    .stat-val { font-size: 20px; font-weight: 500; }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">CMNDR <span>Workbench</span></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Client</div>
+    <div id="client-list">
+      <div class="client-pill active" data-client="peak-flow" onclick="selectClient('peak-flow', 'Peak Flow Plumbing & HVAC', 'PF', 'Plumbing & HVAC')">
+        <div class="client-avatar" style="background:#378ADD;">PF</div>
+        <div><div class="client-name">Peak Flow Plumbing</div><div class="client-type">Plumbing & HVAC</div></div>
+      </div>
+      <div class="client-pill" data-client="demo" onclick="selectClient('demo', 'Launchpad Apps', 'LA', 'SaaS Platform')">
+        <div class="client-avatar" style="background:#6366f1;">LA</div>
+        <div><div class="client-name">Launchpad Apps</div><div class="client-type">SaaS Platform</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Date range</div>
+    <div class="range-grid">
+      <button class="range-btn active" data-range="7d" onclick="setRange('7d')">7 days</button>
+      <button class="range-btn" data-range="30d" onclick="setRange('30d')">30 days</button>
+      <button class="range-btn" data-range="mtd" onclick="setRange('mtd')">Month</button>
+      <button class="range-btn" data-range="qtd" onclick="setRange('qtd')">Quarter</button>
+    </div>
+    <button class="range-btn" style="width:100%;margin-bottom:8px;" data-range="custom" onclick="setRange('custom')">Custom range</button>
+    <div class="custom-dates" id="custom-dates">
+      <div class="date-row"><label>From</label><input type="date" id="from-date"/></div>
+      <div class="date-row"><label>To</label><input type="date" id="to-date"/></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Actions</div>
+    <button class="action-btn btn-preview" onclick="loadPreview()">Preview report</button>
+    <button class="action-btn btn-send" id="send-btn" onclick="sendReport()">Send to client</button>
+    <button class="action-btn btn-pdf" onclick="printReport()">Download PDF</button>
+  </div>
+
+  <div class="sidebar-section status-log">
+    <div class="sidebar-label">Activity log</div>
+    <div id="log-entries">
+      <div class="log-entry"><span class="log-dot log-info"></span><span>Workbench ready</span></div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-av" id="wb-av">—</div>
+      <div>
+        <div class="user-name" id="wb-name">Loading…</div>
+        <div class="user-role" id="wb-role">—</div>
+      </div>
+    </div>
+    <button class="signout-btn" id="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-header">
+    <div>
+      <div class="main-title" id="main-title">Select a client to begin</div>
+      <div class="main-meta" id="main-meta">No report loaded</div>
+    </div>
+    <span class="preview-badge" id="preview-badge" style="display:none;">Preview mode</span>
+  </div>
+
+  <div class="stats-row" id="stats-row" style="display:none;">
+    <div class="stat-card"><div class="stat-label">Total jobs</div><div class="stat-val" id="s-total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-val" id="s-completed" style="color:#1D9E75;">—</div></div>
+    <div class="stat-card"><div class="stat-label">Period revenue</div><div class="stat-val" id="s-revenue">—</div></div>
+    <div class="stat-card"><div class="stat-label">Active alerts</div><div class="stat-val" id="s-alerts" style="color:#E24B4A;">—</div></div>
+  </div>
+
+  <div class="preview-frame">
+    <div class="preview-toolbar">
+      <div class="preview-url" id="preview-url">cmndr-reports.vercel.app — no report loaded</div>
+      <button style="font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;" onclick="loadPreview()">Reload</button>
+    </div>
+    <div class="iframe-wrap" id="iframe-wrap">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="7" x2="17" y2="7" stroke="currentColor" stroke-width="1.5"/><line x1="7" y1="11" x2="13" y2="11" stroke="currentColor" stroke-width="1"/><line x1="7" y1="14" x2="11" y2="14" stroke="currentColor" stroke-width="1"/></svg>
+        </div>
+        <div class="empty-title">No report loaded</div>
+        <div class="empty-sub">Select a client and date range, then click Preview report</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/report';
+const WEBHOOK = 'https://hook.us2.make.com/fsilm67y7ny25rfo7ulhhdket8snpmcd';
+let currentClient = 'peak-flow';
+let currentClientName = 'Peak Flow Plumbing & HVAC';
+let currentRange = '7d';
+let lastData = null;
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function addLog(msg, type) {
+  const log = document.getElementById('log-entries');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const time = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  entry.innerHTML = '<span class="log-dot log-'+type+'"></span><span>'+time+' — '+msg+'</span>';
+  log.insertBefore(entry, log.firstChild);
+  if (log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+function selectClient(id, name, initials, type) {
+  currentClient = id;
+  currentClientName = name;
+  document.querySelectorAll('.client-pill').forEach(p => p.classList.toggle('active', p.dataset.client === id));
+  document.getElementById('main-title').textContent = name;
+  document.getElementById('main-meta').textContent = 'Client selected — click Preview report to load';
+  addLog('Client selected: '+name, 'info');
+}
+
+function setRange(r) {
+  currentRange = r;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r));
+  const custom = document.getElementById('custom-dates');
+  if (r === 'custom') {
+    custom.classList.add('visible');
+    const today = new Date().toISOString().split('T')[0];
+    const week = new Date(); week.setDate(week.getDate()-7);
+    document.getElementById('from-date').value = week.toISOString().split('T')[0];
+    document.getElementById('to-date').value = today;
+  } else {
+    custom.classList.remove('visible');
+  }
+}
+
+function buildURL() {
+  if (currentRange === 'custom') {
+    const from = document.getElementById('from-date').value;
+    const to = document.getElementById('to-date').value;
+    if (from && to) return '/?client='+currentClient+'&from='+from+'&to='+to;
+  }
+  return '/?client='+currentClient+'&range='+currentRange;
+}
+
+async function loadPreview() {
+  const url = buildURL();
+  document.getElementById('preview-url').textContent = 'cmndr-reports.vercel.app' + url;
+  document.getElementById('preview-badge').style.display = 'inline-block';
+  addLog('Loading preview for '+currentClientName, 'info');
+
+  const wrap = document.getElementById('iframe-wrap');
+  wrap.innerHTML = '<iframe src="'+url+'" title="Report preview"></iframe>';
+
+  try {
+    let apiUrl = API + '?client='+currentClient+'&range='+currentRange;
+    if (currentRange === 'custom') {
+      const from = document.getElementById('from-date').value;
+      const to = document.getElementById('to-date').value;
+      if (from && to) apiUrl = API + '?client='+currentClient+'&from='+from+'&to='+to;
+    }
+    const res = await fetch(apiUrl);
+    lastData = await res.json();
+
+    const total = lastData.jobs?.length || 0;
+    const completed = lastData.jobs?.filter(j=>j.status==='completed').length || 0;
+    const rev = lastData.jobs?.filter(j=>j.revenue).reduce((a,j)=>a+j.revenue,0) || 0;
+    const alerts = lastData.alerts?.filter(a=>!a.resolved).length || 0;
+
+    document.getElementById('s-total').textContent = total;
+    document.getElementById('s-completed').textContent = completed;
+    document.getElementById('s-revenue').textContent = '$' + Math.round(rev).toLocaleString();
+    document.getElementById('s-alerts').textContent = alerts;
+    document.getElementById('stats-row').style.display = 'grid';
+
+    const fromLabel = new Date(lastData.from).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const toLabel = new Date(lastData.to).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('main-meta').textContent = 'Previewing — '+fromLabel+' to '+toLabel;
+    addLog('Report loaded: '+total+' jobs, $'+Math.round(rev).toLocaleString()+' revenue', 'success');
+  } catch(e) {
+    addLog('Preview error: '+e.message, 'error');
+  }
+}
+
+async function sendReport() {
+  const btn = document.getElementById('send-btn');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  addLog('Sending report to client...', 'info');
+  try {
+    const from = currentRange === 'custom' ? document.getElementById('from-date').value : null;
+    const to = currentRange === 'custom' ? document.getElementById('to-date').value : null;
+    await fetch(WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client: currentClient, range: currentRange, from, to })
+    });
+    addLog('Report sent to '+currentClientName, 'success');
+    toast('Report sent successfully');
+  } catch(e) {
+    addLog('Send failed: '+e.message, 'error');
+    toast('Send failed — check log');
+  }
+  btn.textContent = 'Send to client';
+  btn.disabled = false;
+}
+
+function printReport() {
+  const frame = document.querySelector('#iframe-wrap iframe');
+  if (!frame) { toast('Load a preview first'); return; }
+  frame.contentWindow.print();
+  addLog('PDF download triggered', 'info');
+}
+
+// ── Auth ─────────────────────────────────────────────────────
+(async () => {
+  const token = localStorage.getItem('cmndr_session');
+  if (!token) { window.location.href = '/login'; return; }
+  try {
+    const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) throw new Error('invalid');
+    const { user, profile } = await r.json();
+    // Only resona roles can access workbench
+    if (!profile.role.startsWith('resona_')) { window.location.href = '/app'; return; }
+    const initials = (profile.full_name || user.email || '?').split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('wb-av').textContent = initials;
+    document.getElementById('wb-name').textContent = profile.full_name || user.email;
+    document.getElementById('wb-role').textContent = profile.role.replace(/_/g, ' ');
+    document.getElementById('signout-btn').style.display = 'block';
+  } catch (e) {
+    localStorage.removeItem('cmndr_session');
+    localStorage.removeItem('cmndr_profile');
+    window.location.href = '/login';
+  }
+})();
+
+function signOut() {
+  const token = localStorage.getItem('cmndr_session');
+  fetch('/api/auth?action=logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  localStorage.removeItem('cmndr_session');
+  localStorage.removeItem('cmndr_profile');
+  window.location.href = '/login';
+}
+
+selectClient('peak-flow', 'Peak Flow Plumbing & HVAC', 'PF', 'Plumbing & HVAC');
+</script>
+</body>
+</html>

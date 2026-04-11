@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMNDR — Sign In</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #6366f1;
+    --accent-hover: #4f52d9;
+    --text: #e8eaf0;
+    --muted: #8b8fa8;
+    --danger: #ef4444;
+    --radius: 10px;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .wordmark {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  input {
+    display: block;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 20px;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  button {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    margin-top: 8px;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-top: 16px;
+    display: none;
+  }
+  .error.visible { display: block; }
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="wordmark">CMNDR</div>
+  <div class="tagline">Business intelligence dashboard</div>
+  <form id="form">
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+    <button type="submit" id="btn">Sign in</button>
+    <div class="error" id="err"></div>
+  </form>
+</div>
+<script>
+  // Redirect if already signed in
+  (async () => {
+    const token = localStorage.getItem('cmndr_session');
+    if (!token) return;
+    try {
+      const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) {
+        const { profile } = await r.json();
+        redirect(profile.role);
+      }
+    } catch (e) {}
+  })();
+
+  function redirect(role) {
+    if (role === 'resona_admin' || role === 'resona_user') {
+      window.location.href = '/hub';
+    } else {
+      window.location.href = '/app';
+    }
+  }
+
+  document.getElementById('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    const err = document.getElementById('err');
+    err.classList.remove('visible');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Signing in…';
+
+    try {
+      const r = await fetch('/api/auth?action=login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Sign in failed');
+
+      localStorage.setItem('cmndr_session', data.session.access_token);
+      localStorage.setItem('cmndr_profile', JSON.stringify(data.profile));
+      redirect(data.profile.role);
+    } catch (e) {
+      err.textContent = e.message;
+      err.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  });
+</script>
+</body>
+</html>
