@@ -185,6 +185,49 @@
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
   .toast.show { opacity: 1; }
 
+  /* Mobile top bar */
+  .mobile-topbar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+  }
+  .hamburger { background: none; border: none; cursor: pointer; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .hamburger span { width: 20px; height: 1.5px; background: var(--text); display: block; }
+  .mobile-drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; }
+  .mobile-drawer-backdrop.open { display: block; }
+
+  @media (max-width: 768px) {
+    body { padding-top: 48px; }
+    .mobile-topbar { display: flex; }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      z-index: 160;
+      width: 240px;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0 !important; }
+    .view { padding: 16px !important; }
+    .portfolio-grid { grid-template-columns: 1fr !important; }
+    .hub-grid { grid-template-columns: 1fr !important; }
+    .pipeline-summary { grid-template-columns: 1fr 1fr !important; }
+    .pip-row, .pip-head-row { font-size: 12px; }
+    .wb-layout { grid-template-columns: 1fr !important; }
+    #view-strategy > div:last-child { flex-direction: column !important; }
+    button, .range-btn { min-height: 44px; }
+    .stats-row { grid-template-columns: 1fr 1fr !important; }
+  }
+
   /* ── Health badge ── */
   .health-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
   .hp-excellent,.hp-healthy { background: rgba(29,158,117,0.12); color: #1D9E75; }
@@ -328,6 +371,16 @@
 </style>
 </head>
 <body>
+
+<!-- Mobile top bar -->
+<div class="mobile-topbar" id="mobile-topbar">
+  <button class="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <span style="font-size:13px;font-weight:600;letter-spacing:.08em;">CMNDR Hub</span>
+  <div style="width:34px;"></div>
+</div>
+<div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
 
 <!-- ── Sidebar ── -->
 <div class="sidebar">
@@ -1453,6 +1506,27 @@ async function strategySubmit() {
   input.focus();
 }
 
+// ── Mobile init ───────────────────────────────────────────────
+function initMobile() {
+  const hamburger = document.querySelector('.hamburger');
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobile-drawer-backdrop');
+
+  if (hamburger) {
+    hamburger.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open');
+    });
+  }
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+    });
+  }
+}
+
+initMobile();
 // Load portfolio + health scores after auth (loadPortfolioCards also fetches health)
 </script>
 </body>
