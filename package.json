@@ -4,5 +4,9 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "papaparse": "^5.4.1"
   }
 }

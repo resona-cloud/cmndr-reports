@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Connections — CMNDR</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card2: #16213e;
+      --border: #2a2a3e;
+      --border2: #3a3a5e;
+      --text: #e8e6de;
+      --text2: #9c9a92;
+      --text3: #6b6b67;
+      --blue: #378ADD;
+      --blue2: #2563eb;
+      --success: #1D9E75;
+      --warning: #EF9F27;
+      --danger: #E24B4A;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text3);
+      background: none; border: none; cursor: pointer;
+      padding: 6px 0; transition: color .12s;
+    }
+    .back-btn:hover { color: var(--text); }
+    .topbar-logo { font-size: 11px; font-weight: 600; color: var(--blue); letter-spacing: .1em; text-transform: uppercase; }
+    .topbar-title { font-size: 14px; font-weight: 500; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-user { font-size: 12px; color: var(--text3); }
+
+    /* ── Layout ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 40px; }
+    .hero-eyebrow { font-size: 11px; font-weight: 600; color: var(--blue); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+    .hero-title { font-size: 28px; font-weight: 600; margin-bottom: 10px; line-height: 1.2; }
+    .hero-sub { font-size: 14px; color: var(--text2); line-height: 1.6; max-width: 560px; }
+
+    /* ── Section labels ── */
+    .section-lbl {
+      font-size: 10px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin: 36px 0 14px;
+    }
+
+    /* ── Connection cards ── */
+    .conn-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color .15s;
+    }
+    .conn-card:hover { border-color: var(--border2); }
+    .conn-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--card2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .conn-info { flex: 1; min-width: 0; }
+    .conn-name { font-size: 14px; font-weight: 500; }
+    .conn-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .conn-status { font-size: 11px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-connected .status-dot { background: var(--success); }
+    .status-disconnected .status-dot { background: var(--text3); }
+    .status-error .status-dot { background: var(--danger); }
+    .status-pending .status-dot { background: var(--warning); }
+    .conn-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .conn-btn {
+      font-size: 12px; padding: 7px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border2);
+      background: none; color: var(--text2);
+      cursor: pointer; transition: all .12s; white-space: nowrap;
+    }
+    .conn-btn:hover { background: var(--border); color: var(--text); }
+    .conn-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .conn-btn.primary:hover { opacity: .85; }
+    .conn-btn.danger { border-color: var(--danger); color: var(--danger); }
+    .conn-btn.danger:hover { background: rgba(226,75,74,.1); }
+
+    /* ── Upload card ── */
+    .upload-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 8px;
+    }
+    .upload-zone {
+      border: 2px dashed var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(55,138,221,.05);
+    }
+    .upload-icon { font-size: 32px; margin-bottom: 12px; }
+    .upload-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+    .upload-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+    .upload-browse {
+      font-size: 13px; padding: 8px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border2);
+      background: none; color: var(--text);
+      cursor: pointer; transition: all .12s;
+    }
+    .upload-browse:hover { background: var(--border); }
+    #file-input { display: none; }
+
+    /* ── Upload progress ── */
+    .upload-progress { display: none; margin-top: 20px; }
+    .progress-bar-wrap { background: var(--border); border-radius: 4px; height: 4px; overflow: hidden; margin-top: 8px; }
+    .progress-bar { height: 100%; background: var(--blue); border-radius: 4px; transition: width .3s; width: 0%; }
+    .progress-label { font-size: 12px; color: var(--text2); }
+
+    /* ── Column mapping ── */
+    .mapping-section { display: none; margin-top: 28px; border-top: 1px solid var(--border); padding-top: 24px; }
+    .mapping-section.visible { display: block; }
+    .mapping-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .mapping-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+    .mapping-grid { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 8px; align-items: center; }
+    .mapping-col-head { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+    .mapping-row { display: contents; }
+    .mapping-source {
+      font-size: 13px; padding: 8px 12px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mapping-arrow { text-align: center; color: var(--text3); font-size: 14px; }
+    .mapping-select {
+      font-size: 13px; padding: 8px 12px;
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      cursor: pointer; width: 100%;
+      appearance: none;
+    }
+    .mapping-select:focus { outline: none; border-color: var(--blue); }
+    .mapping-actions { margin-top: 20px; display: flex; gap: 10px; }
+    .preview-table-wrap { margin-top: 20px; overflow-x: auto; }
+    .preview-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .preview-table th { text-align: left; padding: 8px 12px; background: var(--card2); border-bottom: 1px solid var(--border); color: var(--text2); font-weight: 500; white-space: nowrap; }
+    .preview-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── API Key modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      max-width: 480px; width: calc(100% - 32px);
+      position: relative;
+      transform: translateY(12px);
+      transition: transform .2s;
+    }
+    .modal-backdrop.open .modal { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 16px; right: 20px;
+      font-size: 20px; color: var(--text3);
+      background: none; border: none; cursor: pointer;
+      transition: color .12s; line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-icon { font-size: 28px; margin-bottom: 12px; }
+    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
+    .modal-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+    .modal-input {
+      width: 100%; font-size: 13px; padding: 10px 14px;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border2); border-radius: var(--radius-md);
+      outline: none; transition: border-color .12s;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .modal-input:focus { border-color: var(--blue); }
+    .modal-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .modal-actions { margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btn {
+      font-size: 13px; padding: 9px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border2);
+      background: none; color: var(--text2);
+      cursor: pointer; transition: all .12s;
+    }
+    .modal-btn:hover { background: var(--border); color: var(--text); }
+    .modal-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .modal-btn.primary:hover { opacity: .85; }
+    .modal-btn:disabled { opacity: .5; cursor: default; }
+
+    /* ── Coming soon cards ── */
+    .coming-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: .7;
+    }
+    .coming-badge {
+      font-size: 10px; font-weight: 600; padding: 3px 8px;
+      border-radius: 20px; background: rgba(55,138,221,.15);
+      color: var(--blue); letter-spacing: .04em;
+    }
+    .notify-btn {
+      font-size: 12px; padding: 7px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border2);
+      background: none; color: var(--text3);
+      cursor: pointer; transition: all .12s;
+    }
+    .notify-btn:hover { background: var(--border); color: var(--text); }
+
+    /* ── Bottom banner ── */
+    .bottom-banner {
+      margin-top: 48px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .banner-icon { font-size: 32px; flex-shrink: 0; }
+    .banner-text {}
+    .banner-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .banner-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--card); color: var(--text);
+      border: 1px solid var(--border2);
+      font-size: 13px; padding: 12px 18px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .page { padding: 24px 16px 60px; }
+      .conn-card, .coming-card { flex-wrap: wrap; }
+      .conn-actions { width: 100%; }
+      .conn-btn { flex: 1; text-align: center; }
+      .bottom-banner { flex-direction: column; padding: 24px; }
+      .mapping-grid { grid-template-columns: 1fr; }
+      .mapping-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="back-btn" onclick="window.location.href='/app'">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back
+    </button>
+    <span class="topbar-logo">CMNDR</span>
+    <span class="topbar-title">Data Connections</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-user" id="topbar-user"></span>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">Step 1 of 3</div>
+    <div class="hero-title">Connect your data sources</div>
+    <div class="hero-sub">Link your business tools to power your CMNDR dashboard. Your advisor uses this data to surface insights, flag anomalies, and build your weekly Power Briefing.</div>
+  </div>
+
+  <!-- CSV / Excel Upload -->
+  <div class="section-lbl">Upload a file</div>
+  <div class="upload-card">
+    <div class="upload-zone" id="upload-zone"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="upload-icon">📁</div>
+      <div class="upload-title">Drag &amp; drop your spreadsheet</div>
+      <div class="upload-sub">Supports .xlsx, .xls, and .csv files up to 10 MB</div>
+      <button class="upload-browse" onclick="document.getElementById('file-input').click()">Browse files</button>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(event)"/>
+    </div>
+
+    <div class="upload-progress" id="upload-progress">
+      <div class="progress-label" id="progress-label">Parsing file…</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    </div>
+
+    <!-- Column mapping (shown after upload) -->
+    <div class="mapping-section" id="mapping-section">
+      <div class="mapping-title" id="mapping-title">Map your columns</div>
+      <div class="mapping-sub">Match your spreadsheet columns to CMNDR fields. Unmapped columns will be ignored.</div>
+
+      <div class="preview-table-wrap" id="preview-table-wrap"></div>
+
+      <div style="margin-top:20px;">
+        <div class="mapping-grid" id="mapping-grid" style="column-gap:10px; row-gap:10px;"></div>
+      </div>
+
+      <div class="mapping-actions">
+        <button class="conn-btn" onclick="resetUpload()">Cancel</button>
+        <button class="conn-btn primary" id="import-btn" onclick="doImport()">Import data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field Management -->
+  <div class="section-lbl" id="sec-field">Field management</div>
+  <div id="field-list"></div>
+
+  <!-- Marketing & CRM -->
+  <div class="section-lbl" id="sec-marketing">Marketing &amp; CRM</div>
+  <div id="marketing-list"></div>
+
+  <!-- Finance -->
+  <div class="section-lbl" id="sec-finance">Finance</div>
+  <div id="finance-list"></div>
+
+  <!-- Coming Soon -->
+  <div class="section-lbl">Coming soon</div>
+  <div id="coming-list">
+    <div class="coming-card">
+      <div class="conn-icon">🔵</div>
+      <div class="conn-info">
+        <div class="conn-name">Salesforce <span class="coming-badge">Soon</span></div>
+        <div class="conn-desc">CRM pipeline, opportunities, and account data</div>
+      </div>
+      <div class="conn-actions">
+        <button class="notify-btn" onclick="notifyMe('Salesforce')">Notify me</button>
+      </div>
+    </div>
+    <div class="coming-card">
+      <div class="conn-icon">🟣</div>
+      <div class="conn-info">
+        <div class="conn-name">HubSpot <span class="coming-badge">Soon</span></div>
+        <div class="conn-desc">Contacts, deals, and marketing analytics</div>
+      </div>
+      <div class="conn-actions">
+        <button class="notify-btn" onclick="notifyMe('HubSpot')">Notify me</button>
+      </div>
+    </div>
+    <div class="coming-card">
+      <div class="conn-icon">🟠</div>
+      <div class="conn-info">
+        <div class="conn-name">Gusto <span class="coming-badge">Soon</span></div>
+        <div class="conn-desc">Payroll, headcount, and compensation data</div>
+      </div>
+      <div class="conn-actions">
+        <button class="notify-btn" onclick="notifyMe('Gusto')">Notify me</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom banner -->
+  <div class="bottom-banner">
+    <div class="banner-icon">🤝</div>
+    <div class="banner-text">
+      <div class="banner-title">Need help setting up integrations?</div>
+      <div class="banner-sub">Your Resona advisor can walk you through any connection during your next session. Message them directly from your dashboard or book a setup call.</div>
+    </div>
+  </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-icon" id="modal-icon">🔑</div>
+    <div class="modal-title" id="modal-title">Connect</div>
+    <div class="modal-sub" id="modal-sub">Paste your API key below to connect this integration.</div>
+    <div class="modal-label" id="modal-label">API Key</div>
+    <input class="modal-input" type="password" id="modal-key-input" placeholder="Paste your key here…" autocomplete="off"/>
+    <div class="modal-hint" id="modal-hint"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" id="modal-save-btn" onclick="saveKey()">Save &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let CLIENT = null;
+let currentSource = null;
+let uploadState = null;
+
+const TARGET_FIELDS = [
+  { value: '', label: '— Skip —' },
+  { value: 'date', label: 'Date' },
+  { value: 'revenue', label: 'Revenue' },
+  { value: 'jobs_completed', label: 'Jobs Completed' },
+  { value: 'new_customers', label: 'New Customers' },
+  { value: 'ad_spend', label: 'Ad Spend' },
+  { value: 'leads', label: 'Leads' },
+  { value: 'conversions', label: 'Conversions' },
+  { value: 'technician', label: 'Technician Name' },
+  { value: 'job_type', label: 'Job Type' },
+  { value: 'invoice_amount', label: 'Invoice Amount' },
+  { value: 'customer_name', label: 'Customer Name' },
+  { value: 'notes', label: 'Notes' },
+];
+
+// ── Auth ─────────────────────────────────────────────────────
+(async () => {
+  const token = localStorage.getItem('cmndr_session');
+  if (!token) { window.location.href = '/login'; return; }
+  try {
+    const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) throw new Error('invalid');
+    const { client_id, name } = await r.json();
+    CLIENT = client_id;
+    document.getElementById('topbar-user').textContent = name || '';
+    loadConnections();
+  } catch(e) {
+    localStorage.removeItem('cmndr_session');
+    window.location.href = '/login';
+  }
+})();
+
+// ── Load connections ─────────────────────────────────────────
+async function loadConnections() {
+  try {
+    const r = await fetch(`/api/connections?action=list&client=${encodeURIComponent(CLIENT)}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` }
+    });
+    if (!r.ok) throw new Error('load failed');
+    const { sources } = await r.json();
+    renderSources(sources);
+  } catch(e) {
+    // Fallback to static defaults
+    renderSources(null);
+  }
+}
+
+function renderSources(sources) {
+  const STATIC = [
+    { id: 'servicetitan', name: 'ServiceTitan', category: 'Field Management', icon: '🔧', description: 'Jobs, technicians, invoices, and revenue data', auth_type: 'api_key' },
+    { id: 'jobber', name: 'Jobber', category: 'Field Management', icon: '🏠', description: 'Quoting, scheduling, and job tracking', auth_type: 'api_key' },
+    { id: 'housecall_pro', name: 'HouseCall Pro', category: 'Field Management', icon: '⚡', description: 'Dispatch, payments, and customer records', auth_type: 'api_key' },
+    { id: 'google_ads', name: 'Google Ads', category: 'Marketing & CRM', icon: '📣', description: 'Ad spend, impressions, and lead attribution', auth_type: 'oauth' },
+    { id: 'google_business', name: 'Google Business Profile', category: 'Marketing & CRM', icon: '💬', description: 'Reviews, calls, and local search performance', auth_type: 'oauth' },
+    { id: 'quickbooks', name: 'QuickBooks', category: 'Finance', icon: '📊', description: 'P&L, invoices, expenses, and payroll', auth_type: 'oauth' },
+    { id: 'stripe', name: 'Stripe', category: 'Finance', icon: '💳', description: 'Payment processing and revenue analytics', auth_type: 'api_key' },
+    { id: 'mailchimp', name: 'Mailchimp', category: 'Marketing & CRM', icon: '✉️', description: 'Email campaigns and audience analytics', auth_type: 'api_key' },
+    { id: 'airtable', name: 'Airtable', category: 'Data Import', icon: '📋', description: 'Connect Airtable bases as a data source', auth_type: 'api_key' },
+  ];
+
+  const list = sources || STATIC;
+  const byCategory = {};
+  for (const s of list) {
+    if (!byCategory[s.category]) byCategory[s.category] = [];
+    byCategory[s.category].push(s);
+  }
+
+  const catMap = {
+    'Field Management': 'field-list',
+    'Marketing & CRM': 'marketing-list',
+    'Finance': 'finance-list',
+  };
+
+  for (const [cat, containerId] of Object.entries(catMap)) {
+    const el = document.getElementById(containerId);
+    if (!el) continue;
+    const items = byCategory[cat] || [];
+    el.innerHTML = items.map(s => connCardHTML(s)).join('');
+  }
+}
+
+function connCardHTML(s) {
+  const connected = s.is_connected;
+  const statusClass = connected ? 'status-connected' : 'status-disconnected';
+  const statusText = connected
+    ? `Connected${s.last_synced_at ? ' · Last sync ' + relTime(s.last_synced_at) : ''}`
+    : 'Not connected';
+
+  const actions = s.auth_type === 'upload' ? '' : connected
+    ? `<button class="conn-btn" onclick="testConnection('${s.id}')">Test</button>
+       <button class="conn-btn danger" onclick="disconnectSource('${s.id}', '${s.name}')">Disconnect</button>`
+    : s.auth_type === 'api_key'
+      ? `<button class="conn-btn primary" onclick="openModal('${s.id}', '${s.name}', '${s.icon}')">Connect</button>`
+      : `<button class="conn-btn primary" onclick="oauthConnect('${s.id}', '${s.name}')">Connect</button>`;
+
+  return `<div class="conn-card" id="card-${s.id}">
+    <div class="conn-icon">${s.icon || '🔌'}</div>
+    <div class="conn-info">
+      <div class="conn-name">${s.name}</div>
+      <div class="conn-desc">${s.description}</div>
+      <div class="conn-status ${statusClass}">
+        <span class="status-dot"></span>
+        <span style="color:var(--text3)">${statusText}</span>
+      </div>
+    </div>
+    <div class="conn-actions">${actions}</div>
+  </div>`;
+}
+
+function relTime(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+// ── API Key Modal ─────────────────────────────────────────────
+const MODAL_HINTS = {
+  stripe: 'Find your key at dashboard.stripe.com → Developers → API keys (use Secret key)',
+  mailchimp: 'Find your key at account.mailchimp.com → Account → Extras → API Keys',
+  airtable: 'Find your key at airtable.com/account → Developer Hub → Personal access tokens',
+  servicetitan: 'Find in ServiceTitan Admin → Integrations → API Application',
+  jobber: 'Find in Jobber Settings → Integrations & API → API access',
+  housecall_pro: 'Contact HouseCall Pro support to enable API access for your account',
+};
+
+function openModal(sourceId, name, icon) {
+  currentSource = { id: sourceId, name, icon };
+  document.getElementById('modal-icon').textContent = icon || '🔑';
+  document.getElementById('modal-title').textContent = 'Connect ' + name;
+  document.getElementById('modal-sub').textContent = 'Paste your ' + name + ' API key below. It will be encrypted and stored securely.';
+  document.getElementById('modal-label').textContent = name + ' API Key';
+  document.getElementById('modal-hint').textContent = MODAL_HINTS[sourceId] || '';
+  document.getElementById('modal-key-input').value = '';
+  document.getElementById('modal-save-btn').disabled = false;
+  document.getElementById('modal-save-btn').textContent = 'Save & Connect';
+  document.getElementById('modal-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('modal-key-input').focus(), 150);
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  currentSource = null;
+}
+
+function closeModalOnBackdrop(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+}
+
+async function saveKey() {
+  const key = document.getElementById('modal-key-input').value.trim();
+  if (!key) { showToast('Please enter your API key'); return; }
+
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const r = await fetch('/api/connections?action=save-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
+      body: JSON.stringify({ client: CLIENT, source_id: currentSource.id, api_key: key })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Save failed');
+
+    closeModal();
+    showToast(currentSource.name + ' connected successfully');
+    loadConnections();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Save & Connect';
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ── OAuth (placeholder) ───────────────────────────────────────
+function oauthConnect(sourceId, name) {
+  showToast(name + ' OAuth coming soon — your advisor will set this up');
+}
+
+// ── Test connection ───────────────────────────────────────────
+async function testConnection(sourceId) {
+  showToast('Testing connection…');
+  try {
+    const r = await fetch('/api/connections?action=test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
+      body: JSON.stringify({ client: CLIENT, source_id: sourceId })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast('Connection verified ✓');
+    } else {
+      showToast('Connection failed: ' + (data.error || 'unknown error'));
+    }
+  } catch(e) {
+    showToast('Test failed: ' + e.message);
+  }
+}
+
+// ── Disconnect ────────────────────────────────────────────────
+async function disconnectSource(sourceId, name) {
+  if (!confirm('Disconnect ' + name + '? Your historical data will be preserved.')) return;
+  try {
+    const r = await fetch('/api/connections?action=disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
+      body: JSON.stringify({ client: CLIENT, source_id: sourceId })
+    });
+    if (!r.ok) throw new Error('Disconnect failed');
+    showToast(name + ' disconnected');
+    loadConnections();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ── File upload ───────────────────────────────────────────────
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  if (file.size > 10 * 1024 * 1024) { showToast('File must be under 10 MB'); return; }
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv','xlsx','xls'].includes(ext)) { showToast('Only .csv, .xlsx, .xls files are supported'); return; }
+
+  const prog = document.getElementById('upload-progress');
+  const bar = document.getElementById('progress-bar');
+  const label = document.getElementById('progress-label');
+  prog.style.display = 'block';
+  bar.style.width = '0%';
+  label.textContent = 'Reading file…';
+
+  const reader = new FileReader();
+  reader.onprogress = (e) => {
+    if (e.lengthComputable) bar.style.width = Math.round(e.loaded / e.total * 50) + '%';
+  };
+  reader.onload = async (e) => {
+    bar.style.width = '60%';
+    label.textContent = 'Uploading…';
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+    try {
+      const r = await fetch('/api/connections?action=upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
+        body: JSON.stringify({ client: CLIENT, filename: file.name, data: base64, mime_type: file.type })
+      });
+      bar.style.width = '100%';
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Upload failed');
+      label.textContent = `✓ ${data.total_columns} columns detected · ${file.name}`;
+      uploadState = data;
+      showMapping(data);
+    } catch(err) {
+      prog.style.display = 'none';
+      showToast('Upload failed: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showMapping(data) {
+  const section = document.getElementById('mapping-section');
+  document.getElementById('mapping-title').textContent = 'Map columns from ' + data.filename;
+  section.classList.add('visible');
+
+  // Preview table
+  const wrap = document.getElementById('preview-table-wrap');
+  if (data.preview && data.preview.length > 0) {
+    const headers = data.headers;
+    let html = '<table class="preview-table"><thead><tr>';
+    headers.forEach(h => html += `<th>${h}</th>`);
+    html += '</tr></thead><tbody>';
+    data.preview.forEach(row => {
+      html += '<tr>';
+      headers.forEach(h => html += `<td>${row[h] || ''}</td>`);
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  // Mapping grid
+  const grid = document.getElementById('mapping-grid');
+  const optionsHTML = TARGET_FIELDS.map(f => `<option value="${f.value}">${f.label}</option>`).join('');
+  let html = `<div class="mapping-col-head">Your column</div><div></div><div class="mapping-col-head">CMNDR field</div>`;
+  data.headers.forEach(h => {
+    const suggested = autoSuggest(h);
+    html += `
+      <div class="mapping-source">${h}</div>
+      <div class="mapping-arrow">→</div>
+      <select class="mapping-select" data-source="${h}">
+        ${TARGET_FIELDS.map(f => `<option value="${f.value}" ${f.value === suggested ? 'selected' : ''}>${f.label}</option>`).join('')}
+      </select>`;
+  });
+  grid.innerHTML = html;
+}
+
+function autoSuggest(col) {
+  const c = col.toLowerCase().replace(/[^a-z]/g, '');
+  if (/date|day|week|month/.test(c)) return 'date';
+  if (/revenue|sales|income/.test(c)) return 'revenue';
+  if (/job|order|ticket/.test(c)) return 'jobs_completed';
+  if (/customer|client|new/.test(c)) return 'new_customers';
+  if (/spend|ad|cost/.test(c)) return 'ad_spend';
+  if (/lead|prospect/.test(c)) return 'leads';
+  if (/convert|booked/.test(c)) return 'conversions';
+  if (/tech|staff/.test(c)) return 'technician';
+  if (/amount|invoice/.test(c)) return 'invoice_amount';
+  return '';
+}
+
+async function doImport() {
+  if (!uploadState) return;
+  const selects = document.querySelectorAll('#mapping-grid .mapping-select');
+  const mapping = {};
+  selects.forEach(s => { if (s.value) mapping[s.dataset.source] = s.value; });
+
+  if (Object.keys(mapping).length === 0) { showToast('Please map at least one column'); return; }
+
+  const btn = document.getElementById('import-btn');
+  btn.disabled = true;
+  btn.textContent = 'Importing…';
+
+  try {
+    const r = await fetch('/api/connections?action=map-columns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
+      body: JSON.stringify({
+        client: CLIENT,
+        storage_path: uploadState.storage_path,
+        filename: uploadState.filename,
+        mapping,
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Import failed');
+    showToast(`✓ Imported ${data.inserted} rows successfully`);
+    resetUpload();
+    loadConnections();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Import data';
+    showToast('Import failed: ' + e.message);
+  }
+}
+
+function resetUpload() {
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('mapping-section').classList.remove('visible');
+  document.getElementById('file-input').value = '';
+  uploadState = null;
+}
+
+// ── Notify me ─────────────────────────────────────────────────
+function notifyMe(name) {
+  showToast('We\'ll let you know when ' + name + ' is available');
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

@@ -281,6 +281,76 @@
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; }
     .toast.show { opacity: 1; }
 
+    /* ── Nav collapse ── */
+    .sidebar { transition: width .2s; overflow-x: hidden; }
+    .sidebar.collapsed { width: 56px; padding: 20px 10px 24px; }
+    .sidebar.collapsed .logo,
+    .sidebar.collapsed .nav-lbl,
+    .sidebar.collapsed .sidebar-sep,
+    .sidebar.collapsed .sidebar-lbl,
+    .sidebar.collapsed .range-grid,
+    .sidebar.collapsed .chip-name,
+    .sidebar.collapsed .chip-sub,
+    .sidebar.collapsed .signout-btn,
+    .sidebar.collapsed .nav-label { display: none; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: 8px; }
+    .sidebar.collapsed .client-chip { justify-content: center; padding: 8px; }
+    .nav-collapse-btn { display: flex; align-items: center; justify-content: flex-end; cursor: pointer; padding: 6px 0 0; color: var(--text3); background: none; border: none; width: 100%; margin-top: 10px; transition: color .12s; }
+    .nav-collapse-btn:hover { color: var(--text); }
+    .sidebar.collapsed .nav-collapse-btn { justify-content: center; }
+    .main { transition: margin-left .2s, margin-right .15s; }
+    .main.nav-collapsed { margin-left: 56px; }
+
+    /* ── Advisor panel collapse ── */
+    .strategy-panel { transition: width .2s; overflow-x: hidden; }
+    .strategy-panel.advisor-collapsed { width: 48px; padding: 16px 8px; }
+    .strategy-panel.advisor-collapsed #sp-content { display: none; }
+    .advisor-toggle-btn { display: flex; align-items: center; justify-content: flex-end; background: none; border: none; cursor: pointer; color: var(--text3); width: 100%; margin-bottom: 12px; padding: 0; transition: color .12s; }
+    .advisor-toggle-btn:hover { color: var(--text); }
+    .strategy-panel.advisor-collapsed .advisor-toggle-btn { justify-content: center; margin-bottom: 0; }
+    .main.advisor-collapsed { margin-right: 48px; }
+
+    /* ── Alert modal ── */
+    .alert-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; display: flex; align-items: center; justify-content: center; }
+    .alert-modal { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 24px; max-width: 440px; width: calc(100% - 32px); box-shadow: 0 12px 40px rgba(0,0,0,.15); }
+    .alert-modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 10px; }
+    .alert-modal-title { font-size: 15px; font-weight: 500; line-height: 1.3; flex: 1; }
+    .alert-modal-close { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px; font-size: 18px; flex-shrink: 0; line-height: 1; }
+    .alert-type-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: inline-block; margin-bottom: 12px; }
+    .alert-type-critical { background: #FCEBEB; color: #791F1F; }
+    .alert-type-warning { background: #FAEEDA; color: #633806; }
+    .alert-type-info { background: #E6F1FB; color: #0C447C; }
+    .alert-modal-msg { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 14px; }
+    .alert-power-box { background: rgba(55,138,221,0.06); border: 0.5px solid rgba(55,138,221,0.2); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 18px; }
+    .alert-power-lbl { font-size: 10px; font-weight: 700; color: #378ADD; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 0 8px rgba(55,138,221,0.4); margin-bottom: 6px; }
+    .alert-power-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .alert-modal-cta { width: 100%; padding: 10px; border-radius: var(--radius-md); background: var(--info); color: #fff; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+    .alert-modal-cta:hover { opacity: .85; }
+    .alert-expand-btn { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 0.5px solid var(--border2); background: none; color: var(--text3); cursor: pointer; flex-shrink: 0; transition: color .1s; }
+    .alert-expand-btn:hover { color: var(--text); }
+
+    /* ── Power branding ── */
+    .power-lbl { font-size: 11px; font-weight: 700; color: #378ADD; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 0 8px rgba(55,138,221,0.4); }
+
+    /* ── Ops sub-report tabs ── */
+    .ops-tabs { display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap; }
+    .ops-tab { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border2); background: none; color: var(--text2); cursor: pointer; transition: all .12s; }
+    .ops-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .ops-tab:hover:not(.active) { background: var(--bg2); color: var(--text); }
+
+    /* ── Funnel tooltip ── */
+    .funnel-bar-wrap { position: relative; }
+    .funnel-tooltip { position: absolute; left: 50%; top: -28px; transform: translateX(-50%); background: #1a1a2e; color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 10; }
+    .funnel-bar-wrap:hover .funnel-tooltip { opacity: 1; }
+
+    /* ── Table header rows ── */
+    .table-header-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 8px; border-bottom: 0.5px solid var(--border2); margin-bottom: 2px; gap: 8px; }
+    .table-header-row span { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+    .th-main { flex: 1; min-width: 0; }
+    .th-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; min-width: 120px; justify-content: flex-end; }
+    .tech-header-row { display: flex; align-items: center; gap: 12px; padding: 6px 0 8px; border-bottom: 0.5px solid var(--border2); margin-bottom: 2px; }
+    .tech-header-row span { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+
     /* ── Celebration banner ── */
     .celebration { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: linear-gradient(135deg, #1D9E75, #1481a3); color: #fff; padding: 11px 20px; display: none; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
     .celebration.visible { display: flex; }
@@ -352,7 +422,9 @@
     /* ── Welcome overlay ── */
     .welcome-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:flex; align-items:center; justify-content:center; }
     .welcome-overlay.hidden { display:none; }
-    .welcome-card { background:var(--bg); border-radius:var(--radius-lg); padding:36px 32px; max-width:440px; width:calc(100% - 32px); border:0.5px solid var(--border); box-shadow:0 12px 40px rgba(0,0,0,.15); }
+    .welcome-card { background:var(--bg); border-radius:var(--radius-lg); padding:36px 32px; max-width:440px; width:calc(100% - 32px); border:0.5px solid var(--border); box-shadow:0 12px 40px rgba(0,0,0,.15); position:relative; }
+    .welcome-close { position:absolute; top:12px; right:16px; font-size:20px; color:var(--text3); cursor:pointer; background:none; border:none; line-height:1; padding:0; transition:color .12s; }
+    .welcome-close:hover { color:var(--text); }
     .wc-program { font-size:11px; font-weight:600; color:var(--info); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
     .welcome-card h2 { font-size:20px; font-weight:500; margin:0 0 4px; }
     .welcome-card .wc-sub { font-size:13px; color:var(--text3); margin:0 0 20px; }
@@ -415,6 +487,22 @@
     .ask-input:focus { border-color:var(--info); }
     .ask-submit { font-size:12px; padding:8px 14px; border-radius:var(--radius-md); background:var(--info); color:#fff; border:none; cursor:pointer; white-space:nowrap; flex-shrink:0; }
     .ask-submit:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* ── Goal section collapse ── */
+    .goal-section-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; margin-bottom:6px; }
+    .goal-section-header .msg-panel-lbl { margin-bottom:0; }
+    .goal-section-icon { color:var(--text3); background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; transition:color .12s, transform .2s; flex-shrink:0; }
+    .goal-section-header:hover .goal-section-icon { color:var(--text); }
+    .goal-section-body { overflow:hidden; max-height:400px; opacity:1; transition:max-height .2s ease, opacity .15s ease; }
+    .goal-section-body.collapsed { max-height:0 !important; opacity:0; }
+
+    /* ── Strategy panel section collapse ── */
+    .sp-section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; cursor:pointer; user-select:none; }
+    .sp-section-header .sp-lbl { margin-bottom:0; }
+    .sp-section-header:hover .sp-section-icon { color:var(--text); }
+    .sp-section-icon { color:var(--text3); background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; transition:color .12s, transform .2s; flex-shrink:0; }
+    .sp-section-body { overflow:hidden; max-height:600px; opacity:1; transition:max-height .2s ease, opacity .15s ease; }
+    .sp-section-body.collapsed { max-height:0 !important; opacity:0; }
   </style>
 </head>
 <body>
@@ -451,27 +539,27 @@
 
   <div class="nav-item active" data-page="overview" onclick="nav('overview')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
-    Overview
+    <span class="nav-label">Overview</span>
   </div>
   <div class="nav-item" data-page="operations" onclick="nav('operations')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L2 4.5v6l5.5 3 5.5-3v-6L7.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M7.5 1.5v13M2 4.5l5.5 3 5.5-3" stroke="currentColor" stroke-width="1.2"/></svg>
-    Operations
+    <span class="nav-label">Operations</span>
   </div>
   <div class="nav-item" data-page="marketing" onclick="nav('marketing')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 7 8.5 9.5 13 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 3.5h2.5v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Marketing
+    <span class="nav-label">Marketing</span>
   </div>
   <div class="nav-item" data-page="finance" onclick="nav('finance')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="3.5" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 6.5h12" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 9.5h2M8.5 9.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-    Finance
+    <span class="nav-label">Finance</span>
   </div>
   <div class="nav-item" data-page="optimization" onclick="nav('optimization')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.5v2M7.5 11.5v2M1.5 7.5h2M11.5 7.5h2M3.4 3.4l1.4 1.4M10.2 10.2l1.4 1.4M3.4 11.6l1.4-1.4M10.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-    Optimization
+    <span class="nav-label">Optimization</span>
   </div>
   <div class="nav-item" data-page="history" onclick="nav('history')">
     <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12z" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 4.5v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    History
+    <span class="nav-label">Archive</span>
   </div>
 
   <div class="sidebar-sep"></div>
@@ -485,6 +573,10 @@
       <button class="range-btn" data-range="qtd" onclick="setRange('qtd')">Quarter</button>
     </div>
   </div>
+
+  <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCollapse()" aria-label="Toggle sidebar">
+    <svg id="nav-collapse-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
 
   <div class="sidebar-footer">
     <div class="client-chip">
@@ -520,22 +612,29 @@
     <iframe id="overview-frame" title="Overview"></iframe>
     <div class="msg-panel" id="msg-panel">
       <div class="msg-panel-head">
-        <div class="msg-panel-lbl">Client goal</div>
-        <div class="goal-banner" id="goal-banner">
-          <div class="goal-banner-lbl">
-            <span>Goal</span>
-            <button class="goal-edit-btn" id="goal-edit-btn" style="display:none" onclick="toggleGoalEdit()">Edit</button>
-          </div>
-          <div id="goal-text" style="color:var(--text3)">Loading…</div>
-          <div class="goal-edit-form" id="goal-edit-form">
-            <textarea class="goal-edit-input" id="goal-input" rows="2" placeholder="State the client's primary goal…"></textarea>
-            <button class="goal-save-btn" onclick="saveGoal()">Save goal</button>
-          </div>
+        <div class="goal-section-header" onclick="toggleGoalSection()">
+          <div class="msg-panel-lbl">Client goal</div>
+          <button class="goal-section-icon" id="goal-section-icon" aria-label="Toggle goal section">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.2"/><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.2"/><line x1="6.5" y1="1" x2="6.5" y2="0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </button>
         </div>
-        <div class="health-badge" id="health-badge" style="display:none">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 7l1 3.5L6 8.5 3 10.5l1-3.5L1 4.5h3.5L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
-          <span class="health-score" id="health-score">—</span>
-          <span class="health-label" id="health-label">Health score</span>
+        <div class="goal-section-body" id="goal-section-body">
+          <div class="goal-banner" id="goal-banner">
+            <div class="goal-banner-lbl">
+              <span>Goal</span>
+              <button class="goal-edit-btn" id="goal-edit-btn" style="display:none" onclick="toggleGoalEdit()">Edit</button>
+            </div>
+            <div id="goal-text" style="color:var(--text3)">Loading…</div>
+            <div class="goal-edit-form" id="goal-edit-form">
+              <textarea class="goal-edit-input" id="goal-input" rows="2" placeholder="State the client's primary goal…"></textarea>
+              <button class="goal-save-btn" onclick="saveGoal()">Save goal</button>
+            </div>
+          </div>
+          <div class="health-badge" id="health-badge" style="display:none">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 7l1 3.5L6 8.5 3 10.5l1-3.5L1 4.5h3.5L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+            <span class="health-score" id="health-score">—</span>
+            <span class="health-label" id="health-label">Health score</span>
+          </div>
         </div>
         <div class="msg-panel-lbl" style="margin-top:10px">Messages</div>
       </div>
@@ -645,11 +744,11 @@
     </div>
   </div>
 
-  <!-- History -->
+  <!-- Archive -->
   <div class="page" id="page-history">
     <div class="page-inner">
       <div class="page-head">
-        <div><div class="page-title">Report History</div><div class="page-meta" id="hist-meta">Loading…</div></div>
+        <div><div class="page-title">Archive</div><div class="page-meta" id="hist-meta">Loading…</div></div>
         <button class="reload-btn" onclick="loadPage('history',true)">Refresh</button>
       </div>
       <div id="hist-body">
@@ -671,11 +770,16 @@
 </div>
 
 <div class="strategy-panel" id="strategy-panel">
-  <div class="sp-lbl">Your progress</div>
-  <div class="sp-loading">
-    <div class="skel" style="width:60%"></div>
-    <div class="skel" style="width:80%;height:18px;margin-top:4px;"></div>
-    <div class="skel" style="width:40%;margin-top:4px;"></div>
+  <button class="advisor-toggle-btn" id="advisor-toggle-btn" onclick="toggleAdvisorPanel()" aria-label="Toggle strategy panel">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div id="sp-content">
+    <div class="sp-lbl">Your progress</div>
+    <div class="sp-loading">
+      <div class="skel" style="width:60%"></div>
+      <div class="skel" style="width:80%;height:18px;margin-top:4px;"></div>
+      <div class="skel" style="width:40%;margin-top:4px;"></div>
+    </div>
   </div>
 </div>
 
@@ -684,15 +788,16 @@
 <!-- Welcome overlay (client_user first login) -->
 <div class="welcome-overlay hidden" id="welcome-overlay">
   <div class="welcome-card">
-    <div class="wc-program" id="wc-program">Your program</div>
-    <h2 id="wc-title">Welcome to your Resona dashboard</h2>
-    <p class="wc-sub">Here's what we'll work on together to grow your business:</p>
+    <button class="welcome-close" onclick="dismissWelcome()">×</button>
+    <div class="wc-program" id="wc-program">CMNDR</div>
+    <h2 id="wc-title">Welcome to CMNDR</h2>
+    <p class="wc-sub">Your business intelligence dashboard — here's what's inside:</p>
     <ul class="welcome-bullets">
-      <li>We analyze your business data across 4 key areas every week</li>
-      <li>Claude AI generates personalized insights and recommended actions for you</li>
-      <li>Your Resona advisor reviews progress and adjusts your roadmap each month</li>
+      <li>Your data is connected and analyzed across operations, marketing, finance, and optimization</li>
+      <li>Power Briefings give you plain-language insights and recommended actions every week</li>
+      <li>Your advisor monitors your progress and adjusts your strategy in real time</li>
     </ul>
-    <button class="welcome-cta" onclick="dismissWelcome()">Let's get started</button>
+    <button class="welcome-cta" onclick="window.location.href='/connections'">Connect my data</button>
   </div>
 </div>
 
@@ -701,6 +806,7 @@ const API = '/api/pages';
 let CLIENT = 'peak-flow';
 let currentRange = '7d';
 let currentPage = 'overview';
+let currentOpsView = 'all';
 let USER_ROLE = null;
 let USER_NAME = '';
 const cache = {};
@@ -819,12 +925,12 @@ function renderPage(page, data) {
   renderStrategyPanel(data);
   // Mirror strategy panel content to mobile sheet
   const sheet = document.getElementById('strategy-sheet-content');
-  const panel = document.getElementById('strategy-panel');
-  if (sheet && panel) sheet.innerHTML = panel.innerHTML;
+  const spContent = document.getElementById('sp-content');
+  if (sheet && spContent) sheet.innerHTML = spContent.innerHTML;
   if (data.milestone_just_advanced) showCelebration(data.course);
-  // Action history + Ask Claude
+  // Action history + Ask Claude (skip ask for operations)
   renderActionHistory(page);
-  renderAskSection(page);
+  if (page !== 'operations') renderAskSection(page);
 }
 
 // ── Explain helpers ───────────────────────────────────────────
@@ -836,7 +942,7 @@ function explainBtn(id) {
 }
 function explainPanel(id, summary) {
   return `<div class="explain-panel" id="explain-${id}">
-    <div class="explain-lbl">Claude — AI analysis</div>
+    <div class="explain-lbl power-lbl">Power analysis</div>
     <div class="explain-txt">${summary || 'No explanation available.'}</div>
   </div>`;
 }
@@ -853,7 +959,7 @@ function renderActions(containerId, actionsRaw) {
   el.innerHTML = `
     <div class="rec-head">
       <div class="rec-title">Recommended Actions</div>
-      <span class="rec-badge">Claude AI · ${actions.length} actions</span>
+      <span class="rec-badge">Power · ${actions.length} actions</span>
     </div>
     ${actions.map((a, i) => `
       <div class="rec-item">
@@ -929,6 +1035,14 @@ function renderOperations(d) {
     color: '#378ADD'
   }));
 
+  const techHeaderRow = `<div class="tech-header-row">
+    <span style="width:30px;flex-shrink:0;"></span>
+    <span style="flex:1;min-width:0;">Technician</span>
+    <span style="min-width:80px;">Specialty</span>
+    <span style="min-width:48px;text-align:center;">Active</span>
+    <span style="min-width:60px;text-align:center;">Completed</span>
+    <span style="min-width:60px;text-align:right;">Utilization</span>
+  </div>`;
   const techRows = techs.slice(0, 6).map(t => `
     <div class="tech-row">
       <div class="tech-av">${initials(t.name)}</div>
@@ -940,17 +1054,26 @@ function renderOperations(d) {
       <div class="util-pct" style="color:${utilColor(t.utilization_pct || 0)};">${t.utilization_pct || 0}%</div>
     </div>`).join('') || emptyState('jobs');
 
-  const alertRows = activeAlerts.slice(0, 5).map(a => `
+  const alertRows = activeAlerts.slice(0, 5).map((a, i) => `
     <div class="a-row">
       <div class="a-dot d-${a.type || 'info'}"></div>
-      <div>
+      <div style="flex:1;min-width:0;">
         <div style="font-size:13px;">${a.message || '—'}</div>
         <div style="font-size:11px;color:var(--text2);margin-top:2px;">${(a.type || 'info').charAt(0).toUpperCase() + (a.type || 'info').slice(1)} · ${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</div>
       </div>
+      <button class="alert-expand-btn" onclick="showAlertModal(${JSON.stringify(a).replace(/"/g, '&quot;')})">View</button>
     </div>`).join('') || emptyState('alerts');
 
   const statusMap = { completed: 'b-done', 'in-progress': 'b-prog', scheduled: 'b-lo', cancelled: 'b-overdue' };
   const statusLabel = { completed: 'Done', 'in-progress': 'In progress', scheduled: 'Scheduled', cancelled: 'Cancelled' };
+  const jobHeaderRow = `<div class="table-header-row">
+    <span class="th-main">Job Title</span>
+    <div class="th-right">
+      <span style="min-width:50px;">Status</span>
+      <span style="min-width:44px;">Priority</span>
+      <span style="min-width:44px;text-align:right;">Revenue</span>
+    </div>
+  </div>`;
   const jobRows = jobs.slice(0, 8).map(j => `
     <div class="trow">
       <div style="flex:1;min-width:0;">
@@ -965,44 +1088,60 @@ function renderOperations(d) {
     </div>`).join('') || emptyState('jobs');
 
   document.getElementById('ops-body').innerHTML = `
-    <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">Total jobs</div><div class="kpi-val">${jobs.length}</div><div class="kpi-sub">In period</div></div>
-      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val" style="color:#1D9E75">${completed}</div><div class="kpi-sub" style="color:#1D9E75">${rate}% rate</div></div>
-      <div class="kpi"><div class="kpi-label">In progress</div><div class="kpi-val" style="color:#185FA5">${inprog}</div><div class="kpi-sub">Active now</div></div>
-      <div class="kpi"><div class="kpi-label">Period revenue</div><div class="kpi-val">${fmt$(rev)}</div><div class="kpi-sub">Completed jobs</div></div>
-      <div class="kpi"><div class="kpi-label">Avg job value</div><div class="kpi-val">${fmt$(avg)}</div><div class="kpi-sub">Per job</div></div>
-      <div class="kpi"><div class="kpi-label">Active alerts</div><div class="kpi-val" style="color:${activeAlerts.length > 0 ? '#E24B4A' : '#1D9E75'}">${activeAlerts.length}</div><div class="kpi-sub">Unresolved</div></div>
+    <div class="ops-tabs" id="ops-tabs">
+      <button class="ops-tab active" data-view="all" onclick="setOpsView('all')">All</button>
+      <button class="ops-tab" data-view="jobs" onclick="setOpsView('jobs')">Jobs</button>
+      <button class="ops-tab" data-view="technicians" onclick="setOpsView('technicians')">Technicians</button>
+      <button class="ops-tab" data-view="alerts" onclick="setOpsView('alerts')">Alerts</button>
     </div>
 
-    <div class="sec-label">Weekly revenue trend</div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">Service metrics</div>${explainBtn('ops-metrics')}</div>
-      ${barChart(metricsRows)}
-      ${explainPanel('ops-metrics', d.summary)}
+    <div id="ops-overview-section">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Total jobs</div><div class="kpi-val">${jobs.length}</div><div class="kpi-sub">In period</div></div>
+        <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val" style="color:#1D9E75">${completed}</div><div class="kpi-sub" style="color:#1D9E75">${rate}% rate</div></div>
+        <div class="kpi"><div class="kpi-label">In progress</div><div class="kpi-val" style="color:#185FA5">${inprog}</div><div class="kpi-sub">Active now</div></div>
+        <div class="kpi"><div class="kpi-label">Period revenue</div><div class="kpi-val">${fmt$(rev)}</div><div class="kpi-sub">Completed jobs</div></div>
+        <div class="kpi"><div class="kpi-label">Avg job value</div><div class="kpi-val">${fmt$(avg)}</div><div class="kpi-sub">Per job</div></div>
+        <div class="kpi"><div class="kpi-label">Active alerts</div><div class="kpi-val" style="color:${activeAlerts.length > 0 ? '#E24B4A' : '#1D9E75'}">${activeAlerts.length}</div><div class="kpi-sub">Unresolved</div></div>
+      </div>
+
+      <div class="sec-label">Weekly revenue trend</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Service metrics</div>${explainBtn('ops-metrics')}</div>
+        ${barChart(metricsRows)}
+        ${explainPanel('ops-metrics', d.summary)}
+      </div>
     </div>
 
-    <div class="sec-label">Technician workload</div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">Team utilization</div>${explainBtn('ops-techs')}</div>
-      ${techRows}
-      ${explainPanel('ops-techs', d.summary)}
+    <div id="ops-techs-section">
+      <div class="sec-label">Technician workload</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Team utilization</div>${explainBtn('ops-techs')}</div>
+        ${techHeaderRow}${techRows}
+        ${explainPanel('ops-techs', d.summary)}
+      </div>
     </div>
 
-    <div class="sec-label">Jobs in period</div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">Recent jobs</div>${explainBtn('ops-jobs')}</div>
-      ${jobRows}
-      ${explainPanel('ops-jobs', d.summary)}
+    <div id="ops-jobs-section">
+      <div class="sec-label">Jobs in period</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Recent jobs</div>${explainBtn('ops-jobs')}</div>
+        ${jobHeaderRow}${jobRows}
+        ${explainPanel('ops-jobs', d.summary)}
+      </div>
     </div>
 
-    <div class="sec-label">Active alerts</div>
-    <div class="card">
-      <div class="card-head"><div class="card-title">System alerts</div>${explainBtn('ops-alerts')}</div>
-      ${alertRows}
-      ${explainPanel('ops-alerts', d.summary)}
+    <div id="ops-alerts-section">
+      <div class="sec-label">Active alerts</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">System alerts</div>${explainBtn('ops-alerts')}</div>
+        ${alertRows}
+        ${explainPanel('ops-alerts', d.summary)}
+      </div>
     </div>`;
 
   renderActions('ops-actions', d.actions);
+  setOpsView(currentOpsView);
 }
 
 // ── Marketing ────────────────────────────────────────────────
@@ -1218,14 +1357,22 @@ function renderOptimization(d) {
 
 // ── Strategy Panel ───────────────────────────────────────────
 function showPanelSkeleton() {
+  const _progCollapsed = localStorage.getItem('cmndr_progress_collapsed') === '1';
   const skeletonHtml = `
-    <div class="sp-lbl">Your progress</div>
+    <div class="sp-section-header" onclick="toggleProgressSection()">
+      <div class="sp-lbl">Your progress</div>
+      <button class="sp-section-icon" id="sp-progress-icon" aria-label="Toggle progress section" style="${_progCollapsed ? 'transform:rotate(180deg)' : ''}">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="5" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="sp-section-body${_progCollapsed ? ' collapsed' : ''}" id="sp-progress-body">
     <div class="sp-loading">
       <div class="skel" style="width:55%"></div>
       <div class="skel" style="width:75%;height:18px;margin-top:6px;"></div>
       <div class="skel" style="width:35%;margin-top:6px;"></div>
       <div class="skel" style="width:100%;height:5px;margin-top:10px;border-radius:4px;"></div>
       <div class="skel" style="width:45%"></div>
+    </div>
     </div>
     <div class="sp-sep"></div>
     <div class="sp-lbl">This week's focus</div>
@@ -1238,7 +1385,8 @@ function showPanelSkeleton() {
       <div class="skel"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:80%"></div>
       <div class="skel" style="margin-top:8px;"></div><div class="skel" style="width:75%"></div>
     </div>`;
-  document.getElementById('strategy-panel').innerHTML = skeletonHtml;
+  const spContent = document.getElementById('sp-content');
+  if (spContent) spContent.innerHTML = skeletonHtml;
   const sheet = document.getElementById('strategy-sheet-content');
   if (sheet) sheet.innerHTML = skeletonHtml;
 }
@@ -1290,9 +1438,18 @@ function renderStrategyPanel(data) {
       </div>`;
   }
 
-  panel.innerHTML = `
-    <div class="sp-lbl">Your progress</div>
+  const spContent = document.getElementById('sp-content');
+  const _progCollapsed2 = localStorage.getItem('cmndr_progress_collapsed') === '1';
+  const spHtml = `
+    <div class="sp-section-header" onclick="toggleProgressSection()">
+      <div class="sp-lbl">Your progress</div>
+      <button class="sp-section-icon" id="sp-progress-icon" aria-label="Toggle progress section" style="${_progCollapsed2 ? 'transform:rotate(180deg)' : ''}">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="5" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="sp-section-body${_progCollapsed2 ? ' collapsed' : ''}" id="sp-progress-body">
     ${progressHtml}
+    </div>
     <div class="sp-sep"></div>
     <div class="sp-lbl">This week's focus</div>
     <div class="sp-focus">${data.focus || 'No guidance available.'}</div>
@@ -1300,6 +1457,34 @@ function renderStrategyPanel(data) {
     <div class="sp-lbl">Strategy notes</div>
     <div class="sp-notes">${formatNotes(data.strategyNotes)}</div>
     ${notesHtml}`;
+  if (spContent) spContent.innerHTML = spHtml;
+  else panel.innerHTML = spHtml;
+}
+
+// ── Collapse toggles ─────────────────────────────────────────
+function toggleGoalSection() {
+  const body = document.getElementById('goal-section-body');
+  const icon = document.getElementById('goal-section-icon');
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  if (icon) icon.style.transform = collapsed ? 'rotate(90deg)' : '';
+  localStorage.setItem('cmndr_goal_collapsed', collapsed ? '1' : '');
+}
+function initGoalCollapse() {
+  if (localStorage.getItem('cmndr_goal_collapsed') === '1') {
+    const body = document.getElementById('goal-section-body');
+    const icon = document.getElementById('goal-section-icon');
+    if (body) body.classList.add('collapsed');
+    if (icon) icon.style.transform = 'rotate(90deg)';
+  }
+}
+function toggleProgressSection() {
+  const body = document.getElementById('sp-progress-body');
+  const icon = document.getElementById('sp-progress-icon');
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  if (icon) icon.style.transform = collapsed ? 'rotate(180deg)' : '';
+  localStorage.setItem('cmndr_progress_collapsed', collapsed ? '1' : '');
 }
 
 // ── Notes (strategy panel) ────────────────────────────────────
@@ -1489,10 +1674,11 @@ function renderHistory(data) {
 // ── Welcome overlay ───────────────────────────────────────────
 async function checkWelcome() {
   if (USER_ROLE !== 'client_user') return;
+  if (localStorage.getItem('cmndr_welcome_dismissed') === 'true') return;
   try {
     const r = await fetch(`/api/goal?action=onboarding&client=${CLIENT}`);
     const { state } = await r.json();
-    if (state && state.welcome_dismissed) return;
+    if (state && state.welcome_dismissed) { localStorage.setItem('cmndr_welcome_dismissed', 'true'); return; }
     const overlay = document.getElementById('welcome-overlay');
     if (overlay) overlay.classList.remove('hidden');
     // Try to populate course name from any cached data
@@ -1507,6 +1693,7 @@ async function checkWelcome() {
 
 async function dismissWelcome() {
   document.getElementById('welcome-overlay')?.classList.add('hidden');
+  localStorage.setItem('cmndr_welcome_dismissed', 'true');
   fetch(`/api/goal?action=onboarding&client=${CLIENT}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
 }
 
@@ -1640,7 +1827,7 @@ function renderAskSection(page) {
     <div class="ask-section">
       <div class="ask-lbl">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 4.5C4.5 3.7 5.1 3 6 3s1.5.7 1.5 1.5c0 1-1.5 1.5-1.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="9.5" r=".5" fill="currentColor"/></svg>
-        Ask Claude about this data
+        Ask about this data
       </div>
       <div class="ask-chips">${chips.map(c => `<span class="ask-chip" onclick="askQ('${page}',\`${c}\`)">${c}</span>`).join('')}</div>
       <div class="ask-thread" id="ask-thread-${page}">${renderAskThread(page)}</div>
@@ -1655,7 +1842,7 @@ function renderAskThread(page) {
   const thread = askThreads[page] || [];
   return thread.map(m => m.role === 'user'
     ? `<div class="ask-q">${m.content}</div>`
-    : `<div class="ask-a"><div class="ask-a-lbl">Claude</div>${m.content}</div>`
+    : `<div class="ask-a"><div class="ask-a-lbl power-lbl">Power</div>${m.content}</div>`
   ).join('') || '';
 }
 
@@ -1686,6 +1873,100 @@ async function askQ(page, question) {
   }
   if (threadEl) { threadEl.innerHTML = renderAskThread(page); threadEl.scrollTop = threadEl.scrollHeight; }
   if (btnEl) btnEl.disabled = false;
+}
+
+// ── Ops sub-report switcher ───────────────────────────────────
+function setOpsView(view) {
+  currentOpsView = view;
+  document.querySelectorAll('#ops-tabs .ops-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  const isAll = view === 'all';
+  const overviewSection = document.getElementById('ops-overview-section');
+  const techsSection = document.getElementById('ops-techs-section');
+  const jobsSection = document.getElementById('ops-jobs-section');
+  const alertsSection = document.getElementById('ops-alerts-section');
+
+  if (isAll) {
+    if (overviewSection) overviewSection.style.display = '';
+    if (techsSection) techsSection.style.display = '';
+    if (jobsSection) jobsSection.style.display = '';
+    if (alertsSection) alertsSection.style.display = '';
+  } else {
+    if (overviewSection) overviewSection.style.display = 'none';
+    if (techsSection) techsSection.style.display = view === 'technicians' ? '' : 'none';
+    if (jobsSection) jobsSection.style.display = view === 'jobs' ? '' : 'none';
+    if (alertsSection) alertsSection.style.display = view === 'alerts' ? '' : 'none';
+  }
+}
+
+// ── Alert modal ───────────────────────────────────────────────
+function showAlertModal(alert) {
+  const typeClass = { critical: 'alert-type-critical', warning: 'alert-type-warning', info: 'alert-type-info' };
+  const typeLabel = { critical: 'Critical', warning: 'Warning', info: 'Info' };
+  const t = alert.type || 'info';
+  const html = `<div class="alert-modal-overlay" id="alert-modal" onclick="if(event.target===this)closeAlertModal()">
+    <div class="alert-modal">
+      <div class="alert-modal-head">
+        <div class="alert-modal-title">${alert.message || 'Alert'}</div>
+        <button class="alert-modal-close" onclick="closeAlertModal()">×</button>
+      </div>
+      <div class="alert-type-badge ${typeClass[t] || 'alert-type-info'}">${typeLabel[t] || t}</div>
+      <div class="alert-modal-msg">${alert.message || '—'}</div>
+      <div class="alert-power-box">
+        <div class="alert-power-lbl">Power analysis</div>
+        <div class="alert-power-text">This alert was flagged based on recent operational data. Review the affected area and take corrective action if needed. Your advisor will follow up on persistent alerts in your next session.</div>
+      </div>
+      <button class="alert-modal-cta" onclick="closeAlertModal()">Mark as Reviewed</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeAlertModal() {
+  document.getElementById('alert-modal')?.remove();
+}
+
+// ── Nav collapse ──────────────────────────────────────────────
+function toggleNavCollapse() {
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main');
+  const icon = document.getElementById('nav-collapse-icon');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  if (main) main.classList.toggle('nav-collapsed', collapsed);
+  if (icon) icon.style.transform = collapsed ? 'rotate(180deg)' : '';
+  localStorage.setItem('cmndr_nav_collapsed', collapsed ? '1' : '');
+}
+
+function initNavCollapse() {
+  if (localStorage.getItem('cmndr_nav_collapsed') === '1') {
+    const sidebar = document.querySelector('.sidebar');
+    const main = document.querySelector('.main');
+    const icon = document.getElementById('nav-collapse-icon');
+    if (sidebar) sidebar.classList.add('collapsed');
+    if (main) main.classList.add('nav-collapsed');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
+}
+
+// ── Advisor panel collapse ────────────────────────────────────
+function toggleAdvisorPanel() {
+  const panel = document.getElementById('strategy-panel');
+  const main = document.querySelector('.main');
+  const btn = document.getElementById('advisor-toggle-btn');
+  const collapsed = panel.classList.toggle('advisor-collapsed');
+  if (main) main.classList.toggle('advisor-collapsed', collapsed);
+  if (btn) btn.querySelector('svg path')?.setAttribute('d', collapsed ? 'M5 2l5 4.5L5 11' : 'M8 2l-5 4.5L8 11');
+  localStorage.setItem('cmndr_advisor_collapsed', collapsed ? '1' : '');
+}
+
+function initAdvisorCollapse() {
+  if (localStorage.getItem('cmndr_advisor_collapsed') === '1') {
+    const panel = document.getElementById('strategy-panel');
+    const main = document.querySelector('.main');
+    const btn = document.getElementById('advisor-toggle-btn');
+    if (panel) panel.classList.add('advisor-collapsed');
+    if (main) main.classList.add('advisor-collapsed');
+    if (btn) btn.querySelector('svg path')?.setAttribute('d', 'M5 2l5 4.5L5 11');
+  }
 }
 
 // ── Auth ─────────────────────────────────────────────────────
@@ -1859,6 +2140,9 @@ initAuth().then(() => {
     setTimeout(checkWelcome, 800);
   }
   initMobile();
+  initNavCollapse();
+  initGoalCollapse();
+  initAdvisorCollapse();
 });
 </script>
 </body>

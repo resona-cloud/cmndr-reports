@@ -1,3 +1,6 @@
+// /api/actions — action history + webhook triggers
+// /api/notifications (rewritten here via vercel.json) — client notifications
+
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
@@ -9,12 +12,71 @@ const PAGE_ACTION_TYPE = {
   optimization: 'trigger_automation',
 };
 
+// ── Notifications handler (forwarded from /api/notifications) ──
+async function handleNotifications(req, res) {
+  const { client, id, action } = req.query;
+
+  if (req.method === 'GET') {
+    if (!client) return res.status(400).json({ error: 'client required' });
+    const r = await fetch(
+      `${SB_URL}/rest/v1/client_notifications?client_id=eq.${client}&order=created_at.desc&limit=50&select=*`,
+      { headers: HEADERS }
+    );
+    const rows = await r.json();
+    return res.status(200).json({ notifications: Array.isArray(rows) ? rows : [] });
+  }
+
+  if (req.method === 'POST') {
+    const body = req.body || {};
+    if (!body.client_id) return res.status(400).json({ error: 'client_id required' });
+    const r = await fetch(`${SB_URL}/rest/v1/client_notifications`, {
+      method: 'POST',
+      headers: { ...HEADERS, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id: body.client_id,
+        type: body.type || 'info',
+        title: body.title || '',
+        body: body.body || body.message || '',
+        action_url: body.action_url || null,
+        read: false
+      })
+    });
+    return res.status(r.ok ? 201 : 500).json({ ok: r.ok });
+  }
+
+  if (req.method === 'PATCH') {
+    if (action === 'mark_all_read' && client) {
+      await fetch(
+        `${SB_URL}/rest/v1/client_notifications?client_id=eq.${client}&read=eq.false`,
+        { method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ read: true }) }
+      );
+      return res.status(200).json({ ok: true });
+    }
+    if (id) {
+      await fetch(
+        `${SB_URL}/rest/v1/client_notifications?id=eq.${id}`,
+        { method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ read: true }) }
+      );
+      return res.status(200).json({ ok: true });
+    }
+    return res.status(400).json({ error: 'id or action=mark_all_read required' });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Route notifications requests (forwarded via vercel.json rewrite)
+  if (req.query._type === 'notifications') {
+    return handleNotifications(req, res);
+  }
+
+  // ── Actions handler ────────────────────────────────────────
   if (req.method === 'GET') {
     const client = req.query.client;
     if (!client) return res.status(400).json({ error: 'client required' });
@@ -33,7 +95,6 @@ module.exports = async function handler(req, res) {
     const decidedAt = new Date().toISOString();
     const decision = body.decision || 'approved';
 
-    // 1. Insert to action_history
     const insertRes = await fetch(`${SB_URL}/rest/v1/action_history`, {
       method: 'POST',
       headers: { ...HEADERS, Prefer: 'return=representation' },
@@ -50,12 +111,10 @@ module.exports = async function handler(req, res) {
     const inserted = await insertRes.json();
     const actionId = Array.isArray(inserted) ? inserted[0]?.id : null;
 
-    // Only attempt webhook + execution for approved actions
     if (decision !== 'approved') {
       return res.status(200).json({ ok: true, executed: false });
     }
 
-    // 2. Look up action_webhooks for this client + page action_type
     const actionType = PAGE_ACTION_TYPE[body.page] || 'trigger_automation';
     let webhookUrl = null;
     try {
@@ -71,7 +130,6 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, executed: false });
     }
 
-    // 3. Fire webhook to Make
     let webhookFired = false;
     try {
       await fetch(webhookUrl, {
@@ -89,19 +147,14 @@ module.exports = async function handler(req, res) {
       webhookFired = true;
     } catch(e) {}
 
-    // 4. Update action_history with outcome (fire-and-forget)
     if (actionId) {
       fetch(`${SB_URL}/rest/v1/action_history?id=eq.${actionId}`, {
         method: 'PATCH',
         headers: { ...HEADERS, Prefer: 'return=minimal' },
-        body: JSON.stringify({
-          outcome: 'Execution triggered via Make',
-          outcome_note: 'Webhook fired to Make scenario'
-        })
+        body: JSON.stringify({ outcome: 'Execution triggered via Make', outcome_note: 'Webhook fired to Make scenario' })
       }).catch(() => {});
     }
 
-    // 5. Write to live_events (fire-and-forget)
     fetch(`${SB_URL}/rest/v1/live_events`, {
       method: 'POST',
       headers: { ...HEADERS, Prefer: 'return=minimal' },

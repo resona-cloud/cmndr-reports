@@ -9,12 +9,14 @@
     "api/goal.js": { "maxDuration": 10 },
     "api/health.js": { "maxDuration": 30 },
     "api/onboard.js": { "maxDuration": 30 },
-    "api/notifications.js": { "maxDuration": 10 },
     "api/ask.js": { "maxDuration": 30 },
-    "api/actions.js": { "maxDuration": 10 },
-    "api/pipeline.js": { "maxDuration": 30 }
+    "api/actions.js": { "maxDuration": 15 },
+    "api/pipeline.js": { "maxDuration": 30 },
+    "api/connections.js": { "maxDuration": 60 }
   },
   "rewrites": [
+    { "source": "/api/notifications", "destination": "/api/actions?_type=notifications" },
+    { "source": "/api/notifications/:path*", "destination": "/api/actions?_type=notifications" },
     { "source": "/workbench", "destination": "/workbench.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/operations", "destination": "/app.html" },
@@ -22,6 +24,7 @@
     { "source": "/finance", "destination": "/app.html" },
     { "source": "/optimization", "destination": "/app.html" },
     { "source": "/hub", "destination": "/hub.html" },
+    { "source": "/connections", "destination": "/connections.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/", "destination": "/index.html" }
   ]
