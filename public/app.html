@@ -305,9 +305,16 @@
     .strategy-panel { transition: width .2s; overflow-x: hidden; }
     .strategy-panel.advisor-collapsed { width: 48px; padding: 16px 8px; }
     .strategy-panel.advisor-collapsed #sp-content { display: none; }
-    .advisor-toggle-btn { display: flex; align-items: center; justify-content: flex-end; background: none; border: none; cursor: pointer; color: var(--text3); width: 100%; margin-bottom: 12px; padding: 0; transition: color .12s; }
-    .advisor-toggle-btn:hover { color: var(--text); }
-    .strategy-panel.advisor-collapsed .advisor-toggle-btn { justify-content: center; margin-bottom: 0; }
+    .advisor-toggle-btn {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); border: 0.5px solid var(--border);
+      border-radius: 50%; cursor: pointer; color: var(--text3);
+      width: 26px; height: 26px; padding: 0; transition: color .12s;
+      position: absolute; left: -13px; top: 24px; z-index: 20;
+      flex-shrink: 0;
+    }
+    .advisor-toggle-btn:hover { color: var(--text); background: var(--bg2); }
+    .strategy-panel { position: fixed; top: 0; right: 0; }
     .main.advisor-collapsed { margin-right: 48px; }
 
     /* ── Alert modal ── */
@@ -770,9 +777,6 @@
 </div>
 
 <div class="strategy-panel" id="strategy-panel">
-  <button class="advisor-toggle-btn" id="advisor-toggle-btn" onclick="toggleAdvisorPanel()" aria-label="Toggle strategy panel">
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
   <div id="sp-content">
     <div class="sp-lbl">Your progress</div>
     <div class="sp-loading">
@@ -781,6 +785,9 @@
       <div class="skel" style="width:40%;margin-top:4px;"></div>
     </div>
   </div>
+  <button class="advisor-toggle-btn" id="advisor-toggle-btn" onclick="toggleAdvisorPanel()" aria-label="Toggle strategy panel">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1954,7 +1961,11 @@ function toggleAdvisorPanel() {
   const btn = document.getElementById('advisor-toggle-btn');
   const collapsed = panel.classList.toggle('advisor-collapsed');
   if (main) main.classList.toggle('advisor-collapsed', collapsed);
-  if (btn) btn.querySelector('svg path')?.setAttribute('d', collapsed ? 'M5 2l5 4.5L5 11' : 'M8 2l-5 4.5L8 11');
+  if (btn) {
+    btn.querySelector('svg path')?.setAttribute('d',
+      collapsed ? 'M5 2l5 4.5L5 11' : 'M8 2l-5 4.5L8 11'
+    );
+  }
   localStorage.setItem('cmndr_advisor_collapsed', collapsed ? '1' : '');
 }
 
