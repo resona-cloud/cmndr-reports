@@ -68,8 +68,6 @@
     /* ── Pages ── */
     .page { display: none; }
     .page.active { display: block; }
-    #page-overview { height: 100vh; overflow: hidden; }
-    #overview-frame { width: 100%; height: 100%; border: none; display: block; }
 
     .page-inner { padding: 28px 32px 60px; max-width: 880px; }
     .page-head { margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -265,7 +263,7 @@
       .sidebar.open { transform: translateX(0); }
       .main { margin-left: 0 !important; margin-right: 0 !important; padding: 16px; }
       .right-panel { display: none !important; }
-      .strategy-panel { display: none !important; }
+      .right-sidebar { display: none !important; }
       .strategy-sheet-btn { display: block; }
       .strategy-sheet { display: block; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -301,21 +299,49 @@
     .main { transition: margin-left .2s, margin-right .15s; }
     .main.nav-collapsed { margin-left: 56px; }
 
-    /* ── Advisor panel collapse ── */
-    .strategy-panel { transition: width .2s; overflow-x: hidden; }
-    .strategy-panel.advisor-collapsed { width: 48px; padding: 16px 8px; }
-    .strategy-panel.advisor-collapsed #sp-content { display: none; }
-    .advisor-toggle-btn {
-      display: flex; align-items: center; justify-content: center;
-      background: var(--bg); border: 0.5px solid var(--border);
-      border-radius: 50%; cursor: pointer; color: var(--text3);
-      width: 26px; height: 26px; padding: 0; transition: color .12s;
-      position: absolute; left: -13px; top: 24px; z-index: 20;
+    /* ── Right sidebar ── */
+    .right-sidebar {
+      width: 280px; position: fixed; top: 0; right: 0;
+      height: 100vh; background: var(--bg); border-left: 0.5px solid var(--border);
+      display: flex; flex-direction: column; z-index: 10;
+      transition: width .2s; overflow-x: hidden; overflow-y: auto;
+    }
+    .right-sidebar.hidden-panel { display: none; }
+    .right-sidebar.collapsed { width: 48px; padding: 0; }
+    .right-sidebar.collapsed .rs-content { display: none; }
+    .rs-collapse-btn {
+      display: flex; align-items: center; justify-content: flex-start;
+      cursor: pointer; padding: 20px 16px 0; color: var(--text3);
+      background: none; border: none; width: 100%; transition: color .12s;
       flex-shrink: 0;
     }
-    .advisor-toggle-btn:hover { color: var(--text); background: var(--bg2); }
-    .strategy-panel { position: fixed; top: 0; right: 0; }
-    .main.advisor-collapsed { margin-right: 48px; }
+    .rs-collapse-btn:hover { color: var(--text); }
+    .right-sidebar.collapsed .rs-collapse-btn { justify-content: center; padding: 20px 0 0; }
+    .main.rs-collapsed { margin-right: 48px; }
+    .main { transition: margin-left .2s, margin-right .2s; }
+
+    /* Right sidebar accordion sections */
+    .rs-content { display: flex; flex-direction: column; flex: 1; overflow-y: auto; padding: 12px 0 40px; }
+    .rs-section { border-bottom: 0.5px solid var(--border); }
+    .rs-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; cursor: pointer; user-select: none;
+      transition: background .1s;
+    }
+    .rs-section-header:hover { background: var(--bg2); }
+    .rs-section-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+    .rs-section-icon { color: var(--text3); transition: transform .2s; flex-shrink: 0; }
+    .rs-section-header.open .rs-section-icon { transform: rotate(180deg); }
+    .rs-section-body { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+    .rs-section-body.open { max-height: 1000px; }
+    .rs-section-body-inner { padding: 12px 16px 14px; }
+
+    /* Overview specific: msg panel now in right sidebar */
+    .rs-msg-thread { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    .rs-compose textarea { width: 100%; resize: none; font-size: 12px; padding: 7px 9px; border: 0.5px solid var(--border2); border-radius: var(--radius-md); background: var(--bg2); color: var(--text); outline: none; font-family: inherit; line-height: 1.4; }
+    .rs-compose textarea:focus { border-color: var(--info); }
+    .rs-compose button { width: 100%; margin-top: 5px; padding: 6px; border-radius: var(--radius-md); border: none; background: var(--info); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .rs-compose button:hover { opacity: .85; }
 
     /* ── Alert modal ── */
     .alert-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; display: flex; align-items: center; justify-content: center; }
@@ -368,10 +394,9 @@
     .celeb-close { font-size: 18px; cursor: pointer; opacity: .8; padding: 4px; flex-shrink: 0; }
     .celeb-close:hover { opacity: 1; }
 
-    /* ── Overview layout with messages panel ── */
-    #page-overview { display: flex; height: 100vh; overflow: hidden; }
-    #overview-frame { flex: 1; border: none; min-width: 0; }
-    .msg-panel { width: 280px; flex-shrink: 0; background: var(--bg); border-left: 0.5px solid var(--border); display: flex; flex-direction: column; }
+    /* ── Overview layout ── */
+    #page-overview { height: 100vh; overflow: hidden; }
+    #overview-frame { width: 100%; height: 100%; border: none; display: block; }
     .msg-panel-head { padding: 14px 14px 10px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
     .msg-panel-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
     .goal-banner { font-size: 12px; padding: 7px 9px; background: rgba(55,138,221,0.07); border: 0.5px solid rgba(55,138,221,0.2); border-radius: var(--radius-md); color: var(--text); line-height: 1.4; }
@@ -597,62 +622,12 @@
   </div>
 </div>
 
-<!-- Notification bell (shown for client users) -->
-<div class="notif-bell-wrap" id="notif-bell-wrap" style="display:none">
-  <button class="notif-bell-btn" onclick="toggleNotifDD()" aria-label="Notifications">
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a4.5 4.5 0 00-4.5 4.5v2.25L1.5 10h12l-1.5-1.75V6a4.5 4.5 0 00-4.5-4.5zM6 11.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <div class="notif-badge" id="notif-badge" style="display:none">0</div>
-  </button>
-  <div class="notif-dd" id="notif-dd">
-    <div class="notif-dd-head">
-      <span class="notif-dd-title">Notifications</span>
-      <span class="notif-dd-mark" onclick="markAllNotifRead()">Mark all read</span>
-    </div>
-    <div id="notif-dd-list"><div class="notif-dd-empty">No notifications</div></div>
-  </div>
-</div>
 
 <div class="main">
 
-  <!-- Overview: iframe + messages panel -->
+  <!-- Overview: iframe only (panels in right sidebar) -->
   <div class="page active" id="page-overview">
     <iframe id="overview-frame" title="Overview"></iframe>
-    <div class="msg-panel" id="msg-panel">
-      <div class="msg-panel-head">
-        <div class="goal-section-header" onclick="toggleGoalSection()">
-          <div class="msg-panel-lbl">Client goal</div>
-          <button class="goal-section-icon" id="goal-section-icon" aria-label="Toggle goal section">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.2"/><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1.2"/><line x1="6.5" y1="1" x2="6.5" y2="0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
-        <div class="goal-section-body" id="goal-section-body">
-          <div class="goal-banner" id="goal-banner">
-            <div class="goal-banner-lbl">
-              <span>Goal</span>
-              <button class="goal-edit-btn" id="goal-edit-btn" style="display:none" onclick="toggleGoalEdit()">Edit</button>
-            </div>
-            <div id="goal-text" style="color:var(--text3)">Loading…</div>
-            <div class="goal-edit-form" id="goal-edit-form">
-              <textarea class="goal-edit-input" id="goal-input" rows="2" placeholder="State the client's primary goal…"></textarea>
-              <button class="goal-save-btn" onclick="saveGoal()">Save goal</button>
-            </div>
-          </div>
-          <div class="health-badge" id="health-badge" style="display:none">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 7l1 3.5L6 8.5 3 10.5l1-3.5L1 4.5h3.5L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
-            <span class="health-score" id="health-score">—</span>
-            <span class="health-label" id="health-label">Health score</span>
-          </div>
-        </div>
-        <div class="msg-panel-lbl" style="margin-top:10px">Messages</div>
-      </div>
-      <div class="msg-thread" id="msg-thread">
-        <div class="msg-empty">No messages yet</div>
-      </div>
-      <div class="msg-compose">
-        <textarea class="msg-input" id="msg-input" rows="2" placeholder="Send a message to your advisor…"></textarea>
-        <button class="msg-send-btn" id="msg-send-btn" onclick="sendMessage()">Send</button>
-      </div>
-    </div>
   </div>
 
   <!-- Operations -->
@@ -776,19 +751,6 @@
   <div class="celeb-close" onclick="document.getElementById('celebration').classList.remove('visible')">×</div>
 </div>
 
-<div class="strategy-panel" id="strategy-panel">
-  <div id="sp-content">
-    <div class="sp-lbl">Your progress</div>
-    <div class="sp-loading">
-      <div class="skel" style="width:60%"></div>
-      <div class="skel" style="width:80%;height:18px;margin-top:4px;"></div>
-      <div class="skel" style="width:40%;margin-top:4px;"></div>
-    </div>
-  </div>
-  <button class="advisor-toggle-btn" id="advisor-toggle-btn" onclick="toggleAdvisorPanel()" aria-label="Toggle strategy panel">
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2l-5 4.5L8 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -805,6 +767,106 @@
       <li>Your advisor monitors your progress and adjusts your strategy in real time</li>
     </ul>
     <button class="welcome-cta" onclick="window.location.href='/connections'">Connect my data</button>
+  </div>
+</div>
+
+<div class="right-sidebar hidden-panel" id="right-sidebar">
+  <button class="rs-collapse-btn" id="rs-collapse-btn" onclick="toggleRightSidebar()" aria-label="Toggle right panel">
+    <svg id="rs-collapse-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M5 2l5 4.5L5 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <div class="rs-content" id="rs-content">
+
+    <!-- Section: Your Progress (sub-pages only) -->
+    <div class="rs-section" id="rs-progress-section">
+      <div class="rs-section-header" id="rs-progress-header" onclick="toggleRsSection('progress')">
+        <span class="rs-section-lbl">Your Progress</span>
+        <svg class="rs-section-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="rs-section-body" id="rs-progress-body">
+        <div class="rs-section-body-inner" id="sp-content">
+          <div class="sp-loading">
+            <div class="skel" style="width:55%"></div>
+            <div class="skel" style="width:80%;height:18px;margin-top:6px;"></div>
+            <div class="skel" style="width:40%;margin-top:4px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Client Goal (overview only) -->
+    <div class="rs-section" id="rs-goal-section">
+      <div class="rs-section-header" id="rs-goal-header" onclick="toggleRsSection('goal')">
+        <span class="rs-section-lbl">Client Goal</span>
+        <svg class="rs-section-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="rs-section-body" id="rs-goal-body">
+        <div class="rs-section-body-inner">
+          <div class="goal-banner" id="goal-banner">
+            <div class="goal-banner-lbl">
+              <span>Goal</span>
+              <button class="goal-edit-btn" id="goal-edit-btn" style="display:none" onclick="toggleGoalEdit()">Edit</button>
+            </div>
+            <div id="goal-text" style="color:var(--text3)">Loading…</div>
+            <div class="goal-edit-form" id="goal-edit-form">
+              <textarea class="goal-edit-input" id="goal-input" rows="2" placeholder="State the client's primary goal…"></textarea>
+              <button class="goal-save-btn" onclick="saveGoal()">Save goal</button>
+            </div>
+          </div>
+          <div class="health-badge" id="health-badge" style="display:none;margin-top:8px;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 7l1 3.5L6 8.5 3 10.5l1-3.5L1 4.5h3.5L6 1z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+            <span class="health-score" id="health-score">—</span>
+            <span class="health-label" id="health-label">Health score</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Messages -->
+    <div class="rs-section" id="rs-messages-section">
+      <div class="rs-section-header" id="rs-messages-header" onclick="toggleRsSection('messages')">
+        <span class="rs-section-lbl">Messages</span>
+        <svg class="rs-section-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="rs-section-body" id="rs-messages-body">
+        <div class="rs-section-body-inner">
+          <div class="rs-msg-thread" id="msg-thread">
+            <div class="msg-empty">No messages yet</div>
+          </div>
+          <div class="rs-compose">
+            <textarea id="msg-input" rows="2" placeholder="Send a message to your advisor…"></textarea>
+            <button id="msg-send-btn" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Notifications -->
+    <div class="rs-section" id="rs-notif-section" style="display:none">
+      <div class="rs-section-header" id="rs-notif-header" onclick="toggleRsSection('notif')">
+        <span class="rs-section-lbl">Notifications</span>
+        <svg class="rs-section-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="rs-section-body" id="rs-notif-body">
+        <div class="rs-section-body-inner">
+          <div id="rs-notif-list"><div class="msg-empty">No notifications</div></div>
+          <div style="margin-top:8px;text-align:right;">
+            <span style="font-size:11px;color:var(--info);cursor:pointer;" onclick="markAllNotifRead()">Mark all read</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -860,22 +922,39 @@ function nav(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
   document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
-  const panel = document.getElementById('strategy-panel');
+  const rs = document.getElementById('right-sidebar');
   const main = document.querySelector('.main');
+
   if (page === 'overview') {
-    panel.classList.remove('visible');
-    main.classList.add('no-panel');
+    rs.classList.remove('hidden-panel');
+    main.classList.remove('no-panel');
+    // Show goal + messages, hide progress
+    document.getElementById('rs-progress-section').style.display = 'none';
+    document.getElementById('rs-goal-section').style.display = '';
+    document.getElementById('rs-messages-section').style.display = '';
+    // Open goal and messages by default on overview
+    openRsSection('goal');
+    openRsSection('messages');
     updateOverviewFrame();
     loadOverviewPanel();
   } else if (page === 'history') {
-    panel.classList.remove('visible');
+    rs.classList.add('hidden-panel');
     main.classList.add('no-panel');
     loadPage('history');
   } else {
-    panel.classList.add('visible');
+    rs.classList.remove('hidden-panel');
     main.classList.remove('no-panel');
+    // Show progress, hide goal + messages on sub pages
+    document.getElementById('rs-progress-section').style.display = '';
+    document.getElementById('rs-goal-section').style.display = 'none';
+    document.getElementById('rs-messages-section').style.display = 'none';
+    openRsSection('progress');
     showPanelSkeleton();
     loadPage(page);
+  }
+  // Apply right sidebar margin
+  if (!rs.classList.contains('hidden-panel') && !rs.classList.contains('collapsed')) {
+    main.style.marginRight = '280px';
   }
 }
 
@@ -1364,33 +1443,13 @@ function renderOptimization(d) {
 
 // ── Strategy Panel ───────────────────────────────────────────
 function showPanelSkeleton() {
-  const _progCollapsed = localStorage.getItem('cmndr_progress_collapsed') === '1';
   const skeletonHtml = `
-    <div class="sp-section-header" onclick="toggleProgressSection()">
-      <div class="sp-lbl">Your progress</div>
-      <button class="sp-section-icon" id="sp-progress-icon" aria-label="Toggle progress section" style="${_progCollapsed ? 'transform:rotate(180deg)' : ''}">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="5" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor"/></svg>
-      </button>
-    </div>
-    <div class="sp-section-body${_progCollapsed ? ' collapsed' : ''}" id="sp-progress-body">
     <div class="sp-loading">
       <div class="skel" style="width:55%"></div>
       <div class="skel" style="width:75%;height:18px;margin-top:6px;"></div>
       <div class="skel" style="width:35%;margin-top:6px;"></div>
       <div class="skel" style="width:100%;height:5px;margin-top:10px;border-radius:4px;"></div>
       <div class="skel" style="width:45%"></div>
-    </div>
-    </div>
-    <div class="sp-sep"></div>
-    <div class="sp-lbl">This week's focus</div>
-    <div class="sp-loading">
-      <div class="skel"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:70%"></div>
-    </div>
-    <div class="sp-sep"></div>
-    <div class="sp-lbl">Strategy notes</div>
-    <div class="sp-loading">
-      <div class="skel"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:80%"></div>
-      <div class="skel" style="margin-top:8px;"></div><div class="skel" style="width:75%"></div>
     </div>`;
   const spContent = document.getElementById('sp-content');
   if (spContent) spContent.innerHTML = skeletonHtml;
@@ -1404,7 +1463,6 @@ function formatNotes(text) {
 }
 
 function renderStrategyPanel(data) {
-  const panel = document.getElementById('strategy-panel');
   const course = data.course;
 
   let progressHtml = '';
@@ -1446,17 +1504,8 @@ function renderStrategyPanel(data) {
   }
 
   const spContent = document.getElementById('sp-content');
-  const _progCollapsed2 = localStorage.getItem('cmndr_progress_collapsed') === '1';
   const spHtml = `
-    <div class="sp-section-header" onclick="toggleProgressSection()">
-      <div class="sp-lbl">Your progress</div>
-      <button class="sp-section-icon" id="sp-progress-icon" aria-label="Toggle progress section" style="${_progCollapsed2 ? 'transform:rotate(180deg)' : ''}">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="7" width="2" height="4" rx="0.5" fill="currentColor"/><rect x="5" y="4" width="2" height="7" rx="0.5" fill="currentColor"/><rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor"/></svg>
-      </button>
-    </div>
-    <div class="sp-section-body${_progCollapsed2 ? ' collapsed' : ''}" id="sp-progress-body">
     ${progressHtml}
-    </div>
     <div class="sp-sep"></div>
     <div class="sp-lbl">This week's focus</div>
     <div class="sp-focus">${data.focus || 'No guidance available.'}</div>
@@ -1465,34 +1514,8 @@ function renderStrategyPanel(data) {
     <div class="sp-notes">${formatNotes(data.strategyNotes)}</div>
     ${notesHtml}`;
   if (spContent) spContent.innerHTML = spHtml;
-  else panel.innerHTML = spHtml;
 }
 
-// ── Collapse toggles ─────────────────────────────────────────
-function toggleGoalSection() {
-  const body = document.getElementById('goal-section-body');
-  const icon = document.getElementById('goal-section-icon');
-  if (!body) return;
-  const collapsed = body.classList.toggle('collapsed');
-  if (icon) icon.style.transform = collapsed ? 'rotate(90deg)' : '';
-  localStorage.setItem('cmndr_goal_collapsed', collapsed ? '1' : '');
-}
-function initGoalCollapse() {
-  if (localStorage.getItem('cmndr_goal_collapsed') === '1') {
-    const body = document.getElementById('goal-section-body');
-    const icon = document.getElementById('goal-section-icon');
-    if (body) body.classList.add('collapsed');
-    if (icon) icon.style.transform = 'rotate(90deg)';
-  }
-}
-function toggleProgressSection() {
-  const body = document.getElementById('sp-progress-body');
-  const icon = document.getElementById('sp-progress-icon');
-  if (!body) return;
-  const collapsed = body.classList.toggle('collapsed');
-  if (icon) icon.style.transform = collapsed ? 'rotate(180deg)' : '';
-  localStorage.setItem('cmndr_progress_collapsed', collapsed ? '1' : '');
-}
 
 // ── Notes (strategy panel) ────────────────────────────────────
 function toggleNoteForm() {
@@ -1709,19 +1732,10 @@ let notifPollTimer = null;
 let notifData = [];
 
 function toggleNotifDD() {
-  const dd = document.getElementById('notif-dd');
-  if (!dd) return;
-  dd.classList.toggle('open');
-  if (dd.classList.contains('open')) loadNotifications();
+  // Notifications now in right sidebar; open the section on mobile tap
+  openRsSection('notif');
+  loadNotifications();
 }
-
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
-  const wrap = document.getElementById('notif-bell-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('notif-dd')?.classList.remove('open');
-  }
-});
 
 async function loadNotifications() {
   try {
@@ -1742,9 +1756,9 @@ function updateNotifBadge() {
 }
 
 function renderNotifList() {
-  const list = document.getElementById('notif-dd-list');
+  const list = document.getElementById('rs-notif-list');
   if (!list) return;
-  if (!notifData.length) { list.innerHTML = '<div class="notif-dd-empty">No notifications</div>'; return; }
+  if (!notifData.length) { list.innerHTML = '<div class="msg-empty">No notifications</div>'; return; }
   list.innerHTML = notifData.map(n => `
     <div class="notif-nitem type-${n.type || 'info'}${!n.read ? ' unread' : ''}" onclick="markNotifRead('${n.id}')">
       <div style="flex:1;min-width:0;">
@@ -1772,8 +1786,8 @@ async function markAllNotifRead() {
 }
 
 function initNotifications() {
-  const bell = document.getElementById('notif-bell-wrap');
-  if (bell) bell.style.display = 'block';
+  const notifSection = document.getElementById('rs-notif-section');
+  if (notifSection) notifSection.style.display = '';
   loadNotifications();
   notifPollTimer = setInterval(loadNotifications, 60000);
 }
@@ -1932,6 +1946,55 @@ function closeAlertModal() {
   document.getElementById('alert-modal')?.remove();
 }
 
+// ── Right sidebar ─────────────────────────────────────────────
+function toggleRightSidebar() {
+  const rs = document.getElementById('right-sidebar');
+  const main = document.querySelector('.main');
+  const icon = document.getElementById('rs-collapse-icon');
+  const collapsed = rs.classList.toggle('collapsed');
+  if (collapsed) {
+    main.style.marginRight = '48px';
+    if (icon) icon.querySelector('path').setAttribute('d', 'M8 2l-5 4.5L8 11');
+  } else {
+    main.style.marginRight = '280px';
+    if (icon) icon.querySelector('path').setAttribute('d', 'M5 2l5 4.5L5 11');
+  }
+  localStorage.setItem('cmndr_rs_collapsed', collapsed ? '1' : '');
+}
+
+function initRightSidebar() {
+  if (localStorage.getItem('cmndr_rs_collapsed') === '1') {
+    const rs = document.getElementById('right-sidebar');
+    const main = document.querySelector('.main');
+    const icon = document.getElementById('rs-collapse-icon');
+    if (rs) rs.classList.add('collapsed');
+    if (main) main.style.marginRight = '48px';
+    if (icon) icon.querySelector('path').setAttribute('d', 'M8 2l-5 4.5L8 11');
+  }
+  // Restore open sections from localStorage
+  ['progress','goal','messages','notif'].forEach(s => {
+    if (localStorage.getItem('cmndr_rs_open_' + s) === '1') {
+      openRsSection(s);
+    }
+  });
+}
+
+function toggleRsSection(name) {
+  const body = document.getElementById('rs-' + name + '-body');
+  const header = document.getElementById('rs-' + name + '-header');
+  if (!body) return;
+  const isOpen = body.classList.toggle('open');
+  if (header) header.classList.toggle('open', isOpen);
+  localStorage.setItem('cmndr_rs_open_' + name, isOpen ? '1' : '');
+}
+
+function openRsSection(name) {
+  const body = document.getElementById('rs-' + name + '-body');
+  const header = document.getElementById('rs-' + name + '-header');
+  if (body) body.classList.add('open');
+  if (header) header.classList.add('open');
+}
+
 // ── Nav collapse ──────────────────────────────────────────────
 function toggleNavCollapse() {
   const sidebar = document.querySelector('.sidebar');
@@ -1954,31 +2017,6 @@ function initNavCollapse() {
   }
 }
 
-// ── Advisor panel collapse ────────────────────────────────────
-function toggleAdvisorPanel() {
-  const panel = document.getElementById('strategy-panel');
-  const main = document.querySelector('.main');
-  const btn = document.getElementById('advisor-toggle-btn');
-  const collapsed = panel.classList.toggle('advisor-collapsed');
-  if (main) main.classList.toggle('advisor-collapsed', collapsed);
-  if (btn) {
-    btn.querySelector('svg path')?.setAttribute('d',
-      collapsed ? 'M5 2l5 4.5L5 11' : 'M8 2l-5 4.5L8 11'
-    );
-  }
-  localStorage.setItem('cmndr_advisor_collapsed', collapsed ? '1' : '');
-}
-
-function initAdvisorCollapse() {
-  if (localStorage.getItem('cmndr_advisor_collapsed') === '1') {
-    const panel = document.getElementById('strategy-panel');
-    const main = document.querySelector('.main');
-    const btn = document.getElementById('advisor-toggle-btn');
-    if (panel) panel.classList.add('advisor-collapsed');
-    if (main) main.classList.add('advisor-collapsed');
-    if (btn) btn.querySelector('svg path')?.setAttribute('d', 'M5 2l5 4.5L5 11');
-  }
-}
 
 // ── Auth ─────────────────────────────────────────────────────
 let SESSION_TOKEN = null;
@@ -2152,8 +2190,7 @@ initAuth().then(() => {
   }
   initMobile();
   initNavCollapse();
-  initGoalCollapse();
-  initAdvisorCollapse();
+  initRightSidebar();
 });
 </script>
 </body>
