@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMNDR — Business Exposure Audit</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --border: #2a2a3e;
+      --blue: #378ADD;
+      --blue-dim: #2265b8;
+      --text: #ffffff;
+      --muted: #6b7280;
+      --success: #1D9E75;
+      --warning: #EF9F27;
+      --danger: #E24B4A;
+      --orange: #F97316;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ── States ──────────────────────────────────────────────────────── */
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* ── Page Header ─────────────────────────────────────────────────── */
+    .page-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-mark {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--blue);
+      text-transform: uppercase;
+      border: 1.5px solid var(--blue);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── Container ───────────────────────────────────────────────────── */
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .container-wide {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── Hero / Intro ────────────────────────────────────────────────── */
+    .page-hero {
+      text-align: center;
+      padding: 48px 20px 32px;
+    }
+    .page-hero h1 {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .page-hero p {
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── Card ────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* ── Form ────────────────────────────────────────────────────────── */
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+    }
+    .form-group input::placeholder { color: #4b5563; }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--blue); }
+    .form-group select option { background: #1a1a2e; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+    /* ── Rating Scale ────────────────────────────────────────────────── */
+    .q-section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .q-scale-legend {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .q-scale-legend span { margin-right: 14px; }
+    .question-row {
+      margin-bottom: 18px;
+    }
+    .question-row label {
+      display: block;
+      font-size: 13px;
+      color: #d1d5db;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .rating-group {
+      display: flex;
+      gap: 8px;
+    }
+    .rating-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .rating-btn:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .rating-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.1s;
+      text-align: center;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      width: 100%;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--blue);
+      color: var(--blue);
+      width: 100%;
+    }
+    .btn-outline:hover { background: rgba(55,138,221,0.1); }
+    .fine-print {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Scanning State ──────────────────────────────────────────────── */
+    #state-scanning {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    #state-scanning.active { display: flex; }
+    .scan-logo { font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: var(--blue); text-transform: uppercase; border: 1.5px solid var(--blue); padding: 4px 10px; border-radius: 4px; margin-bottom: 32px; }
+    .scan-heading { font-size: 22px; font-weight: 600; margin-bottom: 40px; }
+    .scan-steps { display: flex; flex-direction: column; gap: 16px; min-width: 280px; }
+    .scan-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: #374151;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease, color 0.3s;
+    }
+    .scan-step.visible { opacity: 1; transform: translateY(0); color: var(--text); }
+    .scan-step .check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      transition: all 0.3s;
+    }
+    .scan-step.visible .check { border-color: var(--success); background: var(--success); color: #fff; }
+
+    /* ── Gate State ──────────────────────────────────────────────────── */
+    #state-gate { padding: 60px 20px; }
+    .gate-wrap { max-width: 480px; margin: 0 auto; }
+    .gate-heading { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 10px; }
+    .gate-sub { color: var(--muted); text-align: center; margin-bottom: 28px; font-size: 15px; }
+    .score-blur-wrap {
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      position: relative;
+    }
+    .score-blur-num {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      filter: blur(10px);
+      color: var(--blue);
+      user-select: none;
+      margin-bottom: 4px;
+    }
+    .score-blur-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .lock-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      filter: none;
+    }
+
+    /* ── Report State ────────────────────────────────────────────────── */
+    #state-report { padding: 40px 0 60px; }
+
+    /* Hero Score */
+    .score-hero {
+      text-align: center;
+      padding: 48px 20px 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    .score-number {
+      font-size: clamp(72px, 15vw, 100px);
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 8px;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.3s;
+    }
+    .score-band {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .score-biz-name {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .exec-summary {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 15px;
+      color: #d1d5db;
+      line-height: 1.7;
+    }
+
+    /* Pillar Grid */
+    .section-heading {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .pillar-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .pillar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .pillar-name {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .severity-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+    .severity-low { background: rgba(29,158,117,0.15); color: var(--success); }
+    .severity-moderate { background: rgba(239,159,39,0.15); color: var(--warning); }
+    .severity-high { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .severity-critical { background: rgba(226,75,74,0.15); color: var(--danger); }
+
+    .pillar-score {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+    .pillar-score-suffix { font-size: 14px; color: var(--muted); font-weight: 400; }
+    .pillar-drag {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+      line-height: 1.5;
+      padding-left: 10px;
+      border-left: 2px solid #374151;
+    }
+    .pillar-upside {
+      font-size: 12px;
+      color: #6ee7b7;
+      line-height: 1.5;
+      padding-left: 10px;
+      border-left: 2px solid var(--success);
+    }
+
+    /* Findings */
+    .findings-list { display: flex; flex-direction: column; gap: 14px; }
+    .finding-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid var(--border);
+    }
+    .finding-item.sev-low { border-left-color: var(--success); }
+    .finding-item.sev-moderate { border-left-color: var(--warning); }
+    .finding-item.sev-high { border-left-color: var(--orange); }
+    .finding-item.sev-critical { border-left-color: var(--danger); }
+    .finding-num {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--border);
+      min-width: 28px;
+      line-height: 1.3;
+    }
+    .finding-text { font-size: 14px; color: #d1d5db; line-height: 1.6; }
+
+    /* Opportunity */
+    .opportunity-card {
+      background: linear-gradient(135deg, rgba(55,138,221,0.08), rgba(55,138,221,0.02));
+      border: 1px solid rgba(55,138,221,0.35);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 24px rgba(55,138,221,0.07);
+    }
+    .opportunity-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 12px;
+    }
+    .opportunity-text {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Power Analysis */
+    .power-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .power-word {
+      color: var(--blue);
+      text-shadow: 0 0 16px rgba(55,138,221,0.5);
+      font-weight: 700;
+    }
+    .ai-summary-text {
+      font-size: 15px;
+      color: #d1d5db;
+      line-height: 1.8;
+    }
+
+    /* Dual CTA */
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) { .cta-grid { grid-template-columns: 1fr; } }
+    .cta-primary.card {
+      background: linear-gradient(135deg, rgba(55,138,221,0.2), rgba(55,138,221,0.08));
+      border-color: rgba(55,138,221,0.4);
+    }
+    .cta-secondary.card { background: var(--card); }
+    .cta-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .cta-desc { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+    .deeper-note {
+      text-align: center;
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 8px;
+    }
+
+    /* ── Utility ─────────────────────────────────────────────────────── */
+    .mt-8 { margin-top: 8px; }
+    .mb-32 { margin-bottom: 32px; }
+    .text-muted { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ STATE 1: INTAKE -->
+<div id="state-intake" class="state active">
+  <div class="page-header">
+    <span class="logo-mark">CMNDR</span>
+  </div>
+
+  <div class="page-hero">
+    <h1>Business Exposure Audit</h1>
+    <p>Find out where your business is visibly losing ground — in under 3 minutes.</p>
+  </div>
+
+  <div class="container" style="padding-bottom: 60px;">
+    <form id="audit-form" novalidate>
+
+      <!-- Section 1: Business Info -->
+      <div class="card">
+        <div class="section-title">Your Business</div>
+
+        <div class="form-group">
+          <label for="f-business-name">Business Name *</label>
+          <input type="text" id="f-business-name" placeholder="Acme Plumbing Co." required />
+        </div>
+
+        <div class="form-group">
+          <label for="f-domain">Website URL *</label>
+          <input type="text" id="f-domain" placeholder="https://yourbusiness.com" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-industry">Industry *</label>
+            <select id="f-industry" required>
+              <option value="">Select industry…</option>
+              <option>Service Business</option>
+              <option>Retail</option>
+              <option>Restaurant</option>
+              <option>Healthcare</option>
+              <option>Professional Services</option>
+              <option>Trades &amp; Contractors</option>
+              <option>E-commerce</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-location">Location</label>
+            <input type="text" id="f-location" placeholder="City, State" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-goal">What's your biggest growth challenge?</label>
+          <select id="f-goal">
+            <option value="">Select a challenge…</option>
+            <option>Getting more leads</option>
+            <option>Converting leads to clients</option>
+            <option>Building trust and credibility</option>
+            <option>Standing out from competitors</option>
+            <option>Scaling operations</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 2: Questionnaire -->
+      <div class="card">
+        <div class="q-section-title">Rate Your Business</div>
+        <div class="q-scale-legend">
+          <span>1 = Poor</span>
+          <span>2 = Weak</span>
+          <span>3 = Average</span>
+          <span>4 = Good</span>
+          <span>5 = Strong</span>
+        </div>
+
+        <div class="question-row" data-q="q1">
+          <label>How clear is your main offer on your homepage?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q2">
+          <label>How strong is your primary call-to-action?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q3">
+          <label>How easy is it for a visitor to contact or book you?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q4">
+          <label>How simple is the path from landing to taking action?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q5">
+          <label>How well does your site work on mobile?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q6">
+          <label>How many reviews do you have publicly visible?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q7">
+          <label>How visible is your social proof (testimonials, logos)?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q8">
+          <label>How consistent is your brand across channels?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q9">
+          <label>How well does your business show up in local search?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q10">
+          <label>How distinctive is your market positioning?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q11">
+          <label>How clear is the next step for someone visiting your site?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="question-row" data-q="q12">
+          <label>How prepared are you to handle a surge in new leads?</label>
+          <div class="rating-group">
+            <button type="button" class="rating-btn" data-val="1">1</button>
+            <button type="button" class="rating-btn" data-val="2">2</button>
+            <button type="button" class="rating-btn active" data-val="3">3</button>
+            <button type="button" class="rating-btn" data-val="4">4</button>
+            <button type="button" class="rating-btn" data-val="5">5</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="form-error" style="color:var(--danger);font-size:13px;margin-bottom:12px;display:none;"></div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Run My Audit →</button>
+      <p class="fine-print mt-8">No account required. Takes about 2 minutes.</p>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ STATE 2: SCANNING -->
+<div id="state-scanning" class="state">
+  <div class="scan-logo">CMNDR</div>
+  <h2 class="scan-heading">Analyzing your business…</h2>
+  <div class="scan-steps">
+    <div class="scan-step" id="step-1"><span class="check">✓</span>Scanning your website</div>
+    <div class="scan-step" id="step-2"><span class="check">✓</span>Measuring performance signals</div>
+    <div class="scan-step" id="step-3"><span class="check">✓</span>Evaluating market presence</div>
+    <div class="scan-step" id="step-4"><span class="check">✓</span>Generating your report…</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ STATE 3: GATE -->
+<div id="state-gate" class="state">
+  <div class="gate-wrap">
+    <h2 class="gate-heading">Your Audit Is Ready</h2>
+    <p class="gate-sub">Enter your details to unlock your full Business Exposure Report.</p>
+
+    <div class="score-blur-wrap">
+      <div class="score-blur-num" aria-hidden="true">72</div>
+      <div class="lock-icon" aria-hidden="true">🔒</div>
+      <p class="score-blur-label">Your score is ready — unlock to reveal</p>
+    </div>
+
+    <form id="gate-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="g-first">First Name *</label>
+          <input type="text" id="g-first" placeholder="Jane" required />
+        </div>
+        <div class="form-group">
+          <label for="g-last">Last Name *</label>
+          <input type="text" id="g-last" placeholder="Smith" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="g-email">Email *</label>
+        <input type="email" id="g-email" placeholder="jane@yourbusiness.com" required />
+      </div>
+      <div class="form-group">
+        <label for="g-phone">Phone (optional)</label>
+        <input type="tel" id="g-phone" placeholder="(555) 000-0000" />
+      </div>
+      <div id="gate-error" style="color:var(--danger);font-size:13px;margin-bottom:12px;display:none;"></div>
+      <button type="submit" class="btn btn-primary" id="gate-btn">Unlock My Report →</button>
+      <p class="fine-print mt-8">We'll never spam you. Your advisor may reach out with personalized recommendations.</p>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ STATE 4: REPORT -->
+<div id="state-report" class="state">
+  <div class="page-header">
+    <span class="logo-mark">CMNDR</span>
+  </div>
+
+  <!-- Hero Score -->
+  <div class="score-hero">
+    <div id="rpt-score" class="score-number">0</div>
+    <div id="rpt-band" class="score-band"></div>
+    <div id="rpt-biz" class="score-biz-name"></div>
+    <p id="rpt-exec" class="exec-summary"></p>
+  </div>
+
+  <div class="container-wide">
+
+    <!-- Pillars -->
+    <div class="mb-32">
+      <div class="section-heading">Pillar Breakdown</div>
+      <div class="pillar-grid" id="rpt-pillars"></div>
+    </div>
+
+    <!-- Top Findings -->
+    <div class="card mb-32">
+      <div class="card-title">Top Findings</div>
+      <div class="findings-list" id="rpt-findings"></div>
+    </div>
+
+    <!-- Top Opportunity -->
+    <div class="opportunity-card mb-32" id="rpt-opportunity-wrap">
+      <div class="opportunity-label">Your Biggest Opportunity</div>
+      <div class="opportunity-text" id="rpt-opportunity"></div>
+    </div>
+
+    <!-- AI Summary -->
+    <div class="card mb-32">
+      <div class="power-label"><span class="power-word">Power</span> Analysis</div>
+      <p class="ai-summary-text" id="rpt-ai-summary"></p>
+    </div>
+
+    <!-- Dual CTA -->
+    <div class="cta-grid">
+      <div class="card cta-primary">
+        <div class="cta-title">Ready to fix this?</div>
+        <p class="cta-desc">Start your CMNDR trial and turn these insights into action.</p>
+        <a href="/app" class="btn btn-primary">Start with CMNDR Trial →</a>
+      </div>
+      <div class="card cta-secondary">
+        <div class="cta-title">Want expert guidance?</div>
+        <p class="cta-desc">Speak with a Resona advisor about your results.</p>
+        <a href="https://calendly.com/operations-resona/30min" class="btn btn-outline" target="_blank" rel="noopener">Book a Free Call →</a>
+      </div>
+    </div>
+
+    <p class="deeper-note">Want a deeper audit? Full subfactor breakdown available with your CMNDR account.</p>
+
+  </div>
+</div>
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  let auditId = null;
+  let pollInterval = null;
+
+  function showState(name) {
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+    document.getElementById('state-' + name).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── Rating Buttons ────────────────────────────────────────────────────────
+  document.querySelectorAll('.question-row').forEach(row => {
+    row.querySelectorAll('.rating-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        row.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  // ── Form Submit ───────────────────────────────────────────────────────────
+  document.getElementById('audit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('form-error');
+    errEl.style.display = 'none';
+
+    const businessName = document.getElementById('f-business-name').value.trim();
+    const domain = document.getElementById('f-domain').value.trim();
+    const industry = document.getElementById('f-industry').value;
+
+    if (!businessName || !domain || !industry) {
+      errEl.textContent = 'Please fill in Business Name, Website URL, and Industry.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    // Collect questionnaire
+    const questionnaire = {};
+    document.querySelectorAll('.question-row').forEach(row => {
+      const q = row.dataset.q;
+      const active = row.querySelector('.rating-btn.active');
+      questionnaire[q] = active ? parseInt(active.dataset.val) : 3;
+    });
+
+    const payload = {
+      business_name: businessName,
+      domain,
+      industry,
+      location: document.getElementById('f-location').value.trim() || null,
+      goal_focus: document.getElementById('f-goal').value || null,
+      questionnaire,
+    };
+
+    document.getElementById('submit-btn').disabled = true;
+    showState('scanning');
+    animateScanSteps();
+
+    try {
+      const res = await fetch('/api/audit/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data.audit_id) {
+        throw new Error(data.error || 'Failed to start audit');
+      }
+
+      auditId = data.audit_id;
+      pollInterval = setInterval(pollStatus, 3000);
+
+    } catch (err) {
+      console.error(err);
+      showState('intake');
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('form-error').textContent = 'Error: ' + err.message;
+      document.getElementById('form-error').style.display = 'block';
+    }
+  });
+
+  function animateScanSteps() {
+    const steps = document.querySelectorAll('.scan-step');
+    steps.forEach(s => s.classList.remove('visible'));
+    steps.forEach((step, i) => {
+      setTimeout(() => step.classList.add('visible'), i * 1500);
+    });
+  }
+
+  async function pollStatus() {
+    if (!auditId) return;
+    try {
+      const res = await fetch('/api/audit/status?audit_id=' + auditId);
+      const data = await res.json();
+
+      if (data.status === 'complete') {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        document.querySelectorAll('.scan-step').forEach(s => s.classList.add('visible'));
+        setTimeout(() => showState('gate'), 600);
+
+      } else if (data.status === 'failed') {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        showState('intake');
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('form-error').textContent = 'Audit failed. Please try again.';
+        document.getElementById('form-error').style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Poll error:', err);
+    }
+  }
+
+  // ── Gate Submit ───────────────────────────────────────────────────────────
+  document.getElementById('gate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('gate-error');
+    errEl.style.display = 'none';
+
+    const email = document.getElementById('g-email').value.trim();
+    const first = document.getElementById('g-first').value.trim();
+    const last = document.getElementById('g-last').value.trim();
+    const phone = document.getElementById('g-phone').value.trim();
+
+    if (!email || !first || !last) {
+      errEl.textContent = 'First name, last name, and email are required.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errEl.textContent = 'Please enter a valid email address.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('gate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Unlocking…';
+
+    try {
+      const gateRes = await fetch('/api/audit/gate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audit_id: auditId, email, first_name: first, last_name: last, phone: phone || null }),
+      });
+
+      if (!gateRes.ok) {
+        const d = await gateRes.json();
+        throw new Error(d.error || 'Failed to unlock report');
+      }
+
+      const reportRes = await fetch('/api/audit/report?audit_id=' + auditId);
+      if (!reportRes.ok) {
+        const d = await reportRes.json();
+        throw new Error(d.error || 'Failed to load report');
+      }
+      const report = await reportRes.json();
+
+      renderReport(report);
+      showState('report');
+      setTimeout(() => animateScore(Number(report.overall_score) || 0), 300);
+
+    } catch (err) {
+      console.error(err);
+      errEl.textContent = 'Error: ' + err.message;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Unlock My Report →';
+    }
+  });
+
+  // ── Report Rendering ──────────────────────────────────────────────────────
+  function scoreColor(score) {
+    if (score >= 70) return '#1D9E75';
+    if (score >= 55) return '#EF9F27';
+    return '#E24B4A';
+  }
+
+  function animateScore(target) {
+    const el = document.getElementById('rpt-score');
+    const color = scoreColor(target);
+    el.style.color = color;
+    document.getElementById('rpt-band').style.color = color;
+    let current = 0;
+    const step = target / 60;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = Math.round(current);
+      if (current >= target) clearInterval(timer);
+    }, 25);
+  }
+
+  function renderReport(r) {
+    document.getElementById('rpt-biz').textContent = (r.business_name || '') + ' — Business Exposure Report';
+    document.getElementById('rpt-band').textContent = r.overall_band || '';
+    document.getElementById('rpt-exec').textContent = r.executive_summary || '';
+
+    // Pillars
+    const grid = document.getElementById('rpt-pillars');
+    grid.innerHTML = (r.pillars || []).map(p => `
+      <div class="pillar-card">
+        <div class="pillar-header">
+          <span class="pillar-name">${esc(p.name)}</span>
+          <span class="severity-badge severity-${esc(p.severity)}">${esc(p.severity)}</span>
+        </div>
+        <div class="pillar-score" style="color:${scoreColor(p.score)}">${p.score}<span class="pillar-score-suffix">/100</span></div>
+        ${p.drag ? `<div class="pillar-drag">${esc(p.drag)}</div>` : ''}
+        ${p.upside ? `<div class="pillar-upside mt-8">${esc(p.upside)}</div>` : ''}
+      </div>
+    `).join('');
+
+    // Findings — color by position (first = most severe)
+    const sevClasses = ['sev-critical', 'sev-high', 'sev-moderate'];
+    const findingsEl = document.getElementById('rpt-findings');
+    findingsEl.innerHTML = (r.top_findings || []).map((f, i) => `
+      <div class="finding-item ${sevClasses[i] || ''}">
+        <span class="finding-num">0${i + 1}</span>
+        <span class="finding-text">${esc(f)}</span>
+      </div>
+    `).join('');
+
+    // Opportunity
+    document.getElementById('rpt-opportunity').textContent = r.top_opportunity || '';
+
+    // AI summary
+    document.getElementById('rpt-ai-summary').textContent = r.ai_summary || '';
+  }
+
+  function esc(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>
