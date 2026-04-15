@@ -102,6 +102,54 @@ async function advanceMilestone(course) {
   }
 }
 
+function getMondayOfWeek() {
+  const d = new Date();
+  const day = d.getUTCDay(); // 0=Sun,1=Mon...
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+
+async function getCachedReport(client, page) {
+  const weekStart = getMondayOfWeek();
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/report_snapshots?client_id=eq.${client}&page=eq.${page}&is_current=eq.true&period_from=eq.${weekStart}&order=created_at.desc&limit=1`,
+      { headers: SB_HEADERS }
+    );
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length && rows[0].snapshot_data) {
+      return rows[0].snapshot_data;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function clearOldCacheAndSave(client, page, weekStart, payload, summary) {
+  // Mark previous is_current rows for this client+page as stale
+  fetch(`${SB_URL}/rest/v1/report_snapshots?client_id=eq.${client}&page=eq.${page}&is_current=eq.true`, {
+    method: 'PATCH',
+    headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({ is_current: false })
+  }).catch(() => {});
+
+  // Insert new cache row
+  fetch(`${SB_URL}/rest/v1/report_snapshots`, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      client_id: client,
+      period_label: `${page} · week of ${weekStart}`,
+      period_from: weekStart,
+      period_to: weekStart,
+      page,
+      is_current: true,
+      snapshot_data: payload,
+      ai_summary: summary || ''
+    })
+  }).catch(() => {});
+}
+
 function saveSnapshot(client, from, to, page, kpis, summary) {
   fetch(`${SB_URL}/rest/v1/report_snapshots`, {
     method: 'POST',
@@ -111,6 +159,7 @@ function saveSnapshot(client, from, to, page, kpis, summary) {
       period_label: `${page} · ${from} to ${to}`,
       period_from: from,
       period_to: to,
+      page,
       snapshot_data: { page, kpis },
       ai_summary: summary || ''
     })
@@ -224,6 +273,15 @@ module.exports = async function handler(req, res) {
     let data = {};
     let milestone_just_advanced = false;
 
+    // ── Cache check ───────────────────────────────────────────
+    const weekStart = getMondayOfWeek();
+    if (from === weekStart) {
+      const cached = await getCachedReport(client, page);
+      if (cached) {
+        return res.status(200).json({ ...cached, page, client, from, to, generatedAt: cached.generatedAt || new Date().toISOString(), fromCache: true });
+      }
+    }
+
     // ── Operations ────────────────────────────────────────────
     if (page === 'operations') {
       const [jobs, service_metrics, technicians, alerts] = await Promise.all([
@@ -259,6 +317,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { jobs: jobs.length, completed, rate, weekRev }, summary);
       data = { jobs, service_metrics, technicians, alerts, summary, actions, focus, strategyNotes, course: shapeCourse(course), milestone_just_advanced, goal, notes };
+      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Marketing ─────────────────────────────────────────────
@@ -287,6 +346,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { leads: leads.length, converted, convRate, totalSpend, totalRevenue }, summary);
       data = { leads, campaigns, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes };
+      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Finance ───────────────────────────────────────────────
@@ -313,6 +373,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { paid, outstanding, overdue, collRate }, summary);
       data = { invoices, snapshots, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes, totals: { paid, outstanding, overdue } };
+      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Optimization ──────────────────────────────────────────
@@ -338,6 +399,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { runs: automation_logs.length, successRate, totalTokens, potentialSavings }, summary);
       data = { automation_logs, ai_usage, opportunities, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes, totals: { totalTokens, totalCost, successRate, potentialSavings } };
+      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     res.status(200).json({ ...data, page, client, from, to, generatedAt: new Date().toISOString() });

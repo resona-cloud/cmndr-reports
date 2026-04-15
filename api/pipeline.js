@@ -53,6 +53,48 @@ module.exports = async function handler(req, res) {
 
   const action = req.query.action;
 
+  // ── GET: Weekly report pre-generation (cron) ─────────────────────────
+  if (req.method === 'GET' && action === 'weekly-report') {
+    if (req.headers['x-cron-secret'] !== process.env.CRON_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const d = new Date();
+    const dow = d.getUTCDay();
+    d.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+    const weekStart = d.toISOString().split('T')[0];
+
+    try {
+      const profilesRes = await fetch(
+        `${SB_URL}/rest/v1/user_profiles?role=eq.client_user&select=client_id`,
+        { headers: HEADERS }
+      );
+      const profiles = await profilesRes.json();
+      const clientIds = [...new Set(
+        (Array.isArray(profiles) ? profiles : []).map(p => p.client_id).filter(Boolean)
+      )];
+
+      const BASE = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL}`;
+      const pages = ['operations', 'marketing', 'finance', 'optimization'];
+      const results = [];
+
+      for (const clientId of clientIds) {
+        for (const page of pages) {
+          try {
+            await fetch(`${BASE}/api/pages?page=${page}&client=${clientId}&from=${weekStart}&to=${weekStart}`);
+            results.push({ client: clientId, page, ok: true });
+          } catch (e) {
+            results.push({ client: clientId, page, ok: false, error: e.message });
+          }
+        }
+      }
+
+      return res.status(200).json({ weekStart, clients: clientIds.length, generated: results.length, results });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ── POST: Make webhook sync event (no auth — secured by URL) ─────────
   if (req.method === 'POST' && action === 'sync_event') {
     const { client_id, scenario_id, scenario_name, status, duration_ms, operations_used, triggered_by } = req.body || {};
