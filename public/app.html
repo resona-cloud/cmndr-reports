@@ -20,8 +20,7 @@
         --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
       }
     }
-    html, body { overflow: hidden; height: 100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
 
     /* ── Sidebar ── */
     .sidebar {
@@ -31,7 +30,7 @@
       position: fixed; top: 0; left: 0; overflow-y: auto;
       display: flex; flex-direction: column; z-index: 10;
     }
-    .main { margin-left: 240px; margin-right: 280px; height: 100vh; overflow-y: auto; overflow-x: hidden; transition: margin-right .15s; }
+    .main { margin-left: 240px; margin-right: 280px; min-height: 100vh; transition: margin-right .15s; }
     .main.no-panel { margin-right: 0; }
 
     .logo { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 24px; }
