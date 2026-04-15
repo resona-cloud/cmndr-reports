@@ -70,6 +70,49 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ courses, recommendation });
   }
 
+  // ── GET/PATCH ?action=goal — client goals (merged from /api/goal) ────
+  if (req.query.action === 'goal' || (!req.query.action && (req.method === 'GET' || req.method === 'PATCH') && !req.body?.email)) {
+    if (req.method === 'GET') {
+      const client = req.query.client || 'peak-flow';
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/client_goals?client_id=eq.${client}`, { headers: HEADERS });
+        const rows = await r.json();
+        return res.status(200).json({ goal: Array.isArray(rows) ? rows[0] || null : null });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+    if (req.method === 'PATCH') {
+      const client = req.query.client || (req.body || {}).client || 'peak-flow';
+      const body = req.body || {};
+      if (!body.stated_goal) return res.status(400).json({ error: 'stated_goal is required' });
+      try {
+        await fetch(`${SB_URL}/rest/v1/client_goals`, {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ client_id: client, stated_goal: body.stated_goal, goal_context: body.goal_context || null, set_by: body.set_by || 'resona', updated_at: new Date().toISOString() })
+        });
+        return res.status(200).json({ ok: true });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+  }
+
+  // ── GET/PATCH ?action=onboarding — onboarding state ──────────────
+  if (req.query.action === 'onboarding') {
+    const client = req.query.client || (req.body || {}).client || 'peak-flow';
+    if (req.method === 'GET') {
+      const r = await fetch(`${SB_URL}/rest/v1/client_onboarding_state?client_id=eq.${client}&select=*`, { headers: HEADERS });
+      const rows = await r.json();
+      return res.status(200).json({ state: Array.isArray(rows) ? rows[0] || null : null });
+    }
+    if (req.method === 'PATCH') {
+      const r = await fetch(`${SB_URL}/rest/v1/client_onboarding_state`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ client_id: client, welcome_dismissed: true, updated_at: new Date().toISOString() })
+      });
+      return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    }
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const body = req.body || {};

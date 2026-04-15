@@ -13,12 +13,11 @@
     "api/actions.js": { "maxDuration": 15 },
     "api/pipeline.js": { "maxDuration": 30 },
     "api/connections.js": { "maxDuration": 60 },
-    "api/audit/start.js": { "maxDuration": 60 },
-    "api/audit/status.js": { "maxDuration": 10 },
-    "api/audit/gate.js": { "maxDuration": 10 },
-    "api/audit/report.js": { "maxDuration": 10 }
+    "api/audit.js": { "maxDuration": 60 }
   },
   "rewrites": [
+    { "source": "/api/audit/:action", "destination": "/api/audit?_action=:action" },
+    { "source": "/api/goal", "destination": "/api/onboard?action=goal" },
     { "source": "/api/notifications", "destination": "/api/actions?_type=notifications" },
     { "source": "/api/notifications/:path*", "destination": "/api/actions?_type=notifications" },
     { "source": "/audit", "destination": "/audit.html" },
