@@ -5,9 +5,9 @@
  * Actions: start | status | gate | report
  */
 
-const supabase = require('./audit/_db');
-const { parseFirecrawlSignals, parsePagespeedSignals, scoringEngine } = require('./audit/_scoring');
-const { interpretAudit } = require('./audit/_ai');
+const supabase = require('../lib/audit/_db');
+const { parseFirecrawlSignals, parsePagespeedSignals, scoringEngine } = require('../lib/audit/_scoring');
+const { interpretAudit } = require('../lib/audit/_ai');
 
 let waitUntil;
 try { ({ waitUntil } = require('@vercel/functions')); }
