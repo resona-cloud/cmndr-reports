@@ -20,7 +20,8 @@
         --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
       }
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+    html, body { overflow: hidden; height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); }
 
     /* ── Sidebar ── */
     .sidebar {
@@ -30,7 +31,7 @@
       position: fixed; top: 0; left: 0; overflow-y: auto;
       display: flex; flex-direction: column; z-index: 10;
     }
-    .main { margin-left: 240px; margin-right: 280px; min-height: 100vh; transition: margin-right .15s; }
+    .main { margin-left: 240px; margin-right: 280px; height: 100vh; overflow-y: auto; overflow-x: hidden; transition: margin-right .15s; }
     .main.no-panel { margin-right: 0; }
 
     .logo { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 24px; }
@@ -614,6 +615,26 @@
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
         <span class="nav-label">Overview</span>
       </div>
+      <div class="nav-item" data-page="forecast" onclick="nav('forecast')">
+        <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 10.5l3.5-4 3 2.5 4-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 13.5h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="nav-label">Forecast</span>
+        <span class="coming-soon-badge">Soon</span>
+      </div>
+      <div class="nav-item" data-page="roadmap" onclick="nav('roadmap')">
+        <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4.5h11M2 7.5h8M2 10.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="nav-label">3 Point Road Map</span>
+        <span class="coming-soon-badge">Soon</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUP 2: Report -->
+  <div class="nav-group" id="nav-group-report">
+    <div class="nav-group-header" onclick="toggleNavGroup('report')">
+      <span class="nav-group-lbl">Report</span>
+      <svg class="nav-group-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="nav-group-items" id="nav-group-items-report">
       <div class="nav-item" data-page="operations" onclick="nav('operations')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5L2 4.5v6l5.5 3 5.5-3v-6L7.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M7.5 1.5v13M2 4.5l5.5 3 5.5-3" stroke="currentColor" stroke-width="1.2"/></svg>
         <span class="nav-label">Operations</span>
@@ -630,29 +651,9 @@
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.5v2M7.5 11.5v2M1.5 7.5h2M11.5 7.5h2M3.4 3.4l1.4 1.4M10.2 10.2l1.4 1.4M3.4 11.6l1.4-1.4M10.2 4.8l1.4-1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span class="nav-label">Optimization</span>
       </div>
-    </div>
-  </div>
-
-  <!-- GROUP 2: Report -->
-  <div class="nav-group" id="nav-group-report">
-    <div class="nav-group-header" onclick="toggleNavGroup('report')">
-      <span class="nav-group-lbl">Report</span>
-      <svg class="nav-group-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>
-    <div class="nav-group-items" id="nav-group-items-report">
       <div class="nav-item" data-page="history" onclick="nav('history')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12z" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 4.5v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="nav-label">Archive</span>
-      </div>
-      <div class="nav-item" data-page="forecast" onclick="nav('forecast')">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 10.5l3.5-4 3 2.5 4-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 13.5h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        <span class="nav-label">Forecast</span>
-        <span class="coming-soon-badge">Soon</span>
-      </div>
-      <div class="nav-item" data-page="roadmap" onclick="nav('roadmap')">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4.5h11M2 7.5h8M2 10.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        <span class="nav-label">Roadmap</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
     </div>
   </div>
@@ -664,10 +665,13 @@
       <svg class="nav-group-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
     <div class="nav-group-items" id="nav-group-items-control">
-      <div class="nav-item" data-page="relays" onclick="nav('relays')">
+      <div class="nav-item" onclick="window.location.href='/connections'">
+        <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="4" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="11" cy="4" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="11" cy="11" r="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 7.5h3.5M8 4h-1l-1.5 3.5M8 11h-1L5.5 7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="nav-label">Connections</span>
+      </div>
+      <div class="nav-item" onclick="window.location.href='/connections'">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="4" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="11" cy="4" r="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="11" cy="11" r="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 7.5h2l2-3.5M5.5 7.5h2l2 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span class="nav-label">Relays</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
       <div class="nav-item" data-page="settings" onclick="nav('settings')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.5v1.2M7.5 12.3v1.2M1.5 7.5h1.2M12.3 7.5h1.2M3.3 3.3l.85.85M10.8 10.8l.85.85M3.3 11.7l.85-.85M10.8 4.2l.85-.85" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
