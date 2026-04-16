@@ -337,7 +337,7 @@
   </div>
 
   <!-- CSV / Excel Upload -->
-  <div class="section-lbl">Upload a file</div>
+  <div class="section-lbl">Upload Data</div>
   <div class="upload-card">
     <div class="upload-zone" id="upload-zone"
          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
@@ -371,77 +371,34 @@
     </div>
   </div>
 
-  <!-- Field Management -->
-  <div class="section-lbl" id="sec-field">Field management</div>
-  <div id="field-list"></div>
-
-  <!-- Marketing & CRM -->
-  <div class="section-lbl" id="sec-marketing">Marketing &amp; CRM</div>
-  <div id="marketing-list"></div>
-
-  <!-- Finance -->
-  <div class="section-lbl" id="sec-finance">Finance</div>
-  <div id="finance-list"></div>
-
-  <!-- Coming Soon -->
-  <div class="section-lbl">Coming soon</div>
-  <div id="coming-list">
-    <div class="coming-card">
-      <div class="conn-icon">🔵</div>
-      <div class="conn-info">
-        <div class="conn-name">Salesforce <span class="coming-badge">Soon</span></div>
-        <div class="conn-desc">CRM pipeline, opportunities, and account data</div>
-      </div>
-      <div class="conn-actions">
-        <button class="notify-btn" onclick="notifyMe('Salesforce')">Notify me</button>
+  <!-- Live Connections -->
+  <div class="section-lbl">Live Connections</div>
+  <div class="conn-card" id="ga4-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 3v18h18" stroke="#EF9F27" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 16l4-4 4 4 4-8" stroke="#378ADD" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Google Analytics 4</div>
+      <div class="conn-desc">Pull traffic, conversions, and audience data directly into your dashboard.</div>
+      <div class="conn-status status-disconnected" id="ga4-status">
+        <div class="status-dot"></div>
+        <span id="ga4-status-text">Not connected</span>
       </div>
     </div>
-    <div class="coming-card">
-      <div class="conn-icon">🟣</div>
-      <div class="conn-info">
-        <div class="conn-name">HubSpot <span class="coming-badge">Soon</span></div>
-        <div class="conn-desc">Contacts, deals, and marketing analytics</div>
-      </div>
-      <div class="conn-actions">
-        <button class="notify-btn" onclick="notifyMe('HubSpot')">Notify me</button>
-      </div>
-    </div>
-    <div class="coming-card">
-      <div class="conn-icon">🟠</div>
-      <div class="conn-info">
-        <div class="conn-name">Gusto <span class="coming-badge">Soon</span></div>
-        <div class="conn-desc">Payroll, headcount, and compensation data</div>
-      </div>
-      <div class="conn-actions">
-        <button class="notify-btn" onclick="notifyMe('Gusto')">Notify me</button>
-      </div>
+    <div class="conn-actions">
+      <button class="conn-btn primary" id="ga4-connect-btn" onclick="startGA4OAuth()">Connect</button>
     </div>
   </div>
 
   <!-- Bottom banner -->
-  <div class="bottom-banner">
-    <div class="banner-icon">🤝</div>
-    <div class="banner-text">
-      <div class="banner-title">Need help setting up integrations?</div>
-      <div class="banner-sub">Your Resona advisor can walk you through any connection during your next session. Message them directly from your dashboard or book a setup call.</div>
-    </div>
-  </div>
-</div>
-
-<!-- API Key Modal -->
-<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-icon" id="modal-icon">🔑</div>
-    <div class="modal-title" id="modal-title">Connect</div>
-    <div class="modal-sub" id="modal-sub">Paste your API key below to connect this integration.</div>
-    <div class="modal-label" id="modal-label">API Key</div>
-    <input class="modal-input" type="password" id="modal-key-input" placeholder="Paste your key here…" autocomplete="off"/>
-    <div class="modal-hint" id="modal-hint"></div>
-    <div class="modal-actions">
-      <button class="modal-btn" onclick="closeModal()">Cancel</button>
-      <button class="modal-btn primary" id="modal-save-btn" onclick="saveKey()">Save &amp; Connect</button>
-    </div>
+  <div style="margin-top:40px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">More integrations are on the way.</div>
+    <div style="font-size:12px;color:var(--text3);">Your Resona advisor can help configure your connections.</div>
   </div>
 </div>
 
@@ -478,199 +435,25 @@ const TARGET_FIELDS = [
     const { client_id, name } = await r.json();
     CLIENT = client_id;
     document.getElementById('topbar-user').textContent = name || '';
-    loadConnections();
   } catch(e) {
     localStorage.removeItem('cmndr_session');
     window.location.href = '/login';
   }
 })();
 
-// ── Load connections ─────────────────────────────────────────
-async function loadConnections() {
-  try {
-    const r = await fetch(`/api/connections?action=list&client=${encodeURIComponent(CLIENT)}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` }
-    });
-    if (!r.ok) throw new Error('load failed');
-    const { sources } = await r.json();
-    renderSources(sources);
-  } catch(e) {
-    // Fallback to static defaults
-    renderSources(null);
-  }
-}
-
-function renderSources(sources) {
-  const STATIC = [
-    { id: 'servicetitan', name: 'ServiceTitan', category: 'Field Management', icon: '🔧', description: 'Jobs, technicians, invoices, and revenue data', auth_type: 'api_key' },
-    { id: 'jobber', name: 'Jobber', category: 'Field Management', icon: '🏠', description: 'Quoting, scheduling, and job tracking', auth_type: 'api_key' },
-    { id: 'housecall_pro', name: 'HouseCall Pro', category: 'Field Management', icon: '⚡', description: 'Dispatch, payments, and customer records', auth_type: 'api_key' },
-    { id: 'google_ads', name: 'Google Ads', category: 'Marketing & CRM', icon: '📣', description: 'Ad spend, impressions, and lead attribution', auth_type: 'oauth' },
-    { id: 'google_business', name: 'Google Business Profile', category: 'Marketing & CRM', icon: '💬', description: 'Reviews, calls, and local search performance', auth_type: 'oauth' },
-    { id: 'quickbooks', name: 'QuickBooks', category: 'Finance', icon: '📊', description: 'P&L, invoices, expenses, and payroll', auth_type: 'oauth' },
-    { id: 'stripe', name: 'Stripe', category: 'Finance', icon: '💳', description: 'Payment processing and revenue analytics', auth_type: 'api_key' },
-    { id: 'mailchimp', name: 'Mailchimp', category: 'Marketing & CRM', icon: '✉️', description: 'Email campaigns and audience analytics', auth_type: 'api_key' },
-    { id: 'airtable', name: 'Airtable', category: 'Data Import', icon: '📋', description: 'Connect Airtable bases as a data source', auth_type: 'api_key' },
-  ];
-
-  const list = sources || STATIC;
-  const byCategory = {};
-  for (const s of list) {
-    if (!byCategory[s.category]) byCategory[s.category] = [];
-    byCategory[s.category].push(s);
-  }
-
-  const catMap = {
-    'Field Management': 'field-list',
-    'Marketing & CRM': 'marketing-list',
-    'Finance': 'finance-list',
-  };
-
-  for (const [cat, containerId] of Object.entries(catMap)) {
-    const el = document.getElementById(containerId);
-    if (!el) continue;
-    const items = byCategory[cat] || [];
-    el.innerHTML = items.map(s => connCardHTML(s)).join('');
-  }
-}
-
-function connCardHTML(s) {
-  const connected = s.is_connected;
-  const statusClass = connected ? 'status-connected' : 'status-disconnected';
-  const statusText = connected
-    ? `Connected${s.last_synced_at ? ' · Last sync ' + relTime(s.last_synced_at) : ''}`
-    : 'Not connected';
-
-  const actions = s.auth_type === 'upload' ? '' : connected
-    ? `<button class="conn-btn" onclick="testConnection('${s.id}')">Test</button>
-       <button class="conn-btn danger" onclick="disconnectSource('${s.id}', '${s.name}')">Disconnect</button>`
-    : s.auth_type === 'api_key'
-      ? `<button class="conn-btn primary" onclick="openModal('${s.id}', '${s.name}', '${s.icon}')">Connect</button>`
-      : `<button class="conn-btn primary" onclick="oauthConnect('${s.id}', '${s.name}')">Connect</button>`;
-
-  return `<div class="conn-card" id="card-${s.id}">
-    <div class="conn-icon">${s.icon || '🔌'}</div>
-    <div class="conn-info">
-      <div class="conn-name">${s.name}</div>
-      <div class="conn-desc">${s.description}</div>
-      <div class="conn-status ${statusClass}">
-        <span class="status-dot"></span>
-        <span style="color:var(--text3)">${statusText}</span>
-      </div>
-    </div>
-    <div class="conn-actions">${actions}</div>
-  </div>`;
-}
-
-function relTime(iso) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 60) return m + 'm ago';
-  const h = Math.floor(m / 60);
-  if (h < 24) return h + 'h ago';
-  return Math.floor(h / 24) + 'd ago';
-}
-
-// ── API Key Modal ─────────────────────────────────────────────
-const MODAL_HINTS = {
-  stripe: 'Find your key at dashboard.stripe.com → Developers → API keys (use Secret key)',
-  mailchimp: 'Find your key at account.mailchimp.com → Account → Extras → API Keys',
-  airtable: 'Find your key at airtable.com/account → Developer Hub → Personal access tokens',
-  servicetitan: 'Find in ServiceTitan Admin → Integrations → API Application',
-  jobber: 'Find in Jobber Settings → Integrations & API → API access',
-  housecall_pro: 'Contact HouseCall Pro support to enable API access for your account',
-};
-
-function openModal(sourceId, name, icon) {
-  currentSource = { id: sourceId, name, icon };
-  document.getElementById('modal-icon').textContent = icon || '🔑';
-  document.getElementById('modal-title').textContent = 'Connect ' + name;
-  document.getElementById('modal-sub').textContent = 'Paste your ' + name + ' API key below. It will be encrypted and stored securely.';
-  document.getElementById('modal-label').textContent = name + ' API Key';
-  document.getElementById('modal-hint').textContent = MODAL_HINTS[sourceId] || '';
-  document.getElementById('modal-key-input').value = '';
-  document.getElementById('modal-save-btn').disabled = false;
-  document.getElementById('modal-save-btn').textContent = 'Save & Connect';
-  document.getElementById('modal-backdrop').classList.add('open');
-  setTimeout(() => document.getElementById('modal-key-input').focus(), 150);
-}
-
-function closeModal() {
-  document.getElementById('modal-backdrop').classList.remove('open');
-  currentSource = null;
-}
-
-function closeModalOnBackdrop(e) {
-  if (e.target === document.getElementById('modal-backdrop')) closeModal();
-}
-
-async function saveKey() {
-  const key = document.getElementById('modal-key-input').value.trim();
-  if (!key) { showToast('Please enter your API key'); return; }
-
-  const btn = document.getElementById('modal-save-btn');
+// ── GA4 OAuth ─────────────────────────────────────────────────
+function startGA4OAuth() {
+  const btn = document.getElementById('ga4-connect-btn');
+  const statusText = document.getElementById('ga4-status-text');
+  const statusEl = document.getElementById('ga4-status');
+  btn.textContent = 'Connecting...';
   btn.disabled = true;
-  btn.textContent = 'Saving…';
-
-  try {
-    const r = await fetch('/api/connections?action=save-key', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
-      body: JSON.stringify({ client: CLIENT, source_id: currentSource.id, api_key: key })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Save failed');
-
-    closeModal();
-    showToast(currentSource.name + ' connected successfully');
-    loadConnections();
-  } catch(e) {
+  setTimeout(() => {
+    btn.textContent = 'Connect';
     btn.disabled = false;
-    btn.textContent = 'Save & Connect';
-    showToast('Error: ' + e.message);
-  }
-}
-
-// ── OAuth (placeholder) ───────────────────────────────────────
-function oauthConnect(sourceId, name) {
-  showToast(name + ' OAuth coming soon — your advisor will set this up');
-}
-
-// ── Test connection ───────────────────────────────────────────
-async function testConnection(sourceId) {
-  showToast('Testing connection…');
-  try {
-    const r = await fetch('/api/connections?action=test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
-      body: JSON.stringify({ client: CLIENT, source_id: sourceId })
-    });
-    const data = await r.json();
-    if (data.ok) {
-      showToast('Connection verified ✓');
-    } else {
-      showToast('Connection failed: ' + (data.error || 'unknown error'));
-    }
-  } catch(e) {
-    showToast('Test failed: ' + e.message);
-  }
-}
-
-// ── Disconnect ────────────────────────────────────────────────
-async function disconnectSource(sourceId, name) {
-  if (!confirm('Disconnect ' + name + '? Your historical data will be preserved.')) return;
-  try {
-    const r = await fetch('/api/connections?action=disconnect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('cmndr_session')}` },
-      body: JSON.stringify({ client: CLIENT, source_id: sourceId })
-    });
-    if (!r.ok) throw new Error('Disconnect failed');
-    showToast(name + ' disconnected');
-    loadConnections();
-  } catch(e) {
-    showToast('Error: ' + e.message);
-  }
+    statusEl.className = 'conn-status status-pending';
+    statusText.textContent = 'OAuth setup coming soon';
+  }, 1500);
 }
 
 // ── File upload ───────────────────────────────────────────────
@@ -810,7 +593,6 @@ async function doImport() {
     if (!r.ok) throw new Error(data.error || 'Import failed');
     showToast(`✓ Imported ${data.inserted} rows successfully`);
     resetUpload();
-    loadConnections();
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Import data';
@@ -823,11 +605,6 @@ function resetUpload() {
   document.getElementById('mapping-section').classList.remove('visible');
   document.getElementById('file-input').value = '';
   uploadState = null;
-}
-
-// ── Notify me ─────────────────────────────────────────────────
-function notifyMe(name) {
-  showToast('We\'ll let you know when ' + name + ' is available');
 }
 
 // ── Toast ─────────────────────────────────────────────────────
