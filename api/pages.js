@@ -260,7 +260,31 @@ module.exports = async function handler(req, res) {
     // ── Roadmap ───────────────────────────────────────────────
     if (page === 'roadmap') {
       const roadmapRow = await safeQueryOne('roadmaps', `client_id=eq.${client}`);
-      return res.status(200).json({ roadmap: roadmapRow || null, page, client, generatedAt: new Date().toISOString() });
+      let roadmap = null;
+      if (roadmapRow) {
+        const toNode = (m, idx) => {
+          if (!m) return null;
+          const num = idx + 1;
+          const currentNode = roadmapRow.current_node || 1;
+          const status = num < currentNode ? 'complete' : num === currentNode ? 'active' : 'pending';
+          return {
+            title: m.title || 'Milestone ' + num,
+            description: m.description || '',
+            subtitle: m.target_date ? 'Target: ' + new Date(m.target_date).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : '',
+            status,
+            milestones: m.milestones || [],
+          };
+        };
+        roadmap = {
+          current_node: roadmapRow.current_node || 1,
+          nodes: [
+            toNode(roadmapRow.milestone_1, 0),
+            toNode(roadmapRow.milestone_2, 1),
+            toNode(roadmapRow.milestone_3, 2),
+          ].filter(Boolean),
+        };
+      }
+      return res.status(200).json({ roadmap, page, client, generatedAt: new Date().toISOString() });
     }
 
     // ── Common context (every page) ───────────────────────────
