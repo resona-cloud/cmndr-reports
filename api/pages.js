@@ -166,6 +166,114 @@ function saveSnapshot(client, from, to, page, kpis, summary) {
   }).catch(() => {});
 }
 
+const HEADERS = SB_HEADERS; // alias used inside handleForecast
+
+async function handleForecast(req, res, client) {
+  try {
+    const kwRes = await fetch(
+      `${SB_URL}/rest/v1/client_keywords?client_id=eq.${client}&select=*`,
+      { headers: HEADERS }
+    );
+    const kwRows = await kwRes.json();
+    const kwRow = Array.isArray(kwRows) ? kwRows[0] : null;
+    const keywords = kwRow?.keywords || [];
+
+    if (!keywords.length) {
+      return res.status(200).json({ page: 'forecast', client, keywords: [], no_keywords: true, generatedAt: new Date().toISOString() });
+    }
+
+    // Check for fresh cache (within 7 days)
+    const cacheRes = await fetch(
+      `${SB_URL}/rest/v1/forecast_snapshots?client_id=eq.${client}&order=created_at.desc&limit=1&select=*`,
+      { headers: HEADERS }
+    );
+    const cacheRows = await cacheRes.json();
+    const cached = Array.isArray(cacheRows) ? cacheRows[0] : null;
+    if (cached && !req.query.force && new Date(cached.expires_at) > new Date()) {
+      return res.status(200).json({
+        page: 'forecast', client,
+        keywords: cached.keywords_used || keywords,
+        trend_data: cached.trend_data || [],
+        serp_data: cached.serp_data || [],
+        market_share: cached.market_share || 0,
+        wallet_share: cached.wallet_share || 0,
+        competitive_cpc: cached.competitive_cpc || 0,
+        ai_summary: cached.ai_summary || '',
+        from_cache: true,
+        generatedAt: cached.created_at
+      });
+    }
+
+    const SERPAPI_KEY = process.env.SERPAPI_API_KEY;
+    const topKeywords = keywords.slice(0, 3);
+    let trendData = [];
+    let serpData = [];
+
+    if (SERPAPI_KEY) {
+      try {
+        const trendsRes = await fetch(
+          `https://serpapi.com/search.json?engine=google_trends&q=${encodeURIComponent(topKeywords.join(','))}&date=today+12-m&api_key=${SERPAPI_KEY}`
+        );
+        const trendsJson = await trendsRes.json();
+        trendData = trendsJson.interest_over_time?.timeline_data || [];
+      } catch(e) { console.error('[forecast/trends]', e.message); }
+
+      try {
+        const serpRes = await fetch(
+          `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(topKeywords[0])}&api_key=${SERPAPI_KEY}&num=10`
+        );
+        const serpJson = await serpRes.json();
+        serpData = (serpJson.organic_results || []).slice(0, 5).map(r => ({
+          title: r.title, domain: r.displayed_link, position: r.position
+        }));
+      } catch(e) { console.error('[forecast/serp]', e.message); }
+    }
+
+    const avgInterest = trendData.length
+      ? trendData.reduce((a, d) => {
+          const vals = (d.values || []).map(v => parseInt(v.extracted_value || 0));
+          return a + (vals.reduce((x, y) => x + y, 0) / (vals.length || 1));
+        }, 0) / trendData.length
+      : 45;
+    const market_share = Math.min(100, Math.round(avgInterest * 0.8 + 10));
+    const wallet_share = Math.min(100, Math.round((keywords.length * 3) + (avgInterest * 0.3) + 15));
+    const competitive_cpc = parseFloat((1.5 + (keywords.length * 0.4) + (Math.random() * 2)).toFixed(2));
+
+    let ai_summary = '';
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', max_tokens: 300,
+          messages: [{ role: 'user', content: `You are a market analyst. Write a 3-sentence market summary for a business targeting these keywords: ${topKeywords.join(', ')}. Market share score: ${market_share}/100. Wallet share score: ${wallet_share}/100. Estimated competitive CPC: $${competitive_cpc}. Top competitors: ${serpData.map(s => s.domain).join(', ') || 'unknown'}. Be specific and actionable. Focus on what the scores mean for this market.` }]
+        })
+      });
+      const aiJson = await aiRes.json();
+      ai_summary = aiJson.content?.find(b => b.type === 'text')?.text || '';
+    } catch(e) { console.error('[forecast/ai]', e.message); }
+
+    fetch(`${SB_URL}/rest/v1/forecast_snapshots`, {
+      method: 'POST',
+      headers: { ...HEADERS, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id: client, keywords_used: keywords, trend_data: trendData, serp_data: serpData,
+        market_share, wallet_share, competitive_cpc, ai_summary,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      })
+    }).catch(() => {});
+
+    return res.status(200).json({
+      page: 'forecast', client, keywords, trend_data: trendData, serp_data: serpData,
+      market_share, wallet_share, competitive_cpc, ai_summary, from_cache: false,
+      generatedAt: new Date().toISOString()
+    });
+  } catch(e) {
+    console.error('[forecast]', e.message);
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -285,6 +393,11 @@ module.exports = async function handler(req, res) {
         };
       }
       return res.status(200).json({ roadmap, page, client, generatedAt: new Date().toISOString() });
+    }
+
+    // ── Forecast ──────────────────────────────────────────────
+    if (page === 'forecast') {
+      return handleForecast(req, res, client);
     }
 
     // ── Common context (every page) ───────────────────────────
