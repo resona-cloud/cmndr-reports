@@ -257,6 +257,12 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ messages, client, generatedAt: new Date().toISOString() });
     }
 
+    // ── Roadmap ───────────────────────────────────────────────
+    if (page === 'roadmap') {
+      const roadmapRow = await safeQueryOne('roadmaps', `client_id=eq.${client}`);
+      return res.status(200).json({ roadmap: roadmapRow || null, page, client, generatedAt: new Date().toISOString() });
+    }
+
     // ── Common context (every page) ───────────────────────────
     const [courses, goal, notes] = await Promise.all([
       safeQuery('client_courses', `client_id=eq.${client}`),
