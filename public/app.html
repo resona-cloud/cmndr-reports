@@ -464,6 +464,37 @@
     .rdmp-sk-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
     .rdmp-sk-bar { height: 10px; border-radius: 5px; background: var(--bg3); margin-bottom: 8px; }
 
+    /* Roadmap hero */
+    .rdmp-hero { padding: 36px 32px 28px; border-bottom: 0.5px solid var(--border); margin-bottom: 8px; }
+    .rdmp-hero-eyebrow { font-size: 10px; font-weight: 600; color: var(--info); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+    .rdmp-hero-title { font-size: 22px; font-weight: 600; margin-bottom: 10px; line-height: 1.2; }
+    .rdmp-hero-body { font-size: 13px; color: var(--text2); line-height: 1.7; max-width: 580px; margin-bottom: 20px; }
+    .rdmp-hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+    .rdmp-hero-stat-val { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+    .rdmp-hero-stat-lbl { font-size: 11px; color: var(--text3); }
+
+    /* Roadmap cards — left aligned, full width stack */
+    .rdmp-cards { display: flex !important; flex-direction: column !important; gap: 8px !important; padding: 0 32px 40px !important; grid-template-columns: unset !important; }
+    .rdmp-card { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+    .rdmp-card:hover { border-color: var(--border2); }
+    .rdmp-card.active-card { border-color: rgba(55,138,221,0.4); box-shadow: 0 0 12px rgba(55,138,221,0.08); }
+    .rdmp-card-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; user-select: none; }
+    .rdmp-card-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+    .rdmp-card-node-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .rdmp-card-node-dot.dot-complete { background: var(--success); color: #fff; }
+    .rdmp-card-node-dot.dot-active { background: var(--info); color: #fff; animation: nodePulse 2s ease-in-out infinite; }
+    .rdmp-card-node-dot.dot-pending { background: var(--bg3); color: var(--text3); border: 1.5px solid var(--border2); }
+    .rdmp-card-chevron { color: var(--text3); transition: transform .2s; flex-shrink: 0; }
+    .rdmp-card.open .rdmp-card-chevron { transform: rotate(180deg); }
+    .rdmp-card-body { overflow: hidden; max-height: 0; transition: max-height .3s ease, padding .2s; padding: 0 0 0 50px; }
+    .rdmp-card.open .rdmp-card-body { max-height: 600px; padding: 14px 0 4px 50px; }
+    .rdmp-card-detail-section { margin-bottom: 14px; }
+    .rdmp-card-detail-lbl { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+    .rdmp-card-detail-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .rdmp-goal-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 12px; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 20px; color: var(--text2); margin: 2px 4px 2px 0; }
+    .rdmp-goal-chip.done { background: rgba(29,158,117,.1); border-color: rgba(29,158,117,.3); color: var(--success); }
+    .rdmp-goal-chip.active { background: rgba(55,138,221,.1); border-color: rgba(55,138,221,.3); color: var(--info); }
+
     /* ── Overview layout ── */
     #page-overview { height: 100vh; overflow: hidden; }
     #page-overview.active { display: flex; }
@@ -1132,6 +1163,12 @@ async function sendCmndrMessage() {
 }
 
 // ── Roadmap ───────────────────────────────────────────────────
+function toggleRdmpCard(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.classList.toggle('open');
+}
+
 function loadRoadmap() {
   const skeleton = document.getElementById('rdmp-skeleton');
   const content = document.getElementById('rdmp-content');
@@ -1152,12 +1189,41 @@ function loadRoadmap() {
 
 function renderRoadmap(roadmap) {
   const nodes = roadmap.nodes || [];
-  if (!nodes.length) return '';
-  const ICONS = ['①', '②', '③'];
+  if (!nodes.length) return '<p class="empty">No roadmap data available.</p>';
+
+  const currentNode = roadmap.current_node || 1;
+  const completedCount = nodes.filter(n => n.status === 'complete').length;
+
+  const heroHtml = `
+    <div class="rdmp-hero">
+      <div class="rdmp-hero-eyebrow">Strategic Roadmap</div>
+      <div class="rdmp-hero-title">Your 3-Point Growth Plan</div>
+      <div class="rdmp-hero-body">
+        Your roadmap breaks your strategy into three focused milestones —
+        each one building on the last. As you complete each phase,
+        your business compounds in stability, reach, and efficiency.
+        This is the structure behind your growth.
+      </div>
+      <div class="rdmp-hero-stats">
+        <div>
+          <div class="rdmp-hero-stat-val" style="color:var(--info)">Phase ${currentNode} of ${nodes.length}</div>
+          <div class="rdmp-hero-stat-lbl">Current Phase</div>
+        </div>
+        <div>
+          <div class="rdmp-hero-stat-val" style="color:var(--success)">${completedCount} Complete</div>
+          <div class="rdmp-hero-stat-lbl">Milestones Done</div>
+        </div>
+        <div>
+          <div class="rdmp-hero-stat-val" style="color:var(--text2)">${nodes.length - completedCount} Remaining</div>
+          <div class="rdmp-hero-stat-lbl">Milestones Ahead</div>
+        </div>
+      </div>
+    </div>`;
+
   let trackHtml = '<div class="rdmp-track">';
   nodes.forEach((node, i) => {
     const cls = node.status === 'complete' ? 'node-complete' : node.status === 'active' ? 'node-active' : 'node-pending';
-    const icon = node.status === 'complete' ? '✓' : (ICONS[i] || String(i + 1));
+    const icon = node.status === 'complete' ? '✓' : (i + 1);
     trackHtml += `<div class="rdmp-node-wrap">
       <div class="rdmp-node ${cls}">${icon}</div>
       <div class="rdmp-node-title">${node.title || 'Phase ' + (i + 1)}</div>
@@ -1171,25 +1237,67 @@ function renderRoadmap(roadmap) {
   trackHtml += '</div>';
 
   let cardsHtml = '<div class="rdmp-cards">';
-  nodes.forEach(node => {
+  nodes.forEach((node, i) => {
     const badgeCls = node.status === 'complete' ? 'badge-complete' : node.status === 'active' ? 'badge-active' : 'badge-pending';
     const badgeLabel = node.status === 'complete' ? 'Complete' : node.status === 'active' ? 'Active' : 'Upcoming';
+    const dotCls = node.status === 'complete' ? 'dot-complete' : node.status === 'active' ? 'dot-active' : 'dot-pending';
+    const dotIcon = node.status === 'complete' ? '✓' : (i + 1);
     const milestones = node.milestones || [];
-    const msHtml = milestones.length ? `<div class="rdmp-milestones">${milestones.map(m => {
-      const dotCls = m.status === 'completed' ? 'done' : m.status === 'in_progress' ? 'current' : 'pending';
-      return `<div class="rdmp-ms"><div class="rdmp-ms-dot ${dotCls}"></div><span>${m.label || m.title || ''}</span></div>`;
-    }).join('')}</div>` : '';
-    cardsHtml += `<div class="rdmp-card">
-      <div class="rdmp-card-head">
-        <div class="rdmp-card-title">${node.title || ''}</div>
-        <div class="rdmp-badge ${badgeCls}">${badgeLabel}</div>
+    const goalsHtml = milestones.length
+      ? milestones.map(m => {
+          const chipCls = m.status === 'completed' ? 'done' : m.status === 'in_progress' ? 'active' : '';
+          const chipIcon = m.status === 'completed' ? '✓ ' : m.status === 'in_progress' ? '→ ' : '○ ';
+          return `<span class="rdmp-goal-chip ${chipCls}">${chipIcon}${m.label || m.title || ''}</span>`;
+        }).join('')
+      : '<span style="font-size:12px;color:var(--text3);">Goals will appear here as your advisor configures this phase.</span>';
+    const cardId = 'rdmp-card-' + i;
+    cardsHtml += `<div class="rdmp-card" id="${cardId}" onclick="toggleRdmpCard('${cardId}')">
+      <div class="rdmp-card-header-row">
+        <div class="rdmp-card-left">
+          <div class="rdmp-card-node-dot ${dotCls}">${dotIcon}</div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Milestone 0${i + 1}</div>
+            <div style="font-size:14px;font-weight:500;">${node.title || 'Phase ' + (i + 1)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          <span class="rdmp-badge ${badgeCls}">${badgeLabel}</span>
+          <svg class="rdmp-card-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
-      <div class="rdmp-card-desc">${node.description || ''}</div>
-      ${msHtml}
+      <div class="rdmp-card-body">
+        <div class="rdmp-card-detail-section">
+          <div class="rdmp-card-detail-lbl">What this phase is about</div>
+          <div class="rdmp-card-detail-text">${node.description || 'Details coming soon.'}</div>
+        </div>
+        ${node.subtitle ? `<div class="rdmp-card-detail-section">
+          <div class="rdmp-card-detail-lbl">Timeline</div>
+          <div class="rdmp-card-detail-text">${node.subtitle}</div>
+        </div>` : ''}
+        <div class="rdmp-card-detail-section">
+          <div class="rdmp-card-detail-lbl">Goals &amp; Targets</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${goalsHtml}</div>
+        </div>
+        ${node.status === 'active' ? `<div class="rdmp-card-detail-section">
+          <div class="rdmp-card-detail-lbl">Current Focus</div>
+          <div class="rdmp-card-detail-text" style="color:var(--info);">● This is your active phase. Work with your advisor and CMNDR to complete the goals above and advance to the next milestone.</div>
+        </div>` : ''}
+      </div>
     </div>`;
   });
   cardsHtml += '</div>';
-  return trackHtml + cardsHtml;
+
+  setTimeout(() => {
+    const activeIdx = nodes.findIndex(n => n.status === 'active');
+    if (activeIdx >= 0) {
+      const el = document.getElementById('rdmp-card-' + activeIdx);
+      if (el) el.classList.add('open');
+    }
+  }, 50);
+
+  return heroHtml + trackHtml + cardsHtml;
 }
 
 // ── Navigation ───────────────────────────────────────────────
