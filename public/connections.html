@@ -412,7 +412,7 @@
         <span id="ga4-status-text">Not connected</span>
       </div>
     </div>
-    <div class="conn-actions">
+    <div class="conn-actions" id="ga4-actions">
       <button class="conn-btn primary" id="ga4-connect-btn" onclick="startGA4OAuth()">Connect</button>
     </div>
   </div>
@@ -466,16 +466,42 @@ const TARGET_FIELDS = [
 // ── GA4 OAuth ─────────────────────────────────────────────────
 function startGA4OAuth() {
   const btn = document.getElementById('ga4-connect-btn');
-  const statusText = document.getElementById('ga4-status-text');
-  const statusEl = document.getElementById('ga4-status');
-  btn.textContent = 'Connecting...';
+  btn.textContent = 'Redirecting...';
   btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = 'Connect';
-    btn.disabled = false;
-    statusEl.className = 'conn-status status-pending';
-    statusText.textContent = 'OAuth setup coming soon';
-  }, 1500);
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  window.location.href = `/api/connections?action=oauth-init&connector=google_analytics&client_id=${clientId}`;
+}
+
+function syncGA4() {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  fetch('/api/connections?action=ga4-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) showToast('GA4 data synced — ' + d.records_synced + ' records updated');
+    else showToast('Sync failed. Try again.');
+  })
+  .catch(() => showToast('Sync failed. Try again.'));
+}
+
+function disconnectGA4() {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  if (!confirm('Disconnect Google Analytics 4?')) return;
+  fetch('/api/connections?action=disconnect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, connector_key: 'google_analytics' })
+  })
+  .then(() => {
+    document.getElementById('ga4-status').className = 'conn-status status-disconnected';
+    document.getElementById('ga4-status-text').textContent = 'Not connected';
+    document.getElementById('ga4-actions').innerHTML =
+      '<button class="conn-btn primary" id="ga4-connect-btn" onclick="startGA4OAuth()">Connect</button>';
+    showToast('Google Analytics 4 disconnected');
+  });
 }
 
 // ── File upload ───────────────────────────────────────────────
@@ -694,6 +720,17 @@ function checkConnectionReturn() {
       '<button class="conn-btn danger" onclick="disconnectGSC()">Disconnect</button>';
     showToast('Google Search Console connected successfully!');
     window.history.replaceState({}, '', '/connections');
+  } else if (connected === 'google_analytics') {
+    const status = document.getElementById('ga4-status');
+    const statusText = document.getElementById('ga4-status-text');
+    const actions = document.getElementById('ga4-actions');
+    if (status) status.className = 'conn-status status-connected';
+    if (statusText) statusText.textContent = 'Connected — syncing data';
+    if (actions) actions.innerHTML =
+      '<button class="conn-btn" onclick="syncGA4()">Sync now</button>' +
+      '<button class="conn-btn danger" onclick="disconnectGA4()">Disconnect</button>';
+    showToast('Google Analytics 4 connected successfully!');
+    window.history.replaceState({}, '', '/connections');
   }
 }
 
@@ -718,6 +755,23 @@ async function loadConnectionStatuses() {
       if (actions) actions.innerHTML =
         '<button class="conn-btn" onclick="syncGSC()">Sync now</button>' +
         '<button class="conn-btn danger" onclick="disconnectGSC()">Disconnect</button>';
+    }
+
+    const ga4 = sources.find(s => s.connector_key === 'google_analytics' || s.id === 'google_analytics');
+    if (ga4?.connected || ga4?.is_connected) {
+      const status = document.getElementById('ga4-status');
+      const statusText = document.getElementById('ga4-status-text');
+      const actions = document.getElementById('ga4-actions');
+      if (status) status.className = 'conn-status status-connected';
+      if (statusText) {
+        const lastSync = ga4.last_sync_at || ga4.last_synced_at;
+        statusText.textContent = lastSync
+          ? 'Last sync: ' + new Date(lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'Connected';
+      }
+      if (actions) actions.innerHTML =
+        '<button class="conn-btn" onclick="syncGA4()">Sync now</button>' +
+        '<button class="conn-btn danger" onclick="disconnectGA4()">Disconnect</button>';
     }
   } catch(e) {
     console.error('[connections] status load failed', e);

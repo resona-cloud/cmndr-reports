@@ -54,6 +54,95 @@ const DEFAULT_CATALOG = [
   { id: 'csv_upload', name: 'CSV / Excel Upload', category: 'Data Import', icon: '📁', description: 'Upload spreadsheet files directly', auth_type: 'upload' },
 ];
 
+// ── GA4 sync ──────────────────────────────────────────────────
+async function syncGA4Data(client_id, accessToken) {
+  const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  const HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+  // Get stored property_id from data_sources.meta
+  let propertyId = null;
+  const dsRows = await sbGet('data_sources', `client_id=eq.${encodeURIComponent(client_id)}&connector_key=eq.google_analytics&select=meta&limit=1`);
+  if (dsRows[0]?.meta) {
+    try { propertyId = JSON.parse(dsRows[0].meta)?.property_id; } catch(e) {}
+  }
+
+  // If not stored, discover via GA4 Admin API
+  if (!propertyId) {
+    const adminRes = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const adminData = await adminRes.json();
+    for (const acct of (adminData.accountSummaries || [])) {
+      if (acct.propertySummaries?.length) {
+        propertyId = acct.propertySummaries[0].property.replace('properties/', '');
+        break;
+      }
+    }
+  }
+
+  if (!propertyId) {
+    console.log('[ga4-sync] No property found for client', client_id);
+    return 0;
+  }
+
+  const endDate = new Date().toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const ga4Res = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'date' }, { name: 'sessionSource' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'totalUsers' },
+          { name: 'newUsers' },
+          { name: 'conversions' },
+          { name: 'bounceRate' },
+          { name: 'averageSessionDuration' }
+        ],
+        limit: 100
+      })
+    }
+  );
+  const ga4Data = await ga4Res.json();
+  const rows = ga4Data.rows || [];
+  if (!rows.length) return 0;
+
+  await fetch(`${SB_URL}/rest/v1/ga4_data?client_id=eq.${client_id}`, { method: 'DELETE', headers: HEADERS });
+
+  const records = rows.map(row => ({
+    client_id,
+    date: row.dimensionValues[0]?.value || '',
+    source: row.dimensionValues[1]?.value || '',
+    sessions: parseInt(row.metricValues[0]?.value || 0),
+    total_users: parseInt(row.metricValues[1]?.value || 0),
+    new_users: parseInt(row.metricValues[2]?.value || 0),
+    conversions: parseInt(row.metricValues[3]?.value || 0),
+    bounce_rate: parseFloat(parseFloat(row.metricValues[4]?.value || 0).toFixed(4)),
+    avg_session_duration: parseFloat(parseFloat(row.metricValues[5]?.value || 0).toFixed(1)),
+    date_range: `${startDate} to ${endDate}`,
+    fetched_at: new Date().toISOString()
+  }));
+
+  await fetch(`${SB_URL}/rest/v1/ga4_data`, {
+    method: 'POST',
+    headers: { ...HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify(records)
+  });
+
+  await fetch(`${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.google_analytics`, {
+    method: 'PATCH',
+    headers: { ...HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({ last_sync_at: new Date().toISOString() })
+  });
+
+  return records.length;
+}
+
 // ── GSC sync ──────────────────────────────────────────────────
 async function syncGSCData(client_id, accessToken) {
   const SB_URL = process.env.SUPABASE_URL;
@@ -119,22 +208,37 @@ async function syncGSCData(client_id, accessToken) {
 // ── OAuth helpers ──────────────────────────────────────────────
 async function actionOAuthInit(req, res) {
   const { connector } = req.query;
-  if (connector !== 'google_search_console') return res.status(400).json({ error: 'unsupported connector' });
-  const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID,
-    redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_search_console',
-    response_type: 'code',
-    scope: 'https://www.googleapis.com/auth/webmasters.readonly',
-    access_type: 'offline',
-    prompt: 'consent',
-    state: req.query.client_id || 'peak-flow',
-  });
-  return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  if (connector === 'google_search_console') {
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_search_console',
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: req.query.client_id || 'peak-flow',
+    });
+    return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  } else if (connector === 'google_analytics') {
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_analytics',
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/analytics.readonly',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: req.query.client_id || 'peak-flow',
+    });
+    return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  }
+  return res.status(400).json({ error: 'unsupported connector' });
 }
 
 async function actionOAuthCallback(req, res) {
-  const { code, state: client_id } = req.query;
+  const { code, state: client_id, connector } = req.query;
   if (!code) return res.redirect(302, '/connections?error=no_code');
+
+  const redirect_uri = `https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=${connector}`;
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -143,7 +247,7 @@ async function actionOAuthCallback(req, res) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_search_console',
+      redirect_uri,
       grant_type: 'authorization_code',
     })
   });
@@ -156,6 +260,62 @@ async function actionOAuthCallback(req, res) {
   const encrypted = encrypt(tokens.refresh_token);
   const now = new Date().toISOString();
 
+  if (connector === 'google_analytics') {
+    // Discover GA4 property
+    let propertyId = null;
+    try {
+      const adminRes = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', {
+        headers: { Authorization: `Bearer ${tokens.access_token}` }
+      });
+      const adminData = await adminRes.json();
+      for (const acct of (adminData.accountSummaries || [])) {
+        if (acct.propertySummaries?.length) {
+          propertyId = acct.propertySummaries[0].property.replace('properties/', '');
+          break;
+        }
+      }
+    } catch(e) { console.error('[oauth-callback] GA4 admin fetch error:', e.message); }
+
+    await fetch(`${SB_URL}/rest/v1/client_credentials`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'google_analytics',
+        credential_type: 'oauth_token',
+        encrypted_key: encrypted,
+        label: 'GA4 Refresh Token',
+        scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+        expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+        last_verified_at: now,
+        is_active: true,
+        updated_at: now
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/data_sources`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'google_analytics',
+        source_label: 'Google Analytics 4',
+        connected: true,
+        track: 'live_sync',
+        category: 'traffic',
+        setup_by: 'self_serve',
+        connector_key: 'google_analytics',
+        last_sync_at: now,
+        meta: JSON.stringify({ property_id: propertyId })
+      })
+    });
+
+    try { await syncGA4Data(client_id, tokens.access_token); } catch(e) { console.error('[oauth-callback] GA4 sync error:', e.message); }
+
+    return res.redirect(302, '/connections?connected=google_analytics');
+  }
+
+  // Default: google_search_console
   await fetch(`${SB_URL}/rest/v1/client_credentials`, {
     method: 'POST',
     headers: UPSERT_H,
@@ -189,7 +349,7 @@ async function actionOAuthCallback(req, res) {
     })
   });
 
-  try { await syncGSCData(client_id, tokens.access_token); } catch(e) { console.error('[oauth-callback] sync error:', e.message); }
+  try { await syncGSCData(client_id, tokens.access_token); } catch(e) { console.error('[oauth-callback] GSC sync error:', e.message); }
 
   return res.redirect(302, '/connections?connected=google_search_console');
 }
@@ -216,6 +376,31 @@ async function actionGscSync(req, res) {
   if (!refreshed.access_token) return res.status(400).json({ error: 'token refresh failed', detail: refreshed });
 
   const count = await syncGSCData(client_id, refreshed.access_token);
+  return res.json({ success: true, records_synced: count });
+}
+
+async function actionGa4Sync(req, res) {
+  const { client_id } = req.body || {};
+  if (!client_id) return res.status(400).json({ error: 'client_id required' });
+
+  const rows = await sbGet('client_credentials', `client_id=eq.${encodeURIComponent(client_id)}&source_system=eq.google_analytics&select=encrypted_key&limit=1`);
+  if (!rows[0]?.encrypted_key) return res.status(404).json({ error: 'no GA4 credentials found' });
+
+  const refreshToken = decrypt(rows[0].encrypted_key);
+  const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+    })
+  });
+  const refreshed = await refreshRes.json();
+  if (!refreshed.access_token) return res.status(400).json({ error: 'token refresh failed', detail: refreshed });
+
+  const count = await syncGA4Data(client_id, refreshed.access_token);
   return res.json({ success: true, records_synced: count });
 }
 
@@ -464,6 +649,7 @@ module.exports = async function handler(req, res) {
     if (action === 'oauth-init')     return await actionOAuthInit(req, res);
     if (action === 'oauth-callback') return await actionOAuthCallback(req, res);
     if (action === 'gsc-sync')       return await actionGscSync(req, res);
+    if (action === 'ga4-sync')       return await actionGa4Sync(req, res);
     res.status(400).json({ error: 'unknown action' });
   } catch(e) {
     res.status(500).json({ error: e.message });
