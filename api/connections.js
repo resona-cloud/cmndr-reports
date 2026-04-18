@@ -54,28 +54,208 @@ const DEFAULT_CATALOG = [
   { id: 'csv_upload', name: 'CSV / Excel Upload', category: 'Data Import', icon: '📁', description: 'Upload spreadsheet files directly', auth_type: 'upload' },
 ];
 
+// ── GSC sync ──────────────────────────────────────────────────
+async function syncGSCData(client_id, accessToken) {
+  const SB_URL = process.env.SUPABASE_URL;
+  const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  const HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+  const sessionRes = await fetch(
+    `${SB_URL}/rest/v1/audit_sessions?client_id=eq.${client_id}&order=created_at.desc&limit=1&select=domain`,
+    { headers: HEADERS }
+  );
+  const sessions = await sessionRes.json();
+  const siteUrl = Array.isArray(sessions) && sessions[0]?.domain ? sessions[0].domain : null;
+
+  if (!siteUrl) {
+    console.log('[gsc-sync] No domain found for client', client_id);
+    return 0;
+  }
+
+  const endDate = new Date().toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const gscRes = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate, endDate, dimensions: ['query', 'page'], rowLimit: 50, startRow: 0 })
+    }
+  );
+  const gscData = await gscRes.json();
+  const rows = gscData.rows || [];
+  if (!rows.length) return 0;
+
+  await fetch(`${SB_URL}/rest/v1/gsc_data?client_id=eq.${client_id}`, { method: 'DELETE', headers: HEADERS });
+
+  const records = rows.map(row => ({
+    client_id,
+    query: row.keys[0] || '',
+    page: row.keys[1] || '',
+    clicks: Math.round(row.clicks || 0),
+    impressions: Math.round(row.impressions || 0),
+    ctr: parseFloat((row.ctr || 0).toFixed(4)),
+    position: parseFloat((row.position || 0).toFixed(1)),
+    date_range: `${startDate} to ${endDate}`,
+    fetched_at: new Date().toISOString()
+  }));
+
+  await fetch(`${SB_URL}/rest/v1/gsc_data`, {
+    method: 'POST',
+    headers: { ...HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify(records)
+  });
+
+  await fetch(`${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.google_search_console`, {
+    method: 'PATCH',
+    headers: { ...HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({ last_sync_at: new Date().toISOString() })
+  });
+
+  return records.length;
+}
+
+// ── OAuth helpers ──────────────────────────────────────────────
+async function actionOAuthInit(req, res) {
+  const { connector } = req.query;
+  if (connector !== 'google_search_console') return res.status(400).json({ error: 'unsupported connector' });
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_search_console',
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+    access_type: 'offline',
+    prompt: 'consent',
+    state: req.query.client_id || 'peak-flow',
+  });
+  return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+}
+
+async function actionOAuthCallback(req, res) {
+  const { code, state: client_id } = req.query;
+  if (!code) return res.redirect(302, '/connections?error=no_code');
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_search_console',
+      grant_type: 'authorization_code',
+    })
+  });
+  const tokens = await tokenRes.json();
+  if (!tokens.refresh_token) {
+    console.error('[oauth-callback] no refresh_token:', JSON.stringify(tokens));
+    return res.redirect(302, '/connections?error=no_refresh_token');
+  }
+
+  const encrypted = encrypt(tokens.refresh_token);
+  const now = new Date().toISOString();
+
+  await fetch(`${SB_URL}/rest/v1/client_credentials`, {
+    method: 'POST',
+    headers: UPSERT_H,
+    body: JSON.stringify({
+      client_id,
+      source_system: 'google_search_console',
+      credential_type: 'oauth_token',
+      encrypted_key: encrypted,
+      label: 'GSC Refresh Token',
+      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+      expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+      last_verified_at: now,
+      is_active: true,
+      updated_at: now
+    })
+  });
+
+  await fetch(`${SB_URL}/rest/v1/data_sources`, {
+    method: 'POST',
+    headers: UPSERT_H,
+    body: JSON.stringify({
+      client_id,
+      source_system: 'google_search_console',
+      source_label: 'Google Search Console',
+      connected: true,
+      track: 'live_sync',
+      category: 'authority',
+      setup_by: 'self_serve',
+      connector_key: 'google_search_console',
+      last_sync_at: now
+    })
+  });
+
+  try { await syncGSCData(client_id, tokens.access_token); } catch(e) { console.error('[oauth-callback] sync error:', e.message); }
+
+  return res.redirect(302, '/connections?connected=google_search_console');
+}
+
+async function actionGscSync(req, res) {
+  const { client_id } = req.body || {};
+  if (!client_id) return res.status(400).json({ error: 'client_id required' });
+
+  const rows = await sbGet('client_credentials', `client_id=eq.${encodeURIComponent(client_id)}&source_system=eq.google_search_console&select=encrypted_key&limit=1`);
+  if (!rows[0]?.encrypted_key) return res.status(404).json({ error: 'no GSC credentials found' });
+
+  const refreshToken = decrypt(rows[0].encrypted_key);
+  const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+    })
+  });
+  const refreshed = await refreshRes.json();
+  if (!refreshed.access_token) return res.status(400).json({ error: 'token refresh failed', detail: refreshed });
+
+  const count = await syncGSCData(client_id, refreshed.access_token);
+  return res.json({ success: true, records_synced: count });
+}
+
 // ── Action handlers ───────────────────────────────────────────
 async function actionList(req, res) {
-  const { client } = req.query;
+  const client = req.query.client || req.query.client_id;
   if (!client) return res.status(400).json({ error: 'client required' });
 
   const [catalogRows, connections] = await Promise.all([
     sbGet('data_sources', `client_id=eq.__catalog__&select=source_id,name,category,icon,description,auth_type`),
-    sbGet('data_sources', `client_id=eq.${encodeURIComponent(client)}&select=source_id,is_active,last_synced_at,sync_status`)
+    sbGet('data_sources', `client_id=eq.${encodeURIComponent(client)}&select=source_id,connector_key,is_active,connected,last_synced_at,last_sync_at,sync_status`)
   ]);
 
   const catalog = catalogRows.length > 0 ? catalogRows : DEFAULT_CATALOG;
   const connMap = {};
-  for (const c of connections) connMap[c.source_id] = c;
+  for (const c of connections) {
+    if (c.source_id) connMap[c.source_id] = c;
+    if (c.connector_key) connMap[c.connector_key] = c;
+  }
 
   const sources = catalog.map(item => ({
     ...item,
-    is_connected: !!(connMap[item.id]?.is_active),
+    connected: !!(connMap[item.id]?.connected || connMap[item.id]?.is_active),
+    is_connected: !!(connMap[item.id]?.is_active || connMap[item.id]?.connected),
+    connector_key: connMap[item.id]?.connector_key || item.id,
     last_synced_at: connMap[item.id]?.last_synced_at || null,
+    last_sync_at: connMap[item.id]?.last_sync_at || connMap[item.id]?.last_synced_at || null,
     sync_status: connMap[item.id]?.sync_status || null,
   }));
 
-  res.json({ sources });
+  // Also include live connectors (GSC etc) not in catalog
+  const liveRows = connections.filter(c => c.connector_key && !catalog.find(cat => cat.id === c.connector_key));
+  const allSources = [...sources, ...liveRows.map(c => ({
+    id: c.connector_key,
+    connector_key: c.connector_key,
+    connected: !!(c.connected || c.is_active),
+    last_sync_at: c.last_sync_at || c.last_synced_at || null,
+  }))];
+
+  res.json({ sources: allSources, data: allSources });
 }
 
 async function actionSaveKey(req, res) {
@@ -133,12 +313,18 @@ async function actionTest(req, res) {
 }
 
 async function actionDisconnect(req, res) {
-  const { client, source_id } = req.body;
+  const client = req.body.client || req.body.client_id;
+  const source_id = req.body.source_id || req.body.connector_key;
   if (!client || !source_id) return res.status(400).json({ error: 'client, source_id required' });
 
-  const r = await fetch(`${SB_URL}/rest/v1/data_sources?client_id=eq.${encodeURIComponent(client)}&source_id=eq.${encodeURIComponent(source_id)}`, {
+  const isConnectorKey = !req.body.source_id && req.body.connector_key;
+  const filter = isConnectorKey
+    ? `client_id=eq.${encodeURIComponent(client)}&connector_key=eq.${encodeURIComponent(source_id)}`
+    : `client_id=eq.${encodeURIComponent(client)}&source_id=eq.${encodeURIComponent(source_id)}`;
+
+  const r = await fetch(`${SB_URL}/rest/v1/data_sources?${filter}`, {
     method: 'PATCH', headers: MIN_H,
-    body: JSON.stringify({ is_active: false, sync_status: 'disconnected', disconnected_at: new Date().toISOString() })
+    body: JSON.stringify({ is_active: false, connected: false, sync_status: 'disconnected', disconnected_at: new Date().toISOString() })
   });
   if (!r.ok) return res.status(500).json({ error: await r.text() });
   res.json({ ok: true });
@@ -269,12 +455,15 @@ module.exports = async function handler(req, res) {
 
   const action = req.query.action;
   try {
-    if (action === 'list')         return await actionList(req, res);
-    if (action === 'save-key')     return await actionSaveKey(req, res);
-    if (action === 'test')         return await actionTest(req, res);
-    if (action === 'disconnect')   return await actionDisconnect(req, res);
-    if (action === 'upload')       return await actionUpload(req, res);
-    if (action === 'map-columns')  return await actionMapColumns(req, res);
+    if (action === 'list')           return await actionList(req, res);
+    if (action === 'save-key')       return await actionSaveKey(req, res);
+    if (action === 'test')           return await actionTest(req, res);
+    if (action === 'disconnect')     return await actionDisconnect(req, res);
+    if (action === 'upload')         return await actionUpload(req, res);
+    if (action === 'map-columns')    return await actionMapColumns(req, res);
+    if (action === 'oauth-init')     return await actionOAuthInit(req, res);
+    if (action === 'oauth-callback') return await actionOAuthCallback(req, res);
+    if (action === 'gsc-sync')       return await actionGscSync(req, res);
     res.status(400).json({ error: 'unknown action' });
   } catch(e) {
     res.status(500).json({ error: e.message });

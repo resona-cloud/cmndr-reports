@@ -373,6 +373,28 @@
 
   <!-- Live Connections -->
   <div class="section-lbl">Live Connections</div>
+
+  <div class="conn-card" id="gsc-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="#378ADD" stroke-width="1.6"/>
+        <path d="M12 3a9 9 0 0 1 6.36 15.36" stroke="#1D9E75" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M12 8v4l3 3" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Google Search Console</div>
+      <div class="conn-desc">Pull your search queries, impressions, clicks and rankings directly into your Forecast and Marketing reports.</div>
+      <div class="conn-status status-disconnected" id="gsc-status">
+        <div class="status-dot"></div>
+        <span id="gsc-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="gsc-actions">
+      <button class="conn-btn primary" id="gsc-connect-btn" onclick="startGSCOAuth()">Connect</button>
+    </div>
+  </div>
+
   <div class="conn-card" id="ga4-card">
     <div class="conn-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -616,6 +638,94 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
+
+// ── GSC OAuth ─────────────────────────────────────────────────
+function startGSCOAuth() {
+  const btn = document.getElementById('gsc-connect-btn');
+  btn.textContent = 'Redirecting...';
+  btn.disabled = true;
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  window.location.href = `/api/connections?action=oauth-init&connector=google_search_console&client_id=${clientId}`;
+}
+
+function syncGSC() {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  fetch('/api/connections?action=gsc-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) showToast('GSC data synced — ' + d.records_synced + ' records updated');
+    else showToast('Sync failed. Try again.');
+  })
+  .catch(() => showToast('Sync failed. Try again.'));
+}
+
+function disconnectGSC() {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  if (!confirm('Disconnect Google Search Console?')) return;
+  fetch('/api/connections?action=disconnect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: clientId, connector_key: 'google_search_console' })
+  })
+  .then(() => {
+    document.getElementById('gsc-status').className = 'conn-status status-disconnected';
+    document.getElementById('gsc-status-text').textContent = 'Not connected';
+    document.getElementById('gsc-actions').innerHTML =
+      '<button class="conn-btn primary" id="gsc-connect-btn" onclick="startGSCOAuth()">Connect</button>';
+    showToast('Google Search Console disconnected');
+  });
+}
+
+function checkConnectionReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const connected = params.get('connected');
+  if (connected === 'google_search_console') {
+    const status = document.getElementById('gsc-status');
+    const statusText = document.getElementById('gsc-status-text');
+    const actions = document.getElementById('gsc-actions');
+    if (status) status.className = 'conn-status status-connected';
+    if (statusText) statusText.textContent = 'Connected — syncing data';
+    if (actions) actions.innerHTML =
+      '<button class="conn-btn" onclick="syncGSC()">Sync now</button>' +
+      '<button class="conn-btn danger" onclick="disconnectGSC()">Disconnect</button>';
+    showToast('Google Search Console connected successfully!');
+    window.history.replaceState({}, '', '/connections');
+  }
+}
+
+async function loadConnectionStatuses() {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  try {
+    const res = await fetch(`/api/connections?action=list&client_id=${clientId}`);
+    const data = await res.json();
+    const sources = data.data || data.sources || [];
+    const gsc = sources.find(s => s.connector_key === 'google_search_console' || s.id === 'google_search_console');
+    if (gsc?.connected || gsc?.is_connected) {
+      const status = document.getElementById('gsc-status');
+      const statusText = document.getElementById('gsc-status-text');
+      const actions = document.getElementById('gsc-actions');
+      if (status) status.className = 'conn-status status-connected';
+      if (statusText) {
+        const lastSync = gsc.last_sync_at || gsc.last_synced_at;
+        statusText.textContent = lastSync
+          ? 'Last sync: ' + new Date(lastSync).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'Connected';
+      }
+      if (actions) actions.innerHTML =
+        '<button class="conn-btn" onclick="syncGSC()">Sync now</button>' +
+        '<button class="conn-btn danger" onclick="disconnectGSC()">Disconnect</button>';
+    }
+  } catch(e) {
+    console.error('[connections] status load failed', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', checkConnectionReturn);
+document.addEventListener('DOMContentLoaded', loadConnectionStatuses);
 </script>
 </body>
 </html>
