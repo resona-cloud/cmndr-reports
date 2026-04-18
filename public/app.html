@@ -430,6 +430,18 @@
     .celeb-close { font-size: 18px; cursor: pointer; opacity: .8; padding: 4px; flex-shrink: 0; }
     .celeb-close:hover { opacity: 1; }
 
+    /* ── Settings & Help ── */
+    .settings-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; gap: 16px; }
+    .settings-toggle-row:last-child { border-bottom: none; }
+    .settings-toggle-lbl { color: var(--text); }
+    .settings-toggle-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .toggle-switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border2); border-radius: 22px; transition: background .2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; left: 3px; top: 3px; transition: transform .2s; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--info); }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
     /* ── Forecast ── */
     .forecast-hero { margin-bottom: 28px; }
     .forecast-eyebrow { font-size: 10px; font-weight: 600; color: var(--info); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
@@ -957,10 +969,127 @@
     <div class="page-inner"><div class="page-head"><div><div class="page-title">Relays</div><div class="page-meta">Coming soon</div></div></div><div class="stub-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="8" cy="16" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M11 16h4l4-8M11 16h4l4 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div>Relays is coming soon</div></div></div>
   </div>
   <div class="page" id="page-settings">
-    <div class="page-inner"><div class="page-head"><div><div class="page-title">Settings</div><div class="page-meta">Coming soon</div></div></div><div class="stub-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M16 4v3M16 25v3M4 16h3M25 16h3M6.3 6.3l2.1 2.1M23.6 23.6l2.1 2.1M6.3 25.7l2.1-2.1M23.6 8.4l2.1-2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><div>Settings is coming soon</div></div></div>
+    <div class="page-inner" style="max-width:640px;">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-meta">Account preferences and configuration</div>
+        </div>
+      </div>
+
+      <div class="sec-label">Profile</div>
+      <div class="card">
+        <div class="settings-toggle-row">
+          <div><div class="settings-toggle-lbl">Account Name</div></div>
+          <div id="settings-account-name" style="font-size:13px;color:var(--text2);">—</div>
+        </div>
+        <div class="settings-toggle-row">
+          <div><div class="settings-toggle-lbl">Client ID</div></div>
+          <div id="settings-client-id" style="font-size:11px;color:var(--text3);font-family:monospace;background:var(--bg2);padding:3px 8px;border-radius:4px;">—</div>
+        </div>
+        <div class="settings-toggle-row">
+          <div><div class="settings-toggle-lbl">Role</div></div>
+          <div id="settings-role" style="font-size:13px;color:var(--text2);">—</div>
+        </div>
+      </div>
+
+      <div class="sec-label">Report Preferences</div>
+      <div class="card">
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Report Cadence</div>
+            <div class="settings-toggle-sub">Weekly — Every Monday at 8:00 AM EST</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);">Managed by advisor</div>
+        </div>
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Data Retention</div>
+            <div class="settings-toggle-sub">90 days of report history</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-label">Notifications</div>
+      <div class="card">
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Weekly report ready</div>
+            <div class="settings-toggle-sub">Get notified when your new report is available</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked onchange="toast('Notification preference saved')">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">New advisor message</div>
+            <div class="settings-toggle-sub">Get notified when your advisor sends a message</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked onchange="toast('Notification preference saved')">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Milestone achieved</div>
+            <div class="settings-toggle-sub">Get notified when you advance to a new milestone</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked onchange="toast('Notification preference saved')">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="sec-label">Account</div>
+      <div class="card">
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Sign out</div>
+            <div class="settings-toggle-sub">Sign out of your CMNDR account</div>
+          </div>
+          <button onclick="signOut()" style="font-size:12px;padding:6px 16px;border-radius:var(--radius-md);border:0.5px solid var(--border2);background:none;color:var(--text2);cursor:pointer;" onmouseover="this.style.borderColor='var(--danger)';this.style.color='var(--danger)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">Sign out</button>
+        </div>
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-toggle-lbl">Contact your advisor</div>
+            <div class="settings-toggle-sub">Book a session or get support</div>
+          </div>
+          <a href="https://calendly.com/operations-resona/30min" target="_blank" style="font-size:12px;color:var(--info);text-decoration:none;">Book a call →</a>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="page" id="page-help">
-    <div class="page-inner"><div class="page-head"><div><div class="page-title">Help</div><div class="page-meta">Coming soon</div></div></div><div class="stub-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="1.5"/><path d="M11.5 12a4.5 4.5 0 017.5 3c0 2.5-3 3.5-3 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="23" r="1" fill="currentColor"/></svg><div>Help is coming soon</div></div></div>
+    <div class="page-inner" style="max-width:700px;">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Help Center</div>
+          <div class="page-meta">Documentation and support resources</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;">
+        <a href="https://calendly.com/operations-resona/30min" target="_blank" style="text-decoration:none;">
+          <div class="card" style="cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--info)'" onmouseout="this.style.borderColor=''">
+            <div style="font-size:20px;margin-bottom:10px;">📞</div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Talk to your advisor</div>
+            <div style="font-size:12px;color:var(--text2);">Book a 30-minute session with your Resona advisor.</div>
+          </div>
+        </a>
+        <div class="card" style="cursor:pointer;transition:border-color .15s;" onclick="openRsSection('cmndr')" onmouseover="this.style.borderColor='var(--info)'" onmouseout="this.style.borderColor=''">
+          <div style="font-size:20px;margin-bottom:10px;">💬</div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Ask CMNDR</div>
+          <div style="font-size:12px;color:var(--text2);">Ask the AI assistant anything about your reports and data.</div>
+        </div>
+      </div>
+
+      <div class="sec-label">Frequently Asked Questions</div>
+      <div id="help-faq"></div>
+    </div>
   </div>
 
   <!-- Archive -->
@@ -1210,6 +1339,54 @@ async function sendCmndrMessage() {
   }
   sendBtn.disabled = false;
   thread.scrollTop = thread.scrollHeight;
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function loadSettings() {
+  const accountName = document.querySelector('.chip-name')?.textContent || '—';
+  const role = typeof USER_ROLE !== 'undefined' ? USER_ROLE : '—';
+  const clientId = typeof CLIENT !== 'undefined' ? CLIENT : '—';
+  document.getElementById('settings-account-name').textContent = accountName;
+  document.getElementById('settings-role').textContent = role;
+  document.getElementById('settings-client-id').textContent = clientId;
+}
+
+// ── Help ───────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  { q: 'How often is my report updated?', a: 'Your report is generated every Monday at 8:00 AM EST. You\'ll receive a notification when it\'s ready. Your advisor can also generate a fresh report on demand from their dashboard.' },
+  { q: 'What does my health score mean?', a: 'Your health score (0–100) reflects the overall performance of your business across Operations, Marketing, Finance, and Optimization. A score above 70 is healthy. Below 55 indicates areas that need attention.' },
+  { q: 'How do I connect my data sources?', a: 'Go to Relays in the left menu. From there you can upload a spreadsheet or connect live data sources like Google Analytics. Your advisor can also configure connections on your behalf.' },
+  { q: 'What is the 3 Point Road Map?', a: 'The 3PR is your strategic roadmap broken into three focused milestones. Each milestone builds on the last. As you complete each phase, your business grows in stability, reach, and efficiency. Your advisor configures and advances your milestones.' },
+  { q: 'What is the Forecast page?', a: 'Forecast uses your keyword profile and market data to show your projected market share, wallet share, and competitive landscape. It updates weekly alongside your main report.' },
+  { q: 'How do I advance to the next milestone?', a: 'Your Resona advisor reviews your progress and advances your milestone when the goals for the current phase are met. You can discuss your progress anytime by booking a call or messaging through CMNDR.' },
+  { q: 'Can I change my report date range?', a: 'Yes — use the Date Range selector in the bottom of the left menu. You can view 7 days, 30 days, Month-to-date, or Quarter-to-date. This affects all report pages.' },
+  { q: 'How do I get more keywords added to my Forecast?', a: 'Contact your Resona advisor and they will update your keyword profile. Keywords are used to generate your market intelligence reports.' }
+];
+
+function loadHelp() {
+  const faqEl = document.getElementById('help-faq');
+  if (!faqEl) return;
+  faqEl.innerHTML = FAQ_ITEMS.map((item, i) => `
+    <div class="card" style="margin-bottom:8px;cursor:pointer;padding:0;" onclick="toggleHelpItem(${i})">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px;">
+        <div style="font-size:13px;font-weight:500;">${item.q}</div>
+        <svg id="help-chevron-${i}" width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--text3);transition:transform .2s;">
+          <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div id="help-body-${i}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 16px;">
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;padding-bottom:14px;">${item.a}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleHelpItem(i) {
+  const body = document.getElementById('help-body-' + i);
+  const chevron = document.getElementById('help-chevron-' + i);
+  if (!body) return;
+  const isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
+  body.style.maxHeight = isOpen ? '0px' : '200px';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 // ── Forecast ──────────────────────────────────────────────────
@@ -1491,7 +1668,7 @@ function renderRoadmap(roadmap) {
 }
 
 // ── Navigation ───────────────────────────────────────────────
-const STUB_PAGES = new Set(['relays', 'settings', 'help']);
+const STUB_PAGES = new Set(['relays']);
 
 function nav(page) {
   currentPage = page;
@@ -1532,6 +1709,14 @@ function nav(page) {
     rs.classList.add('hidden-panel');
     main.classList.add('no-panel');
     loadForecast();
+  } else if (page === 'settings') {
+    rs.classList.add('hidden-panel');
+    main.classList.add('no-panel');
+    loadSettings();
+  } else if (page === 'help') {
+    rs.classList.add('hidden-panel');
+    main.classList.add('no-panel');
+    loadHelp();
   } else if (page === 'history') {
     rs.classList.add('hidden-panel');
     main.classList.add('no-panel');
