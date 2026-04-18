@@ -417,6 +417,67 @@
     </div>
   </div>
 
+  <div class="conn-card" id="stripe-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="5" width="20" height="14" rx="2" stroke="#6772E5" stroke-width="1.6"/>
+        <path d="M2 10h20" stroke="#6772E5" stroke-width="1.6"/>
+        <path d="M6 15h4" stroke="#6772E5" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Stripe</div>
+      <div class="conn-desc">Connect Stripe to pull revenue, charges, refunds, and MRR into your Finance report.</div>
+      <div class="conn-status status-disconnected" id="stripe-status">
+        <div class="status-dot"></div>
+        <span id="stripe-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="stripe-actions">
+      <button class="conn-btn primary" onclick="openApiKeyModal('stripe')">Connect</button>
+    </div>
+  </div>
+
+  <div class="conn-card" id="mailchimp-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" stroke="#FFE01B" stroke-width="1.6"/>
+        <path d="M22 6l-10 7L2 6" stroke="#FFE01B" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Mailchimp</div>
+      <div class="conn-desc">Sync subscribers, campaign performance, and open rates into your Marketing report.</div>
+      <div class="conn-status status-disconnected" id="mailchimp-status">
+        <div class="status-dot"></div>
+        <span id="mailchimp-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="mailchimp-actions">
+      <button class="conn-btn primary" onclick="openApiKeyModal('mailchimp')">Connect</button>
+    </div>
+  </div>
+
+  <div class="conn-card" id="quickbooks-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#2CA01C" stroke-width="1.6"/>
+        <path d="M8 12h8M12 8v8" stroke="#2CA01C" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">QuickBooks Online</div>
+      <div class="conn-desc">Pull P&amp;L, invoices, expenses, and cash flow directly into your Finance report.</div>
+      <div class="conn-status status-disconnected" id="quickbooks-status">
+        <div class="status-dot"></div>
+        <span id="quickbooks-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="quickbooks-actions">
+      <button class="conn-btn primary" onclick="startQBOAuth()">Connect</button>
+    </div>
+  </div>
+
   <!-- Bottom banner -->
   <div style="margin-top:40px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
     <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">More integrations are on the way.</div>
@@ -731,6 +792,17 @@ function checkConnectionReturn() {
       '<button class="conn-btn danger" onclick="disconnectGA4()">Disconnect</button>';
     showToast('Google Analytics 4 connected successfully!');
     window.history.replaceState({}, '', '/connections');
+  } else if (connected === 'quickbooks') {
+    const status = document.getElementById('quickbooks-status');
+    const statusText = document.getElementById('quickbooks-status-text');
+    const actions = document.getElementById('quickbooks-actions');
+    if (status) status.className = 'conn-status status-connected';
+    if (statusText) statusText.textContent = 'Connected — syncing data';
+    if (actions) actions.innerHTML =
+      '<button class="conn-btn" onclick="syncConnector(\'quickbooks\')">Sync now</button>' +
+      '<button class="conn-btn danger" onclick="disconnectConnector(\'quickbooks\')">Disconnect</button>';
+    showToast('QuickBooks Online connected successfully!');
+    window.history.replaceState({}, '', '/connections');
   }
 }
 
@@ -773,9 +845,200 @@ async function loadConnectionStatuses() {
         '<button class="conn-btn" onclick="syncGA4()">Sync now</button>' +
         '<button class="conn-btn danger" onclick="disconnectGA4()">Disconnect</button>';
     }
+    const connectors = ['stripe', 'mailchimp', 'quickbooks'];
+    for (const c of connectors) {
+      const src = sources.find(s => s.connector_key === c || s.id === c);
+      if (src?.connected || src?.is_connected) {
+        const status = document.getElementById(c + '-status');
+        const statusText = document.getElementById(c + '-status-text');
+        const actions = document.getElementById(c + '-actions');
+        if (status) status.className = 'conn-status status-connected';
+        if (statusText) {
+          statusText.textContent = src.last_sync_at
+            ? 'Last sync: ' + new Date(src.last_sync_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : 'Connected';
+        }
+        if (actions) actions.innerHTML =
+          (c === 'quickbooks'
+            ? '<button class="conn-btn" onclick="syncConnector(\'quickbooks\')">Sync now</button>'
+            : `<button class="conn-btn" onclick="syncConnector('${c}')">Sync now</button>`) +
+          `<button class="conn-btn danger" onclick="disconnectConnector('${c}')">Disconnect</button>`;
+      }
+    }
   } catch(e) {
     console.error('[connections] status load failed', e);
   }
+}
+
+// ── QuickBooks OAuth ──────────────────────────────────────────
+function startQBOAuth() {
+  const btn = document.querySelector('#quickbooks-actions .conn-btn');
+  if (btn) { btn.textContent = 'Redirecting...'; btn.disabled = true; }
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  window.location.href = `/api/connections?action=oauth-init&connector=quickbooks&client_id=${clientId}`;
+}
+
+// ── API Key modal (Stripe / Mailchimp) ────────────────────────
+function openApiKeyModal(connector) {
+  const configs = {
+    stripe: {
+      name: 'Stripe',
+      instruction: 'Find your Secret Key in Stripe Dashboard → Developers → API Keys. Use a Restricted Key with read-only access to Charges, Customers, and Subscriptions.',
+      placeholder: 'sk_live_...'
+    },
+    mailchimp: {
+      name: 'Mailchimp',
+      instruction: 'Find your API Key in Mailchimp → Account → Extras → API Keys. Generate a new key if needed.',
+      placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us00'
+    }
+  };
+  const config = configs[connector];
+  if (!config) return;
+
+  document.getElementById('api-key-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'api-key-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:16px;padding:32px;max-width:480px;width:calc(100% - 32px);position:relative;">
+      <button onclick="document.getElementById('api-key-modal').remove()"
+        style="position:absolute;top:16px;right:20px;font-size:20px;color:#6b7280;background:none;border:none;cursor:pointer;line-height:1;">×</button>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Connect ${config.name}</div>
+      <div style="font-size:13px;color:#9c9a92;margin-bottom:20px;line-height:1.6;">${config.instruction}</div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px;">API Key</label>
+        <div style="position:relative;">
+          <input type="password" id="modal-api-key" placeholder="${config.placeholder}"
+            style="width:100%;background:#0f0f1a;border:1px solid #2a2a3e;color:#e8e6de;padding:10px 40px 10px 14px;border-radius:8px;font-size:13px;outline:none;font-family:monospace;"/>
+          <button onclick="toggleModalKeyVis()"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#6b7280;font-size:12px;">Show</button>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px;">Label (optional)</label>
+        <input type="text" id="modal-api-label" placeholder="${config.name} Key"
+          style="width:100%;background:#0f0f1a;border:1px solid #2a2a3e;color:#e8e6de;padding:10px 14px;border-radius:8px;font-size:13px;outline:none;"/>
+      </div>
+      <button onclick="submitApiKey('${connector}')"
+        style="width:100%;padding:11px;border-radius:8px;border:none;background:#378ADD;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">
+        Connect &amp; Verify
+      </button>
+      <div id="modal-error" style="margin-top:10px;font-size:12px;color:#E24B4A;display:none;"></div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function toggleModalKeyVis() {
+  const input = document.getElementById('modal-api-key');
+  const btn = input?.nextElementSibling;
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  if (btn) btn.textContent = input.type === 'password' ? 'Show' : 'Hide';
+}
+
+async function submitApiKey(connector) {
+  const keyInput = document.getElementById('modal-api-key');
+  const labelInput = document.getElementById('modal-api-label');
+  const errorEl = document.getElementById('modal-error');
+  const submitBtn = document.querySelector('#api-key-modal button[onclick^="submitApiKey"]');
+
+  const api_key = keyInput?.value?.trim();
+  if (!api_key) {
+    if (errorEl) { errorEl.textContent = 'Please enter your API key.'; errorEl.style.display = ''; }
+    return;
+  }
+
+  if (submitBtn) { submitBtn.textContent = 'Connecting...'; submitBtn.disabled = true; }
+  if (errorEl) errorEl.style.display = 'none';
+
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+
+  try {
+    const saveRes = await fetch('/api/connections?action=save-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, connector_key: connector, api_key, label: labelInput?.value?.trim() || connector })
+    });
+    const saveData = await saveRes.json();
+    if (!saveData.success) throw new Error(saveData.error || 'Save failed');
+
+    const testRes = await fetch('/api/connections?action=test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, connector_key: connector })
+    });
+    const testData = await testRes.json();
+
+    document.getElementById('api-key-modal')?.remove();
+
+    const status = document.getElementById(connector + '-status');
+    const statusText = document.getElementById(connector + '-status-text');
+    const actions = document.getElementById(connector + '-actions');
+
+    if (testData.success) {
+      if (status) status.className = 'conn-status status-connected';
+      if (statusText) statusText.textContent = 'Connected — syncing data';
+      if (actions) actions.innerHTML =
+        `<button class="conn-btn" onclick="syncConnector('${connector}')">Sync now</button>` +
+        `<button class="conn-btn danger" onclick="disconnectConnector('${connector}')">Disconnect</button>`;
+      showToast(connector.charAt(0).toUpperCase() + connector.slice(1) + ' connected successfully!');
+    } else {
+      if (status) status.className = 'conn-status status-error';
+      if (statusText) statusText.textContent = 'Key saved but connection test failed';
+      showToast('Key saved but verification failed — check your key and try again.');
+    }
+  } catch(e) {
+    if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = ''; }
+    if (submitBtn) { submitBtn.textContent = 'Connect & Verify'; submitBtn.disabled = false; }
+  }
+}
+
+// ── Generic sync / disconnect ─────────────────────────────────
+async function syncConnector(connector) {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  const actionMap = { stripe: 'stripe-sync', mailchimp: 'mailchimp-sync', quickbooks: 'qb-sync' };
+  const action = actionMap[connector];
+  if (!action) return;
+
+  try {
+    const res = await fetch(`/api/connections?action=${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(connector + ' synced — ' + data.records_synced + ' records updated');
+      const statusText = document.getElementById(connector + '-status-text');
+      if (statusText) statusText.textContent = 'Last sync: ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      showToast('Sync failed. Try again.');
+    }
+  } catch(e) { showToast('Sync failed. Try again.'); }
+}
+
+async function disconnectConnector(connector) {
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  if (!confirm('Disconnect ' + connector + '?')) return;
+
+  try {
+    await fetch('/api/connections?action=disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, connector_key: connector })
+    });
+    const status = document.getElementById(connector + '-status');
+    const statusText = document.getElementById(connector + '-status-text');
+    const actions = document.getElementById(connector + '-actions');
+    if (status) status.className = 'conn-status status-disconnected';
+    if (statusText) statusText.textContent = 'Not connected';
+    if (actions) actions.innerHTML = connector === 'quickbooks'
+      ? '<button class="conn-btn primary" onclick="startQBOAuth()">Connect</button>'
+      : `<button class="conn-btn primary" onclick="openApiKeyModal('${connector}')">Connect</button>`;
+    showToast(connector + ' disconnected');
+  } catch(e) { showToast('Disconnect failed.'); }
 }
 
 document.addEventListener('DOMContentLoaded', checkConnectionReturn);

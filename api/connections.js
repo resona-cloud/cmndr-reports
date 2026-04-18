@@ -205,6 +205,235 @@ async function syncGSCData(client_id, accessToken) {
   return records.length;
 }
 
+// ── Stripe sync ───────────────────────────────────────────────
+async function syncStripeData(client_id, apiKey) {
+  const HEADERS_SB = SVC_H;
+  const STRIPE_H = { Authorization: `Bearer ${apiKey}` };
+  const now = new Date().toISOString();
+  const periodEnd = new Date();
+  const periodStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  try {
+    const chargesRes = await fetch(
+      `https://api.stripe.com/v1/charges?created[gte]=${Math.floor(periodStart.getTime()/1000)}&limit=100`,
+      { headers: STRIPE_H }
+    );
+    const chargesData = await chargesRes.json();
+    const charges = chargesData.data || [];
+    const successful = charges.filter(c => c.status === 'succeeded');
+    const failed = charges.filter(c => c.status === 'failed');
+    const totalRevenue = successful.reduce((a, c) => a + (c.amount - (c.amount_refunded || 0)), 0) / 100;
+    const totalRefunds = successful.reduce((a, c) => a + (c.amount_refunded || 0), 0) / 100;
+
+    const subsRes = await fetch(
+      'https://api.stripe.com/v1/subscriptions?status=active&limit=100',
+      { headers: STRIPE_H }
+    );
+    const subsData = await subsRes.json();
+    const subs = subsData.data || [];
+    const mrr = subs.reduce((a, s) => {
+      const plan = s.items?.data?.[0]?.price;
+      if (!plan) return a;
+      const amount = plan.unit_amount / 100;
+      const interval = plan.recurring?.interval;
+      return a + (interval === 'year' ? amount / 12 : amount);
+    }, 0);
+
+    const customerSet = new Set(successful.map(c => c.customer).filter(Boolean));
+
+    await fetch(`${SB_URL}/rest/v1/stripe_data?client_id=eq.${client_id}`,
+      { method: 'DELETE', headers: HEADERS_SB });
+
+    await fetch(`${SB_URL}/rest/v1/stripe_data`, {
+      method: 'POST',
+      headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id,
+        period_start: periodStart.toISOString().split('T')[0],
+        period_end: periodEnd.toISOString().split('T')[0],
+        total_revenue: parseFloat(totalRevenue.toFixed(2)),
+        total_charges: charges.length,
+        successful_charges: successful.length,
+        failed_charges: failed.length,
+        refunds: parseFloat(totalRefunds.toFixed(2)),
+        mrr: parseFloat(mrr.toFixed(2)),
+        active_customers: customerSet.size,
+        top_products: subs.slice(0, 5).map(s => ({
+          name: s.items?.data?.[0]?.price?.nickname || 'Subscription',
+          amount: (s.items?.data?.[0]?.price?.unit_amount || 0) / 100,
+          interval: s.items?.data?.[0]?.price?.recurring?.interval || 'month'
+        })),
+        fetched_at: now
+      })
+    });
+
+    await fetch(
+      `${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.stripe`,
+      { method: 'PATCH', headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+        body: JSON.stringify({ last_sync_at: now }) }
+    );
+
+    return successful.length;
+  } catch(e) {
+    console.error('[stripe-sync]', e.message);
+    return 0;
+  }
+}
+
+// ── Mailchimp sync ────────────────────────────────────────────
+async function syncMailchimpData(client_id, apiKey) {
+  const HEADERS_SB = SVC_H;
+  const now = new Date().toISOString();
+
+  try {
+    const dc = apiKey.split('-').pop();
+    const MC_BASE = `https://${dc}.api.mailchimp.com/3.0`;
+    const MC_H = { Authorization: `Bearer ${apiKey}` };
+
+    const listsRes = await fetch(`${MC_BASE}/lists?count=10`, { headers: MC_H });
+    const listsData = await listsRes.json();
+    const lists = listsData.lists || [];
+    const totalSubs = lists.reduce((a, l) => a + (l.stats?.member_count || 0), 0);
+    const unsubs = lists.reduce((a, l) => a + (l.stats?.unsubscribe_count || 0), 0);
+
+    const campRes = await fetch(
+      `${MC_BASE}/campaigns?count=10&status=sent&sort_field=send_time&sort_dir=DESC`,
+      { headers: MC_H }
+    );
+    const campData = await campRes.json();
+    const campaigns = campData.campaigns || [];
+    const avgOpenRate = campaigns.length
+      ? campaigns.reduce((a, c) => a + (c.report_summary?.open_rate || 0), 0) / campaigns.length
+      : 0;
+    const avgClickRate = campaigns.length
+      ? campaigns.reduce((a, c) => a + (c.report_summary?.click_rate || 0), 0) / campaigns.length
+      : 0;
+
+    await fetch(`${SB_URL}/rest/v1/mailchimp_data?client_id=eq.${client_id}`,
+      { method: 'DELETE', headers: HEADERS_SB });
+
+    await fetch(`${SB_URL}/rest/v1/mailchimp_data`, {
+      method: 'POST',
+      headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id,
+        total_subscribers: totalSubs,
+        active_subscribers: totalSubs,
+        unsubscribes: unsubs,
+        campaigns_sent: campaigns.length,
+        avg_open_rate: parseFloat(avgOpenRate.toFixed(4)),
+        avg_click_rate: parseFloat(avgClickRate.toFixed(4)),
+        top_campaigns: campaigns.slice(0, 5).map(c => ({
+          title: c.settings?.title || c.settings?.subject_line || '—',
+          send_time: c.send_time,
+          open_rate: c.report_summary?.open_rate || 0,
+          click_rate: c.report_summary?.click_rate || 0,
+          emails_sent: c.emails_sent || 0
+        })),
+        lists: lists.slice(0, 5).map(l => ({
+          name: l.name,
+          members: l.stats?.member_count || 0,
+          open_rate: l.stats?.open_rate || 0
+        })),
+        fetched_at: now
+      })
+    });
+
+    await fetch(
+      `${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.mailchimp`,
+      { method: 'PATCH', headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+        body: JSON.stringify({ last_sync_at: now }) }
+    );
+
+    return totalSubs;
+  } catch(e) {
+    console.error('[mailchimp-sync]', e.message);
+    return 0;
+  }
+}
+
+// ── QuickBooks sync ───────────────────────────────────────────
+async function syncQuickBooksData(client_id, accessToken, realmId) {
+  const HEADERS_SB = SVC_H;
+  const now = new Date().toISOString();
+  const QB_BASE = `https://quickbooks.api.intuit.com/v3/company/${realmId}`;
+  const QB_H = { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' };
+
+  try {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const plRes = await fetch(
+      `${QB_BASE}/reports/ProfitAndLoss?start_date=${startDate}&end_date=${endDate}&summarize_column_by=Total`,
+      { headers: QB_H }
+    );
+    const plData = await plRes.json();
+
+    let totalRevenue = 0, totalExpenses = 0;
+    const rows = plData.Rows?.Row || [];
+    for (const row of rows) {
+      const header = row.Header?.ColData?.[0]?.value || '';
+      const total = parseFloat(row.Summary?.ColData?.[1]?.value || 0);
+      if (header.toLowerCase().includes('income') || header.toLowerCase().includes('revenue')) totalRevenue += total;
+      if (header.toLowerCase().includes('expense')) totalExpenses += total;
+    }
+    const netIncome = totalRevenue - totalExpenses;
+
+    const invRes = await fetch(
+      `${QB_BASE}/query?query=SELECT * FROM Invoice WHERE TxnDate >= '${startDate}' MAXRESULTS 100`,
+      { headers: QB_H }
+    );
+    const invData = await invRes.json();
+    const invoices = invData.QueryResponse?.Invoice || [];
+    const paid = invoices.filter(i => i.Balance === 0).length;
+    const overdue = invoices.filter(i => i.Balance > 0 && new Date(i.DueDate) < new Date()).length;
+
+    const bsRes = await fetch(`${QB_BASE}/reports/BalanceSheet?end_date=${endDate}`, { headers: QB_H });
+    const bsData = await bsRes.json();
+    let ar = 0, ap = 0;
+    for (const row of (bsData.Rows?.Row || [])) {
+      const header = row.Header?.ColData?.[0]?.value || '';
+      const val = parseFloat(row.Summary?.ColData?.[1]?.value || 0);
+      if (header.toLowerCase().includes('accounts receivable')) ar = val;
+      if (header.toLowerCase().includes('accounts payable')) ap = val;
+    }
+
+    await fetch(`${SB_URL}/rest/v1/quickbooks_data?client_id=eq.${client_id}`,
+      { method: 'DELETE', headers: HEADERS_SB });
+
+    await fetch(`${SB_URL}/rest/v1/quickbooks_data`, {
+      method: 'POST',
+      headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id,
+        period_start: startDate,
+        period_end: endDate,
+        total_revenue: parseFloat(totalRevenue.toFixed(2)),
+        total_expenses: parseFloat(totalExpenses.toFixed(2)),
+        net_income: parseFloat(netIncome.toFixed(2)),
+        accounts_receivable: parseFloat(ar.toFixed(2)),
+        accounts_payable: parseFloat(ap.toFixed(2)),
+        total_invoices: invoices.length,
+        paid_invoices: paid,
+        overdue_invoices: overdue,
+        top_expense_categories: [],
+        fetched_at: now
+      })
+    });
+
+    await fetch(
+      `${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.quickbooks`,
+      { method: 'PATCH', headers: { ...HEADERS_SB, Prefer: 'return=minimal' },
+        body: JSON.stringify({ last_sync_at: now }) }
+    );
+
+    return invoices.length;
+  } catch(e) {
+    console.error('[qb-sync]', e.message);
+    return 0;
+  }
+}
+
 // ── OAuth helpers ──────────────────────────────────────────────
 async function actionOAuthInit(req, res) {
   const { connector } = req.query;
@@ -231,12 +460,82 @@ async function actionOAuthInit(req, res) {
     });
     return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   }
+  } else if (connector === 'quickbooks') {
+    const params = new URLSearchParams({
+      client_id: process.env.QUICKBOOKS_CLIENT_ID,
+      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=quickbooks',
+      response_type: 'code',
+      scope: 'com.intuit.quickbooks.accounting',
+      state: req.query.client_id || 'peak-flow',
+    });
+    return res.redirect(302, `https://appcenter.intuit.com/connect/oauth2?${params.toString()}`);
+  }
   return res.status(400).json({ error: 'unsupported connector' });
 }
 
 async function actionOAuthCallback(req, res) {
   const { code, state: client_id, connector } = req.query;
   if (!code) return res.redirect(302, '/connections?error=no_code');
+
+  if (connector === 'quickbooks') {
+    const qbTokenRes = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: 'Basic ' + Buffer.from(
+          process.env.QUICKBOOKS_CLIENT_ID + ':' + process.env.QUICKBOOKS_CLIENT_SECRET
+        ).toString('base64')
+      },
+      body: new URLSearchParams({
+        code,
+        redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=quickbooks',
+        grant_type: 'authorization_code',
+      })
+    });
+    const qbTokens = await qbTokenRes.json();
+    const realmId = req.query.realmId;
+    const encRefresh = encrypt(qbTokens.refresh_token);
+    const encAccess = encrypt(qbTokens.access_token);
+    const now = new Date().toISOString();
+
+    await fetch(`${SB_URL}/rest/v1/client_credentials`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'quickbooks',
+        credential_type: 'oauth_token',
+        encrypted_key: encRefresh,
+        label: 'QuickBooks Refresh Token',
+        scopes: ['com.intuit.quickbooks.accounting'],
+        expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        last_verified_at: now,
+        is_active: true,
+        updated_at: now,
+        meta: JSON.stringify({ realm_id: realmId, access_token: encAccess })
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/data_sources`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'quickbooks',
+        source_label: 'QuickBooks Online',
+        connected: true,
+        track: 'live_sync',
+        category: 'finance',
+        setup_by: 'self_serve',
+        connector_key: 'quickbooks',
+        last_sync_at: now
+      })
+    });
+
+    try { await syncQuickBooksData(client_id, qbTokens.access_token, realmId); } catch(e) { console.error('[qb-callback] sync error:', e.message); }
+
+    return res.redirect(302, '/connections?connected=quickbooks');
+  }
 
   const redirect_uri = `https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=${connector}`;
 
@@ -404,6 +703,43 @@ async function actionGa4Sync(req, res) {
   return res.json({ success: true, records_synced: count });
 }
 
+async function actionApiSync(req, res, action) {
+  const body = req.body || {};
+  const client_id = body.client_id || 'peak-flow';
+  const sourceSystem = action === 'stripe-sync' ? 'stripe' : action === 'mailchimp-sync' ? 'mailchimp' : 'quickbooks';
+
+  const creds = await sbGet('client_credentials',
+    `client_id=eq.${client_id}&source_system=eq.${sourceSystem}&is_active=eq.true&limit=1`
+  );
+  if (!creds.length) return res.status(404).json({ error: 'No credentials found' });
+
+  const cred = creds[0];
+  const decrypted = decrypt(cred.encrypted_key);
+  let synced = 0;
+
+  if (action === 'stripe-sync') {
+    synced = await syncStripeData(client_id, decrypted);
+  } else if (action === 'mailchimp-sync') {
+    synced = await syncMailchimpData(client_id, decrypted);
+  } else {
+    const meta = JSON.parse(cred.meta || '{}');
+    const refreshRes = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: 'Basic ' + Buffer.from(
+          process.env.QUICKBOOKS_CLIENT_ID + ':' + process.env.QUICKBOOKS_CLIENT_SECRET
+        ).toString('base64')
+      },
+      body: new URLSearchParams({ refresh_token: decrypted, grant_type: 'refresh_token' })
+    });
+    const refreshed = await refreshRes.json();
+    synced = await syncQuickBooksData(client_id, refreshed.access_token, meta.realm_id);
+  }
+
+  return res.status(200).json({ success: true, records_synced: synced });
+}
+
 // ── Action handlers ───────────────────────────────────────────
 async function actionList(req, res) {
   const client = req.query.client || req.query.client_id;
@@ -444,7 +780,10 @@ async function actionList(req, res) {
 }
 
 async function actionSaveKey(req, res) {
-  const { client, source_id, api_key } = req.body;
+  const client = req.body.client || req.body.client_id;
+  const source_id = req.body.source_id || req.body.connector_key;
+  const connector_key = req.body.connector_key || req.body.source_id;
+  const { api_key } = req.body;
   if (!client || !source_id || !api_key) return res.status(400).json({ error: 'client, source_id, api_key required' });
 
   const encrypted = encrypt(api_key);
@@ -452,20 +791,28 @@ async function actionSaveKey(req, res) {
 
   const credRes = await fetch(`${SB_URL}/rest/v1/client_credentials`, {
     method: 'POST', headers: UPSERT_H,
-    body: JSON.stringify({ client_id: client, source_id, encrypted_key: encrypted, updated_at: now })
+    body: JSON.stringify({ client_id: client, source_id, source_system: connector_key, encrypted_key: encrypted, updated_at: now })
   });
   if (!credRes.ok) return res.status(500).json({ error: 'credential save failed: ' + await credRes.text() });
 
   await fetch(`${SB_URL}/rest/v1/data_sources`, {
     method: 'POST', headers: UPSERT_H,
-    body: JSON.stringify({ client_id: client, source_id, is_active: true, connected_at: now, sync_status: 'pending' })
+    body: JSON.stringify({ client_id: client, source_id, connector_key, connected: true, is_active: true, connected_at: now, sync_status: 'pending' })
   });
 
-  res.json({ ok: true });
+  if (connector_key === 'stripe') {
+    try { await syncStripeData(client, api_key); } catch(e) {}
+  }
+  if (connector_key === 'mailchimp') {
+    try { await syncMailchimpData(client, api_key); } catch(e) {}
+  }
+
+  res.json({ success: true, ok: true });
 }
 
 async function actionTest(req, res) {
-  const { client, source_id } = req.body;
+  const client = req.body.client || req.body.client_id;
+  const source_id = req.body.source_id || req.body.connector_key;
   if (!client || !source_id) return res.status(400).json({ error: 'client, source_id required' });
 
   const rows = await sbGet('client_credentials', `client_id=eq.${encodeURIComponent(client)}&source_id=eq.${encodeURIComponent(source_id)}&select=encrypted_key&limit=1`);
@@ -494,7 +841,7 @@ async function actionTest(req, res) {
     body: JSON.stringify({ sync_status: ok ? 'connected' : 'error', last_tested_at: new Date().toISOString() })
   }).catch(() => {});
 
-  res.json({ ok, status, note });
+  res.json({ success: ok, ok, status, note });
 }
 
 async function actionDisconnect(req, res) {
@@ -650,6 +997,8 @@ module.exports = async function handler(req, res) {
     if (action === 'oauth-callback') return await actionOAuthCallback(req, res);
     if (action === 'gsc-sync')       return await actionGscSync(req, res);
     if (action === 'ga4-sync')       return await actionGa4Sync(req, res);
+    if (action === 'stripe-sync' || action === 'mailchimp-sync' || action === 'qb-sync')
+                                     return await actionApiSync(req, res, action);
     res.status(400).json({ error: 'unknown action' });
   } catch(e) {
     res.status(500).json({ error: e.message });
