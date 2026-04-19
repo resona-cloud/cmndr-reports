@@ -150,26 +150,167 @@ ${actionHistory.map(a => `• ${a.client_id} — ${a.action_title} [${a.page}] �
     return res.status(200).json({ answer, clients_referenced: clientsReferenced });
   }
 
-  // ── POST (default) — Ask Your Data (client-facing) ────────────────────
-  const { client_id, page, question, context_data } = req.body || {};
-  if (!client_id || !question) return res.status(400).json({ error: 'client_id and question required' });
+  // ── POST (default) — CMNDR Chat (client-facing) ──────────────
+  const { client_id, page, question } = req.body || {};
+  if (!client_id || !question) {
+    return res.status(400).json({ error: 'client_id and question required' });
+  }
 
-  const pageLabel = page || 'general';
-  const ctxStr = context_data ? '\n\nPage data context (summarized):\n' + String(context_data).slice(0, 1500) : '';
-
+  const pageLabel = page || 'overview';
   const start = Date.now();
-  let answer = 'No answer available.';
+
+  // Pull rich context from Supabase based on current page
+  let pageContext = '';
+  try {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString().split('T')[0];
+
+    if (pageLabel === 'operations' || pageLabel === 'overview') {
+      const [jobs, techs, alerts, pipeline] = await Promise.all([
+        safeQuery('jobs', `client_id=eq.${client_id}&order=scheduled_date.desc&limit=20`),
+        safeQuery('technicians', `client_id=eq.${client_id}`),
+        safeQuery('alerts', `client_id=eq.${client_id}&resolved=eq.false`),
+        safeQuery('pipeline_stages', `client_id=eq.${client_id}&order=week_label.asc`)
+      ]);
+      const completed = jobs.filter(j => j.status === 'completed').length;
+      const inProg = jobs.filter(j => j.status === 'in-progress').length;
+      const rev = jobs.filter(j => j.revenue)
+        .reduce((a, j) => a + j.revenue, 0);
+      pageContext = `
+OPERATIONS DATA (last 30 days):
+- Total jobs: ${jobs.length} | Completed: ${completed} | In Progress: ${inProg}
+- Period revenue: ${Math.round(rev).toLocaleString()}
+- Active alerts: ${alerts.length} unresolved
+- Technicians: ${techs.map(t => `${t.name} (${t.utilization_pct}% utilization)`).join(', ')}
+- Pipeline: ${pipeline.map(p => `${p.stage}: ${p.count} jobs (${p.total_value || 0})`).join(', ')}
+`.trim();
+    }
+
+    if (pageLabel === 'marketing') {
+      const [leads, campaigns, ga4, gsc] = await Promise.all([
+        safeQuery('leads', `client_id=eq.${client_id}&order=created_at.desc&limit=50`),
+        safeQuery('campaigns', `client_id=eq.${client_id}&active=eq.true`),
+        safeQuery('ga4_data', `client_id=eq.${client_id}&order=date.desc&limit=7`),
+        safeQuery('gsc_data', `client_id=eq.${client_id}&order=impressions.desc&limit=10`)
+      ]);
+      const converted = leads.filter(l => l.status === 'converted').length;
+      const convRate = leads.length
+        ? Math.round(converted / leads.length * 100) : 0;
+      const totalSpend = campaigns.reduce((a, c) => a + (c.spend || 0), 0);
+      const totalRev = campaigns.reduce((a, c) => a + (c.revenue_attributed || 0), 0);
+      const sessions = ga4.reduce((a, r) => a + (r.sessions || 0), 0);
+      const topQueries = gsc.slice(0, 5).map(g => g.query).join(', ');
+      pageContext = `
+MARKETING DATA (last 30 days):
+- Leads: ${leads.length} total | ${converted} converted | ${convRate}% conversion rate
+- Campaign spend: ${Math.round(totalSpend).toLocaleString()} | Revenue attributed: ${Math.round(totalRev).toLocaleString()}
+- GA4 sessions (last 7 days): ${sessions.toLocaleString()}
+- Top search queries: ${topQueries || 'no GSC data yet'}
+- Active campaigns: ${campaigns.length}
+`.trim();
+    }
+
+    if (pageLabel === 'finance') {
+      const [invoices, snapshots, stripeData, qbData] = await Promise.all([
+        safeQuery('invoices', `client_id=eq.${client_id}&order=issued_date.desc&limit=50`),
+        safeQuery('revenue_snapshots', `client_id=eq.${client_id}&order=period_start.desc&limit=6`),
+        safeQuery('stripe_data', `client_id=eq.${client_id}&order=fetched_at.desc&limit=1`),
+        safeQuery('quickbooks_data', `client_id=eq.${client_id}&order=fetched_at.desc&limit=1`)
+      ]);
+      const paid = invoices.filter(i => i.status === 'paid')
+        .reduce((a, i) => a + i.amount, 0);
+      const overdue = invoices.filter(i => i.status === 'overdue')
+        .reduce((a, i) => a + i.amount, 0);
+      const stripe = stripeData[0];
+      const qb = qbData[0];
+      pageContext = `
+FINANCE DATA (last 30 days):
+- Invoices: ${invoices.length} total | Paid: ${Math.round(paid).toLocaleString()} | Overdue: ${Math.round(overdue).toLocaleString()}
+${stripe ? `- Stripe: ${stripe.total_revenue} revenue | ${stripe.successful_charges} charges | MRR: ${stripe.mrr}` : ''}
+${qb ? `- QuickBooks: Revenue ${qb.total_revenue} | Expenses ${qb.total_expenses} | Net ${qb.net_income}` : ''}
+- Revenue trend: ${snapshots.map(s => `${s.period_label}: ${Math.round(s.revenue || 0).toLocaleString()}`).join(' | ')}
+`.trim();
+    }
+
+    if (pageLabel === 'optimization') {
+      const [logs, opps, aiUsage] = await Promise.all([
+        safeQuery('automation_logs', `client_id=eq.${client_id}&order=ran_at.desc&limit=50`),
+        safeQuery('automation_opportunities', `client_id=eq.${client_id}&status=neq.dismissed`),
+        safeQuery('ai_usage_logs', `client_id=eq.${client_id}&order=ran_at.desc&limit=20`)
+      ]);
+      const successRate = logs.length
+        ? Math.round(logs.filter(l => l.status === 'success').length / logs.length * 100) : 0;
+      const totalCost = aiUsage.reduce((a, l) => a + (parseFloat(l.cost_usd) || 0), 0);
+      const potSavings = opps.reduce((a, o) => a + (o.estimated_cost_saving || 0), 0);
+      pageContext = `
+OPTIMIZATION DATA:
+- Automation runs: ${logs.length} | Success rate: ${successRate}%
+- Opportunities identified: ${opps.length} | Potential savings: ${Math.round(potSavings).toLocaleString()}/yr
+- AI spend: ${totalCost.toFixed(2)} total
+`.trim();
+    }
+
+    if (pageLabel === 'roadmap') {
+      const [roadmap, courses, goals] = await Promise.all([
+        safeQuery('roadmaps', `client_id=eq.${client_id}&limit=1`),
+        safeQuery('client_courses', `client_id=eq.${client_id}&limit=1`),
+        safeQuery('client_goals', `client_id=eq.${client_id}&limit=1`)
+      ]);
+      const rm = roadmap[0];
+      const course = courses[0];
+      const goal = goals[0];
+      pageContext = `
+ROADMAP DATA:
+- Goal: ${goal?.stated_goal || 'not set'}
+- Current program: ${course?.course_display || 'not enrolled'}
+- Roadmap: ${rm ? `Phase ${rm.current_node}/3 active` : 'not configured'}
+- Current milestone: ${rm ? JSON.stringify(rm[`milestone_${rm.current_node}`]?.title || '—') : '—'}
+`.trim();
+    }
+
+  } catch(e) {
+    console.error('[ask/context]', e.message);
+    pageContext = 'Context unavailable.';
+  }
+
+  // Get client goal for system prompt
+  let clientGoal = '';
+  try {
+    const goalRows = await safeQuery('client_goals', `client_id=eq.${client_id}&limit=1`);
+    clientGoal = goalRows[0]?.stated_goal || '';
+  } catch(e) {}
+
+  let answer = 'I could not generate a response. Please try again.';
   let inputTokens = 0, outputTokens = 0;
 
   try {
     const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 350,
-        system: `You are a business performance advisor for Resona, analyzing data for client ID "${client_id}". Answer questions about the ${pageLabel} dashboard view. Be concise (2-4 sentences), specific, and actionable. Plain text only — no markdown, no bullet points.`,
-        messages: [{ role: 'user', content: question + ctxStr }]
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: `You are CMNDR, an AI business advisor embedded in a client dashboard.
+You are helping a business owner understand their performance data and make better decisions.
+${clientGoal ? `Their primary business goal: "${clientGoal}"` : ''}
+Current dashboard section: ${pageLabel}
+
+Rules:
+- Be direct, specific, and actionable — never generic
+- Reference actual numbers from the data when answering
+- Keep responses to 2-4 sentences maximum
+- If data shows a problem, name it and suggest one concrete next step
+- Plain text only — no markdown, no bullet points, no headers
+- If you don't have enough data to answer confidently, say so briefly`,
+        messages: [{
+          role: 'user',
+          content: `${question}\n\n${pageContext}`
+        }]
       })
     });
     const data = await aiRes.json();
@@ -177,22 +318,50 @@ ${actionHistory.map(a => `• ${a.client_id} — ${a.action_title} [${a.page}] �
     inputTokens = data.usage?.input_tokens || 0;
     outputTokens = data.usage?.output_tokens || 0;
   } catch(e) {
-    return res.status(500).json({ error: 'AI error: ' + e.message });
+    console.error('[ask/ai]', e.message);
   }
 
-  // Log usage (fire-and-forget)
+  // Log usage fire-and-forget
   fetch(`${SB_URL}/rest/v1/ai_usage_logs`, {
     method: 'POST',
     headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
     body: JSON.stringify({
-      client_id, feature: 'ask_your_data', prompt_type: pageLabel,
-      model: 'claude-sonnet-4-6',
-      input_tokens: inputTokens, output_tokens: outputTokens,
-      total_tokens: inputTokens + outputTokens,
-      cost_usd: ((inputTokens * 3 + outputTokens * 15) / 1_000_000).toFixed(6),
-      duration_ms: Date.now() - start, ran_at: new Date().toISOString()
+      client_id,
+      feature: 'cmndr_chat',
+      model: 'claude-haiku-4-5-20251001',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_usd: ((inputTokens * 0.25 + outputTokens * 1.25) / 1_000_000).toFixed(6),
+      triggered_by: 'client',
+      ran_at: new Date().toISOString()
     })
   }).catch(() => {});
 
+  // Save to cmndr_chat table
+  fetch(`${SB_URL}/rest/v1/cmndr_chat`, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      client_id,
+      page: pageLabel,
+      role: 'user',
+      content: question,
+      created_at: new Date().toISOString()
+    })
+  }).catch(() => {});
+
+  fetch(`${SB_URL}/rest/v1/cmndr_chat`, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      client_id,
+      page: pageLabel,
+      role: 'assistant',
+      content: answer,
+      created_at: new Date().toISOString()
+    })
+  }).catch(() => {});
+
+  const duration = Date.now() - start;
   return res.status(200).json({ answer });
 };

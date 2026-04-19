@@ -1214,7 +1214,7 @@
 
     <!-- Section: CMNDR (AI chat) -->
     <div class="rs-section" id="rs-messages-section">
-      <div class="rs-section-header" id="rs-messages-header" onclick="toggleRsSection('messages')">
+      <div class="rs-section-header" id="rs-messages-header" onclick="toggleRsSection('messages');loadCmndrHistory();">
         <span class="rs-section-lbl">CMNDR</span>
         <svg class="rs-section-icon" width="11" height="11" viewBox="0 0 11 11" fill="none">
           <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1223,7 +1223,7 @@
       <div class="rs-section-body" id="rs-messages-body">
         <div class="rs-section-body-inner">
           <div class="cmndr-thread" id="cmndr-thread">
-            <div class="cmndr-msg cmndr-msg--ai">
+            <div class="cmndr-msg cmndr-msg--ai cmndr-empty">
               <div class="cmndr-bubble">Ask me anything about your business data.</div>
             </div>
           </div>
@@ -1304,6 +1304,33 @@ function initNavGroups() {
 }
 
 // ── CMNDR AI Chat ─────────────────────────────────────────────
+async function loadCmndrHistory() {
+  const thread = document.getElementById('cmndr-thread');
+  if (!thread) return;
+  try {
+    const res = await fetch(
+      `/api/pages?page=cmndr-history&client=${CLIENT}&from=&to=`
+    );
+    const data = await res.json();
+    const messages = data.messages || [];
+    if (!messages.length) return;
+    const empty = thread.querySelector('.cmndr-empty');
+    if (empty) empty.remove();
+    messages.forEach(m => {
+      const el = document.createElement('div');
+      if (m.role === 'user') {
+        el.className = 'cmndr-msg cmndr-msg--user';
+        el.innerHTML = `<div class="cmndr-bubble">${(m.content || '').replace(/</g,'&lt;')}</div>`;
+      } else {
+        el.className = 'cmndr-msg cmndr-msg--ai';
+        el.innerHTML = `<div class="cmndr-bubble">${(m.content || '').replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
+      }
+      thread.appendChild(el);
+    });
+    thread.scrollTop = thread.scrollHeight;
+  } catch(e) {}
+}
+
 async function sendCmndrMessage() {
   const input = document.getElementById('cmndr-input');
   const sendBtn = document.getElementById('cmndr-send-btn');
@@ -1313,6 +1340,10 @@ async function sendCmndrMessage() {
 
   input.value = '';
   sendBtn.disabled = true;
+
+  // Remove the empty placeholder if still present
+  const empty = thread.querySelector('.cmndr-empty');
+  if (empty) empty.remove();
 
   const userMsg = document.createElement('div');
   userMsg.className = 'cmndr-msg cmndr-msg--user';
@@ -1326,10 +1357,10 @@ async function sendCmndrMessage() {
   thread.scrollTop = thread.scrollHeight;
 
   try {
-    const res = await fetch(`/api/ask?client=${CLIENT}&page=${currentPage}`, {
+    const res = await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: text }),
+      body: JSON.stringify({ client_id: CLIENT, page: currentPage, question: text }),
     });
     const data = await res.json();
     const answer = data.answer || data.error || 'No response.';
@@ -1703,6 +1734,7 @@ function nav(page) {
     document.getElementById('rs-messages-section').style.display = '';
     openRsSection('goal');
     openRsSection('messages');
+    setTimeout(loadCmndrHistory, 300);
     updateOverviewFrame();
     loadOverviewPanel();
   } else if (page === 'forecast') {

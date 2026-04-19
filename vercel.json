@@ -1,7 +1,7 @@
 {
   "outputDirectory": "public",
   "crons": [
-    { "path": "/api/pipeline?action=weekly-report", "schedule": "0 6 * * 1" }
+    { "path": "/api/pipeline?action=weekly-report", "schedule": "0 13 * * 1" }
   ],
   "functions": {
     "api/report.js": { "maxDuration": 30 },

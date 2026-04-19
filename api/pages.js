@@ -350,6 +350,19 @@ module.exports = async function handler(req, res) {
   const { biz: BIZ, type: BIZ_TYPE } = CLIENT_META[client] || DEFAULT_META;
 
   try {
+    // ── CMNDR Chat history ────────────────────────────────────
+    if (page === 'cmndr-history') {
+      const messages = await safeQuery(
+        'cmndr_chat',
+        `client_id=eq.${client}&order=created_at.asc&limit=20`
+      );
+      return res.status(200).json({
+        messages: messages || [],
+        page: 'cmndr-history',
+        client
+      });
+    }
+
     // ── History page ─────────────────────────────────────────
     if (page === 'history') {
       const [snapshots, messages] = await Promise.all([
