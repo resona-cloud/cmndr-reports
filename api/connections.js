@@ -352,6 +352,211 @@ async function syncMailchimpData(client_id, apiKey) {
   }
 }
 
+// ── Square sync ───────────────────────────────────────────────
+async function syncSquareData(client_id, apiKey) {
+  const now = new Date().toISOString();
+  const endDate = new Date().toISOString();
+  const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const SQ_H = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Square-Version': '2024-01-18' };
+
+    const paymentsRes = await fetch(
+      `https://connect.squareup.com/v2/payments?begin_time=${startDate}&end_time=${endDate}&limit=100`,
+      { headers: SQ_H }
+    );
+    const paymentsData = await paymentsRes.json();
+    const payments = paymentsData.payments || [];
+    const completed = payments.filter(p => p.status === 'COMPLETED');
+    const totalRevenue = completed.reduce((a, p) => a + ((p.total_money?.amount || 0) / 100), 0);
+    const totalRefunds = completed.reduce((a, p) => a + ((p.refunded_money?.amount || 0) / 100), 0);
+    const avgTransaction = completed.length ? totalRevenue / completed.length : 0;
+
+    const methodMap = {};
+    completed.forEach(p => {
+      const method = p.source_type || 'OTHER';
+      methodMap[method] = (methodMap[method] || 0) + 1;
+    });
+    const paymentMethods = Object.entries(methodMap).map(([method, count]) => ({
+      method, count,
+      pct: parseFloat((count / (completed.length || 1) * 100).toFixed(1))
+    }));
+
+    const locsRes = await fetch('https://connect.squareup.com/v2/locations', { headers: SQ_H });
+    const locsData = await locsRes.json();
+    const locations = (locsData.locations || []).map(l => ({ name: l.name, id: l.id, status: l.status }));
+
+    const ordersRes = await fetch('https://connect.squareup.com/v2/orders/search', {
+      method: 'POST',
+      headers: SQ_H,
+      body: JSON.stringify({
+        location_ids: locations.map(l => l.id).slice(0, 5),
+        query: {
+          filter: {
+            date_time_filter: { created_at: { start_at: startDate, end_at: endDate } },
+            state_filter: { states: ['COMPLETED'] }
+          },
+          sort: { sort_field: 'CREATED_AT', sort_order: 'DESC' }
+        },
+        limit: 50
+      })
+    });
+    const ordersData = await ordersRes.json();
+    const orders = ordersData.orders || [];
+    const itemMap = {};
+    orders.forEach(order => {
+      (order.line_items || []).forEach(item => {
+        const name = item.name || 'Unknown';
+        if (!itemMap[name]) itemMap[name] = { name, qty: 0, revenue: 0 };
+        itemMap[name].qty += parseInt(item.quantity || 1);
+        itemMap[name].revenue += (item.total_money?.amount || 0) / 100;
+      });
+    });
+    const topItems = Object.values(itemMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+
+    await fetch(`${SB_URL}/rest/v1/square_data?client_id=eq.${client_id}`, { method: 'DELETE', headers: SVC_H });
+
+    await fetch(`${SB_URL}/rest/v1/square_data`, {
+      method: 'POST',
+      headers: { ...SVC_H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id,
+        period_start: startDate.split('T')[0],
+        period_end: endDate.split('T')[0],
+        total_revenue: parseFloat(totalRevenue.toFixed(2)),
+        total_transactions: completed.length,
+        avg_transaction: parseFloat(avgTransaction.toFixed(2)),
+        refunds: parseFloat(totalRefunds.toFixed(2)),
+        top_items: topItems,
+        payment_methods: paymentMethods,
+        locations,
+        fetched_at: now
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.square`,
+      { method: 'PATCH', headers: { ...SVC_H, Prefer: 'return=minimal' }, body: JSON.stringify({ last_sync_at: now }) }
+    );
+
+    return completed.length;
+  } catch(e) {
+    console.error('[square-sync]', e.message);
+    return 0;
+  }
+}
+
+// ── Google Ads sync ───────────────────────────────────────────
+async function syncGoogleAdsData(client_id, accessToken, customerId) {
+  const now = new Date().toISOString();
+
+  try {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const GADS_H = {
+      Authorization: `Bearer ${accessToken}`,
+      'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+      'Content-Type': 'application/json'
+    };
+
+    const query = `
+      SELECT campaign.name, campaign.status,
+        metrics.impressions, metrics.clicks, metrics.cost_micros,
+        metrics.conversions, metrics.ctr, metrics.average_cpc, metrics.cost_per_conversion
+      FROM campaign
+      WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
+        AND campaign.status = 'ENABLED'
+      ORDER BY metrics.cost_micros DESC
+      LIMIT 20
+    `;
+
+    const adsRes = await fetch(
+      `https://googleads.googleapis.com/v16/customers/${customerId}/googleAds:search`,
+      { method: 'POST', headers: GADS_H, body: JSON.stringify({ query }) }
+    );
+    const adsData = await adsRes.json();
+    const results = adsData.results || [];
+
+    let impressions = 0, clicks = 0, cost = 0, conversions = 0;
+    const topCampaigns = results.map(r => {
+      const m = r.metrics || {};
+      const costVal = (m.cost_micros || 0) / 1000000;
+      impressions += parseInt(m.impressions || 0);
+      clicks += parseInt(m.clicks || 0);
+      cost += costVal;
+      conversions += parseFloat(m.conversions || 0);
+      return {
+        name: r.campaign?.name || '—',
+        impressions: parseInt(m.impressions || 0),
+        clicks: parseInt(m.clicks || 0),
+        cost: parseFloat(costVal.toFixed(2)),
+        conversions: parseFloat(m.conversions || 0),
+        ctr: parseFloat((m.ctr || 0).toFixed(4)),
+        avg_cpc: parseFloat(((m.average_cpc || 0) / 1000000).toFixed(2))
+      };
+    });
+
+    const kwQuery = `
+      SELECT ad_group_criterion.keyword.text,
+        metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions
+      FROM keyword_view
+      WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
+        AND ad_group_criterion.status = 'ENABLED'
+      ORDER BY metrics.impressions DESC
+      LIMIT 20
+    `;
+    const kwRes = await fetch(
+      `https://googleads.googleapis.com/v16/customers/${customerId}/googleAds:search`,
+      { method: 'POST', headers: GADS_H, body: JSON.stringify({ query: kwQuery }) }
+    );
+    const kwData = await kwRes.json();
+    const topKeywords = (kwData.results || []).map(r => ({
+      keyword: r.ad_group_criterion?.keyword?.text || '—',
+      impressions: parseInt(r.metrics?.impressions || 0),
+      clicks: parseInt(r.metrics?.clicks || 0),
+      cost: parseFloat(((r.metrics?.cost_micros || 0) / 1000000).toFixed(2)),
+      conversions: parseFloat(r.metrics?.conversions || 0)
+    }));
+
+    const ctr = impressions > 0 ? parseFloat((clicks / impressions).toFixed(4)) : 0;
+    const avgCpc = clicks > 0 ? parseFloat((cost / clicks).toFixed(2)) : 0;
+    const convRate = clicks > 0 ? parseFloat((conversions / clicks).toFixed(4)) : 0;
+    const costPerConv = conversions > 0 ? parseFloat((cost / conversions).toFixed(2)) : 0;
+
+    await fetch(`${SB_URL}/rest/v1/google_ads_data?client_id=eq.${client_id}`, { method: 'DELETE', headers: SVC_H });
+
+    await fetch(`${SB_URL}/rest/v1/google_ads_data`, {
+      method: 'POST',
+      headers: { ...SVC_H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        client_id,
+        period_start: startDate,
+        period_end: endDate,
+        impressions,
+        clicks,
+        cost: parseFloat(cost.toFixed(2)),
+        conversions: parseFloat(conversions.toFixed(2)),
+        ctr,
+        avg_cpc: avgCpc,
+        conversion_rate: convRate,
+        cost_per_conversion: costPerConv,
+        top_campaigns: topCampaigns,
+        top_keywords: topKeywords,
+        fetched_at: now
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/data_sources?client_id=eq.${client_id}&connector_key=eq.google_ads`,
+      { method: 'PATCH', headers: { ...SVC_H, Prefer: 'return=minimal' }, body: JSON.stringify({ last_sync_at: now }) }
+    );
+
+    return results.length;
+  } catch(e) {
+    console.error('[google-ads-sync]', e.message);
+    return 0;
+  }
+}
+
 // ── QuickBooks sync ───────────────────────────────────────────
 async function syncQuickBooksData(client_id, accessToken, realmId) {
   const HEADERS_SB = SVC_H;
@@ -459,7 +664,6 @@ async function actionOAuthInit(req, res) {
       state: req.query.client_id || 'peak-flow',
     });
     return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
-  }
   } else if (connector === 'quickbooks') {
     const params = new URLSearchParams({
       client_id: process.env.QUICKBOOKS_CLIENT_ID,
@@ -469,6 +673,17 @@ async function actionOAuthInit(req, res) {
       state: req.query.client_id || 'peak-flow',
     });
     return res.redirect(302, `https://appcenter.intuit.com/connect/oauth2?${params.toString()}`);
+  } else if (connector === 'google_ads') {
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      redirect_uri: 'https://cmndr-reports.vercel.app/api/connections?action=oauth-callback&connector=google_ads',
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/adwords',
+      access_type: 'offline',
+      prompt: 'consent',
+      state: req.query.client_id || 'peak-flow',
+    });
+    return res.redirect(302, `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   }
   return res.status(400).json({ error: 'unsupported connector' });
 }
@@ -614,6 +829,66 @@ async function actionOAuthCallback(req, res) {
     return res.redirect(302, '/connections?connected=google_analytics');
   }
 
+  if (connector === 'google_ads') {
+    // Discover Google Ads customer ID
+    let customerId = null;
+    try {
+      const custRes = await fetch('https://googleads.googleapis.com/v16/customers:listAccessibleCustomers', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+          'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN
+        }
+      });
+      const custData = await custRes.json();
+      const resourceNames = custData.resourceNames || [];
+      if (resourceNames.length) {
+        customerId = resourceNames[0].replace('customers/', '');
+      }
+    } catch(e) { console.error('[oauth-callback] Google Ads customer discovery error:', e.message); }
+
+    await fetch(`${SB_URL}/rest/v1/client_credentials`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'google_ads',
+        credential_type: 'oauth_token',
+        encrypted_key: encrypted,
+        label: 'Google Ads Refresh Token',
+        scopes: ['https://www.googleapis.com/auth/adwords'],
+        expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+        last_verified_at: now,
+        is_active: true,
+        updated_at: now,
+        meta: JSON.stringify({ customer_id: customerId })
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/data_sources`, {
+      method: 'POST',
+      headers: UPSERT_H,
+      body: JSON.stringify({
+        client_id,
+        source_system: 'google_ads',
+        source_label: 'Google Ads',
+        connected: true,
+        track: 'live_sync',
+        category: 'ads',
+        setup_by: 'self_serve',
+        connector_key: 'google_ads',
+        last_sync_at: now,
+        meta: JSON.stringify({ customer_id: customerId })
+      })
+    });
+
+    if (customerId) {
+      try { await syncGoogleAdsData(client_id, tokens.access_token, customerId); } catch(e) { console.error('[oauth-callback] Google Ads sync error:', e.message); }
+    }
+
+    return res.redirect(302, '/connections?connected=google_ads');
+  }
+
   // Default: google_search_console
   await fetch(`${SB_URL}/rest/v1/client_credentials`, {
     method: 'POST',
@@ -706,7 +981,14 @@ async function actionGa4Sync(req, res) {
 async function actionApiSync(req, res, action) {
   const body = req.body || {};
   const client_id = body.client_id || 'peak-flow';
-  const sourceSystem = action === 'stripe-sync' ? 'stripe' : action === 'mailchimp-sync' ? 'mailchimp' : 'quickbooks';
+  const sourceSystemMap = {
+    'stripe-sync': 'stripe',
+    'mailchimp-sync': 'mailchimp',
+    'qb-sync': 'quickbooks',
+    'square-sync': 'square',
+    'google-ads-sync': 'google_ads'
+  };
+  const sourceSystem = sourceSystemMap[action] || 'quickbooks';
 
   const creds = await sbGet('client_credentials',
     `client_id=eq.${client_id}&source_system=eq.${sourceSystem}&is_active=eq.true&limit=1`
@@ -721,7 +1003,26 @@ async function actionApiSync(req, res, action) {
     synced = await syncStripeData(client_id, decrypted);
   } else if (action === 'mailchimp-sync') {
     synced = await syncMailchimpData(client_id, decrypted);
+  } else if (action === 'square-sync') {
+    synced = await syncSquareData(client_id, decrypted);
+  } else if (action === 'google-ads-sync') {
+    const meta = JSON.parse(cred.meta || '{}');
+    const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        refresh_token: decrypted,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        grant_type: 'refresh_token'
+      })
+    });
+    const refreshed = await refreshRes.json();
+    if (refreshed.access_token) {
+      synced = await syncGoogleAdsData(client_id, refreshed.access_token, meta.customer_id);
+    }
   } else {
+    // qb-sync
     const meta = JSON.parse(cred.meta || '{}');
     const refreshRes = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
       method: 'POST',
@@ -805,6 +1106,9 @@ async function actionSaveKey(req, res) {
   }
   if (connector_key === 'mailchimp') {
     try { await syncMailchimpData(client, api_key); } catch(e) {}
+  }
+  if (connector_key === 'square') {
+    try { await syncSquareData(client, api_key); } catch(e) {}
   }
 
   res.json({ success: true, ok: true });
@@ -997,7 +1301,8 @@ module.exports = async function handler(req, res) {
     if (action === 'oauth-callback') return await actionOAuthCallback(req, res);
     if (action === 'gsc-sync')       return await actionGscSync(req, res);
     if (action === 'ga4-sync')       return await actionGa4Sync(req, res);
-    if (action === 'stripe-sync' || action === 'mailchimp-sync' || action === 'qb-sync')
+    if (action === 'stripe-sync' || action === 'mailchimp-sync' || action === 'qb-sync' ||
+        action === 'square-sync' || action === 'google-ads-sync')
                                      return await actionApiSync(req, res, action);
     res.status(400).json({ error: 'unknown action' });
   } catch(e) {

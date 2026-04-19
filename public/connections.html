@@ -478,6 +478,47 @@
     </div>
   </div>
 
+  <div class="conn-card" id="square-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="3" stroke="#00B272" stroke-width="1.6"/>
+        <rect x="8" y="8" width="8" height="8" rx="1" stroke="#00B272" stroke-width="1.6"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Square</div>
+      <div class="conn-desc">Sync POS payments, top items, and location data for your revenue report.</div>
+      <div class="conn-status status-disconnected" id="square-status">
+        <div class="status-dot"></div>
+        <span id="square-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="square-actions">
+      <button class="conn-btn primary" onclick="openApiKeyModal('square')">Connect</button>
+    </div>
+  </div>
+
+  <div class="conn-card" id="google_ads-card">
+    <div class="conn-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 17L8.5 7l5.5 9.5" stroke="#4285F4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="18" cy="16" r="3" stroke="#4285F4" stroke-width="1.6"/>
+        <path d="M8.5 7h9" stroke="#4285F4" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="conn-info">
+      <div class="conn-name">Google Ads</div>
+      <div class="conn-desc">Pull campaign performance, keywords, and ad spend into your marketing report.</div>
+      <div class="conn-status status-disconnected" id="google_ads-status">
+        <div class="status-dot"></div>
+        <span id="google_ads-status-text">Not connected</span>
+      </div>
+    </div>
+    <div class="conn-actions" id="google_ads-actions">
+      <button class="conn-btn primary" onclick="startGoogleAdsOAuth()">Connect</button>
+    </div>
+  </div>
+
   <!-- Bottom banner -->
   <div style="margin-top:40px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
     <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">More integrations are on the way.</div>
@@ -803,6 +844,17 @@ function checkConnectionReturn() {
       '<button class="conn-btn danger" onclick="disconnectConnector(\'quickbooks\')">Disconnect</button>';
     showToast('QuickBooks Online connected successfully!');
     window.history.replaceState({}, '', '/connections');
+  } else if (connected === 'google_ads') {
+    const status = document.getElementById('google_ads-status');
+    const statusText = document.getElementById('google_ads-status-text');
+    const actions = document.getElementById('google_ads-actions');
+    if (status) status.className = 'conn-status status-connected';
+    if (statusText) statusText.textContent = 'Connected — syncing data';
+    if (actions) actions.innerHTML =
+      '<button class="conn-btn" onclick="syncConnector(\'google_ads\')">Sync now</button>' +
+      '<button class="conn-btn danger" onclick="disconnectConnector(\'google_ads\')">Disconnect</button>';
+    showToast('Google Ads connected successfully!');
+    window.history.replaceState({}, '', '/connections');
   }
 }
 
@@ -845,7 +897,7 @@ async function loadConnectionStatuses() {
         '<button class="conn-btn" onclick="syncGA4()">Sync now</button>' +
         '<button class="conn-btn danger" onclick="disconnectGA4()">Disconnect</button>';
     }
-    const connectors = ['stripe', 'mailchimp', 'quickbooks'];
+    const connectors = ['stripe', 'mailchimp', 'quickbooks', 'square', 'google_ads'];
     for (const c of connectors) {
       const src = sources.find(s => s.connector_key === c || s.id === c);
       if (src?.connected || src?.is_connected) {
@@ -859,9 +911,7 @@ async function loadConnectionStatuses() {
             : 'Connected';
         }
         if (actions) actions.innerHTML =
-          (c === 'quickbooks'
-            ? '<button class="conn-btn" onclick="syncConnector(\'quickbooks\')">Sync now</button>'
-            : `<button class="conn-btn" onclick="syncConnector('${c}')">Sync now</button>`) +
+          `<button class="conn-btn" onclick="syncConnector('${c}')">Sync now</button>` +
           `<button class="conn-btn danger" onclick="disconnectConnector('${c}')">Disconnect</button>`;
       }
     }
@@ -878,7 +928,14 @@ function startQBOAuth() {
   window.location.href = `/api/connections?action=oauth-init&connector=quickbooks&client_id=${clientId}`;
 }
 
-// ── API Key modal (Stripe / Mailchimp) ────────────────────────
+function startGoogleAdsOAuth() {
+  const btn = document.querySelector('#google_ads-actions .conn-btn');
+  if (btn) { btn.textContent = 'Redirecting...'; btn.disabled = true; }
+  const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
+  window.location.href = `/api/connections?action=oauth-init&connector=google_ads&client_id=${clientId}`;
+}
+
+// ── API Key modal (Stripe / Mailchimp / Square) ───────────────
 function openApiKeyModal(connector) {
   const configs = {
     stripe: {
@@ -890,6 +947,11 @@ function openApiKeyModal(connector) {
       name: 'Mailchimp',
       instruction: 'Find your API Key in Mailchimp → Account → Extras → API Keys. Generate a new key if needed.',
       placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us00'
+    },
+    square: {
+      name: 'Square',
+      instruction: 'Find your Access Token in Square Developer Dashboard → Applications → select your app → Credentials. Use a Production Access Token.',
+      placeholder: 'EAAAl...'
     }
   };
   const config = configs[connector];
@@ -998,7 +1060,7 @@ async function submitApiKey(connector) {
 // ── Generic sync / disconnect ─────────────────────────────────
 async function syncConnector(connector) {
   const clientId = new URLSearchParams(window.location.search).get('client') || CLIENT || 'peak-flow';
-  const actionMap = { stripe: 'stripe-sync', mailchimp: 'mailchimp-sync', quickbooks: 'qb-sync' };
+  const actionMap = { stripe: 'stripe-sync', mailchimp: 'mailchimp-sync', quickbooks: 'qb-sync', square: 'square-sync', google_ads: 'google-ads-sync' };
   const action = actionMap[connector];
   if (!action) return;
 
@@ -1034,9 +1096,13 @@ async function disconnectConnector(connector) {
     const actions = document.getElementById(connector + '-actions');
     if (status) status.className = 'conn-status status-disconnected';
     if (statusText) statusText.textContent = 'Not connected';
-    if (actions) actions.innerHTML = connector === 'quickbooks'
-      ? '<button class="conn-btn primary" onclick="startQBOAuth()">Connect</button>'
-      : `<button class="conn-btn primary" onclick="openApiKeyModal('${connector}')">Connect</button>`;
+    if (actions) {
+      let reconnectBtn;
+      if (connector === 'quickbooks') reconnectBtn = '<button class="conn-btn primary" onclick="startQBOAuth()">Connect</button>';
+      else if (connector === 'google_ads') reconnectBtn = '<button class="conn-btn primary" onclick="startGoogleAdsOAuth()">Connect</button>';
+      else reconnectBtn = `<button class="conn-btn primary" onclick="openApiKeyModal('${connector}')">Connect</button>`;
+      actions.innerHTML = reconnectBtn;
+    }
     showToast(connector + ' disconnected');
   } catch(e) { showToast('Disconnect failed.'); }
 }
