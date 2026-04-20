@@ -368,6 +368,203 @@
   .wz-success-icon { font-size: 48px; margin-bottom: 16px; }
   .wz-success-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
   .wz-success-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Client Modal ── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-backdrop.open {
+    opacity: 1; pointer-events: all;
+  }
+  .client-modal {
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-lg);
+    width: calc(100% - 48px);
+    max-width: 680px;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(12px);
+    transition: transform .2s;
+  }
+  .modal-backdrop.open .client-modal {
+    transform: translateY(0);
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 18px;
+    font-size: 20px; color: var(--text3);
+    background: none; border: none; cursor: pointer;
+    line-height: 1; transition: color .12s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-header {
+    padding: 24px 24px 0;
+    display: flex; align-items: flex-start;
+    gap: 14px; margin-bottom: 20px;
+  }
+  .modal-av {
+    width: 44px; height: 44px; border-radius: 50%;
+    color: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .modal-client-name { font-size: 18px; font-weight: 600; }
+  .modal-client-id { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .modal-tabs {
+    display: flex; gap: 0;
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 24px; margin-bottom: 0;
+  }
+  .modal-tab {
+    font-size: 13px; padding: 10px 14px;
+    color: var(--text2); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px; transition: color .12s;
+    user-select: none; white-space: nowrap;
+  }
+  .modal-tab:hover { color: var(--text); }
+  .modal-tab.active {
+    color: var(--info);
+    border-bottom-color: var(--info);
+    font-weight: 500;
+  }
+  .modal-body { padding: 20px 24px 24px; }
+  .modal-tab-panel { display: none; }
+  .modal-tab-panel.active { display: block; }
+
+  /* Modal form elements */
+  .mform-group { margin-bottom: 16px; }
+  .mform-label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text2); margin-bottom: 6px;
+  }
+  .mform-input {
+    width: 100%; font-size: 13px; padding: 9px 12px;
+    background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md); color: var(--text);
+    outline: none; font-family: inherit;
+  }
+  .mform-input:focus { border-color: var(--info); }
+  .mform-textarea {
+    width: 100%; font-size: 13px; padding: 9px 12px;
+    background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md); color: var(--text);
+    outline: none; font-family: inherit; resize: vertical;
+    min-height: 80px; line-height: 1.5;
+  }
+  .mform-textarea:focus { border-color: var(--info); }
+  .mform-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .mbtn {
+    font-size: 13px; padding: 8px 18px;
+    border-radius: var(--radius-md); border: none;
+    cursor: pointer; font-weight: 500;
+    transition: opacity .15s;
+  }
+  .mbtn:hover { opacity: .85; }
+  .mbtn-primary { background: var(--info); color: #fff; }
+  .mbtn-success { background: var(--success); color: #fff; }
+  .mbtn-danger { background: none; border: 0.5px solid var(--danger) !important; color: var(--danger); }
+  .mbtn-muted { background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border2) !important; }
+  .modal-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  /* Milestone progress in modal */
+  .milestone-list { display: flex; flex-direction: column; gap: 8px; }
+  .milestone-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: var(--radius-md);
+    background: var(--bg2); border: 0.5px solid var(--border);
+  }
+  .milestone-item.active {
+    border-color: rgba(55,138,221,.4);
+    background: rgba(55,138,221,.05);
+  }
+  .milestone-item.complete {
+    border-color: rgba(29,158,117,.3);
+    background: rgba(29,158,117,.04);
+  }
+  .milestone-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .milestone-dot.active { background: var(--info); }
+  .milestone-dot.complete { background: var(--success); }
+  .milestone-dot.pending { background: var(--border2); }
+  .milestone-text { flex: 1; font-size: 13px; }
+  .milestone-status-lbl {
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    border-radius: 10px;
+  }
+  .ms-active { background: rgba(55,138,221,.12); color: var(--info); }
+  .ms-complete { background: rgba(29,158,117,.12); color: var(--success); }
+  .ms-pending { background: var(--bg3); color: var(--text3); }
+
+  /* Keyword tags */
+  .keyword-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  }
+  .keyword-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 10px;
+    background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: 20px; color: var(--text2);
+  }
+  .keyword-tag button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 14px; line-height: 1;
+    padding: 0; transition: color .1s;
+  }
+  .keyword-tag button:hover { color: var(--danger); }
+  .keyword-add-row {
+    display: flex; gap: 8px;
+  }
+  .keyword-add-row input {
+    flex: 1; font-size: 13px; padding: 7px 10px;
+    background: var(--bg2); border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md); color: var(--text);
+    outline: none; font-family: inherit;
+  }
+  .keyword-add-row input:focus { border-color: var(--info); }
+
+  /* Connection status in modal */
+  .conn-status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+  }
+  .conn-status-row:last-child { border-bottom: none; }
+  .conn-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    display: inline-block; margin-right: 7px;
+  }
+  .conn-dot.connected { background: var(--success); }
+  .conn-dot.disconnected { background: var(--text3); }
+
+  /* Onboarding form view */
+  .onboard-card {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px;
+    max-width: 600px;
+  }
+  .onboard-section-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin: 24px 0 14px; padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+  }
+  .onboard-section-title:first-of-type {
+    margin-top: 0; padding-top: 0; border-top: none;
+  }
 </style>
 </head>
 <body>
@@ -403,6 +600,18 @@
         <rect x="5.5" y="9" width="5" height="6" rx=".5" stroke="currentColor" stroke-width="1.3"/>
       </svg>
       Hub
+    </div>
+    <div class="nav-item" id="nav-clients"
+      onclick="showView('view-clients');loadClients()">
+      <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15"
+        fill="none">
+        <circle cx="7.5" cy="5" r="2.5" stroke="currentColor"
+          stroke-width="1.2"/>
+        <path d="M2 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round"/>
+      </svg>
+      Clients
     </div>
     <div class="nav-item" id="nav-workbench" onclick="showView('workbench')">
       <svg class="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -657,6 +866,172 @@
     <div id="pipeline-body"><div class="pip-empty">Loading pipeline data…</div></div>
   </div><!-- /view-pipeline -->
 
+  <!-- Clients view -->
+  <div class="view" id="view-clients">
+    <div style="display:flex;justify-content:space-between;
+      align-items:center;margin-bottom:24px;">
+      <div>
+        <div class="greeting" style="font-size:20px;">Clients</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:2px;">
+          Manage your client roster
+        </div>
+      </div>
+      <button class="mbtn mbtn-primary" onclick="showView('view-onboard')">
+        + New Client
+      </button>
+    </div>
+
+    <div style="background:var(--bg);border:0.5px solid var(--border);
+      border-radius:var(--radius-lg);overflow:hidden;">
+      <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 80px;
+        padding:9px 16px;border-bottom:0.5px solid var(--border);
+        background:var(--bg2);">
+        <span style="font-size:10px;font-weight:600;color:var(--text3);
+          text-transform:uppercase;letter-spacing:.06em;">Client</span>
+        <span style="font-size:10px;font-weight:600;color:var(--text3);
+          text-transform:uppercase;letter-spacing:.06em;">Goal</span>
+        <span style="font-size:10px;font-weight:600;color:var(--text3);
+          text-transform:uppercase;letter-spacing:.06em;">Milestone</span>
+        <span style="font-size:10px;font-weight:600;color:var(--text3);
+          text-transform:uppercase;letter-spacing:.06em;">Health</span>
+        <span style="font-size:10px;font-weight:600;color:var(--text3);
+          text-transform:uppercase;letter-spacing:.06em;">Connections</span>
+        <span></span>
+      </div>
+      <div id="clients-list-body">
+        <div style="padding:32px;text-align:center;color:var(--text3);
+          font-size:13px;">Loading clients...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboard view -->
+  <div class="view" id="view-onboard">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+      <button onclick="showView('view-clients')"
+        style="background:none;border:none;cursor:pointer;
+        color:var(--text3);font-size:13px;display:flex;
+        align-items:center;gap:4px;">
+        ← Back
+      </button>
+      <div class="greeting" style="font-size:20px;">New Client</div>
+    </div>
+
+    <div class="onboard-card">
+      <div class="onboard-section-title">Account</div>
+      <div class="mform-row">
+        <div class="mform-group">
+          <label class="mform-label">First Name *</label>
+          <input class="mform-input" id="ob-first" type="text"
+            placeholder="Jane"/>
+        </div>
+        <div class="mform-group">
+          <label class="mform-label">Last Name *</label>
+          <input class="mform-input" id="ob-last" type="text"
+            placeholder="Smith"/>
+        </div>
+      </div>
+      <div class="mform-group">
+        <label class="mform-label">Email *</label>
+        <input class="mform-input" id="ob-email" type="email"
+          placeholder="jane@business.com"/>
+      </div>
+      <div class="mform-row">
+        <div class="mform-group">
+          <label class="mform-label">Password *</label>
+          <input class="mform-input" id="ob-password" type="password"
+            placeholder="Min 8 characters"/>
+        </div>
+        <div class="mform-group">
+          <label class="mform-label">Client ID *</label>
+          <input class="mform-input" id="ob-client-id" type="text"
+            placeholder="e.g. acme-plumbing"/>
+        </div>
+      </div>
+
+      <div class="onboard-section-title">Business</div>
+      <div class="mform-group">
+        <label class="mform-label">Business Goal *</label>
+        <textarea class="mform-textarea" id="ob-goal"
+          placeholder="What is this client's primary business goal?"></textarea>
+      </div>
+      <div class="mform-row">
+        <div class="mform-group">
+          <label class="mform-label">Industry</label>
+          <select class="mform-input" id="ob-industry">
+            <option value="">Select...</option>
+            <option>Service Business</option>
+            <option>Retail</option>
+            <option>Restaurant</option>
+            <option>Healthcare</option>
+            <option>Professional Services</option>
+            <option>Trades &amp; Contractors</option>
+            <option>E-commerce</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="mform-group">
+          <label class="mform-label">Location</label>
+          <input class="mform-input" id="ob-location" type="text"
+            placeholder="City, State"/>
+        </div>
+      </div>
+
+      <div class="onboard-section-title">Strategy</div>
+      <div class="mform-group">
+        <label class="mform-label">Roadmap — Milestone 1 *</label>
+        <input class="mform-input" id="ob-m1-title" type="text"
+          placeholder="e.g. Build the Foundation"/>
+        <textarea class="mform-textarea" id="ob-m1-desc"
+          style="margin-top:6px;"
+          placeholder="Describe what this phase involves..."></textarea>
+      </div>
+      <div class="mform-group">
+        <label class="mform-label">Roadmap — Milestone 2</label>
+        <input class="mform-input" id="ob-m2-title" type="text"
+          placeholder="e.g. Scale Demand"/>
+        <textarea class="mform-textarea" id="ob-m2-desc"
+          style="margin-top:6px;"
+          placeholder="Describe what this phase involves..."></textarea>
+      </div>
+      <div class="mform-group">
+        <label class="mform-label">Roadmap — Milestone 3</label>
+        <input class="mform-input" id="ob-m3-title" type="text"
+          placeholder="e.g. Optimize Operations"/>
+        <textarea class="mform-textarea" id="ob-m3-desc"
+          style="margin-top:6px;"
+          placeholder="Describe what this phase involves..."></textarea>
+      </div>
+
+      <div class="onboard-section-title">Forecast Keywords</div>
+      <div class="mform-group">
+        <label class="mform-label">
+          Keywords (comma separated)
+        </label>
+        <textarea class="mform-textarea" id="ob-keywords"
+          placeholder="plumbing, HVAC, pipe repair, emergency plumber...">
+        </textarea>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          These drive the Forecast page market analysis
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px;">
+        <button class="mbtn mbtn-primary" onclick="submitOnboard()"
+          id="ob-submit-btn" style="flex:1;padding:11px;">
+          Create Client
+        </button>
+        <button class="mbtn mbtn-muted" onclick="showView('view-clients')">
+          Cancel
+        </button>
+      </div>
+      <div id="ob-error" style="margin-top:10px;font-size:12px;
+        color:var(--danger);display:none;"></div>
+      <div id="ob-success" style="margin-top:10px;font-size:12px;
+        color:var(--success);display:none;"></div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 <div class="toast" id="toast"></div>
 
@@ -714,6 +1089,152 @@
         <button class="wz-back-btn" id="wz-back" onclick="wizardBack()" style="display:none">Back</button>
         <button class="wz-next-btn" id="wz-next" onclick="wizardNext()">Continue</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="client-modal-backdrop"
+  onclick="closeClientModal(event)">
+  <div class="client-modal" id="client-modal">
+    <button class="modal-close" onclick="closeClientModal()">×</button>
+
+    <div class="modal-header">
+      <div class="modal-av" id="modal-av"
+        style="background:var(--info);">??</div>
+      <div>
+        <div class="modal-client-name" id="modal-client-name">
+          Loading...
+        </div>
+        <div class="modal-client-id" id="modal-client-id"></div>
+      </div>
+    </div>
+
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-tab="overview"
+        onclick="switchModalTab('overview')">Overview</div>
+      <div class="modal-tab" data-tab="roadmap"
+        onclick="switchModalTab('roadmap')">Roadmap</div>
+      <div class="modal-tab" data-tab="keywords"
+        onclick="switchModalTab('keywords')">Keywords</div>
+      <div class="modal-tab" data-tab="connections"
+        onclick="switchModalTab('connections')">Connections</div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Overview tab -->
+      <div class="modal-tab-panel active" id="modal-tab-overview">
+        <div class="mform-group">
+          <label class="mform-label">Current Goal</label>
+          <textarea class="mform-textarea" id="modal-goal"
+            rows="3"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;
+          gap:10px;margin-bottom:16px;">
+          <div style="background:var(--bg2);border-radius:var(--radius-md);
+            padding:12px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">
+              Health Score
+            </div>
+            <div style="font-size:20px;font-weight:600;"
+              id="modal-health-score">—</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius-md);
+            padding:12px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">
+              Current Phase
+            </div>
+            <div style="font-size:20px;font-weight:600;"
+              id="modal-phase">—</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius-md);
+            padding:12px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">
+              Program
+            </div>
+            <div style="font-size:13px;font-weight:500;line-height:1.3;"
+              id="modal-program">—</div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="mbtn mbtn-muted" onclick="closeClientModal()">
+            Close
+          </button>
+          <button class="mbtn mbtn-primary"
+            onclick="saveClientGoal()">
+            Save Goal
+          </button>
+          <button class="mbtn mbtn-success"
+            onclick="openInWorkbench()">
+            Open in Workbench
+          </button>
+        </div>
+      </div>
+
+      <!-- Roadmap tab -->
+      <div class="modal-tab-panel" id="modal-tab-roadmap">
+        <div id="modal-roadmap-body">
+          <div style="color:var(--text3);font-size:13px;">
+            Loading roadmap...
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="mbtn mbtn-muted" onclick="closeClientModal()">
+            Close
+          </button>
+          <button class="mbtn mbtn-success"
+            onclick="advanceClientMilestone()"
+            id="modal-advance-btn">
+            Advance to Next Milestone
+          </button>
+        </div>
+      </div>
+
+      <!-- Keywords tab -->
+      <div class="modal-tab-panel" id="modal-tab-keywords">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">
+          These keywords drive the Forecast page market analysis.
+        </div>
+        <div class="keyword-list" id="modal-keyword-list"></div>
+        <div class="keyword-add-row">
+          <input type="text" id="modal-keyword-input"
+            placeholder="Add keyword..."
+            onkeydown="if(event.key==='Enter') addModalKeyword()"/>
+          <button class="mbtn mbtn-primary" onclick="addModalKeyword()">
+            Add
+          </button>
+        </div>
+        <div class="modal-actions">
+          <button class="mbtn mbtn-muted" onclick="closeClientModal()">
+            Close
+          </button>
+          <button class="mbtn mbtn-primary"
+            onclick="saveClientKeywords()">
+            Save Keywords
+          </button>
+        </div>
+      </div>
+
+      <!-- Connections tab -->
+      <div class="modal-tab-panel" id="modal-tab-connections">
+        <div id="modal-connections-body">
+          <div style="color:var(--text3);font-size:13px;">
+            Loading connections...
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="mbtn mbtn-muted" onclick="closeClientModal()">
+            Close
+          </button>
+          <a href="/connections" target="_blank"
+            style="text-decoration:none;">
+            <button class="mbtn mbtn-primary">
+              Manage Connections →
+            </button>
+          </a>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1528,6 +2049,554 @@ function initMobile() {
 
 initMobile();
 // Load portfolio + health scores after auth (loadPortfolioCards also fetches health)
+
+// ── Modal state ───────────────────────────────────────────────
+let _modalClientId = null;
+let _modalKeywords = [];
+let _modalRoadmap = null;
+let _modalCourse = null;
+
+// ── showView helper (overrides existing — supports full view IDs) ─
+function showView(id) {
+  // Support both 'hub' shorthand and 'view-hub' full IDs
+  const fullId = id.startsWith('view-') ? id : 'view-' + id;
+  document.querySelectorAll('.view').forEach(v =>
+    v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n =>
+    n.classList.remove('active'));
+  const view = document.getElementById(fullId);
+  if (view) view.classList.add('active');
+  const navMap = {
+    'view-hub': 'nav-hub',
+    'view-clients': 'nav-clients',
+    'view-workbench': 'nav-workbench',
+    'view-strategy': 'nav-strategy',
+    'view-pipeline': 'nav-pipeline',
+  };
+  const navId = navMap[fullId];
+  if (navId) document.getElementById(navId)?.classList.add('active');
+  if (fullId === 'view-pipeline') loadPipeline();
+  if (fullId === 'view-strategy') {
+    const input = document.getElementById('strategy-input');
+    if (input) input.focus();
+  }
+}
+
+// ── showToast alias ───────────────────────────────────────────
+function showToast(msg) { toast(msg); }
+
+// ── Load clients roster ───────────────────────────────────────
+async function loadClients() {
+  const body = document.getElementById('clients-list-body');
+  if (!body) return;
+  body.innerHTML = '<div style="padding:24px;text-align:center;' +
+    'color:var(--text3);font-size:13px;">Loading...</div>';
+
+  try {
+    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+    const SB_ANON = window.SUPABASE_ANON_KEY ||
+      document.querySelector('script[src*="supabase"]')?.src?.match(/key=([^&]+)/)?.[1] || '';
+    const token = SESSION_TOKEN;
+
+    const profilesRes = await fetch(
+      `${SB_URL}/rest/v1/user_profiles?role=eq.client_user&select=*`,
+      { headers: {
+        apikey: SB_ANON,
+        Authorization: `Bearer ${token}`
+      }}
+    );
+    const profiles = await profilesRes.json();
+    if (!Array.isArray(profiles) || !profiles.length) {
+      body.innerHTML = '<div style="padding:32px;text-align:center;' +
+        'color:var(--text3);font-size:13px;">No clients yet. ' +
+        '<span style="color:var(--info);cursor:pointer;" ' +
+        'onclick="showView(\'view-onboard\')">Add your first client →</span>' +
+        '</div>';
+      return;
+    }
+
+    const clientIds = [...new Set(profiles.map(p => p.client_id))];
+
+    const [healthRows, goalRows, sourceRows, courseRows] = await Promise.all([
+      fetchSB(SB_URL, SB_ANON, token, 'client_health_scores',
+        `client_id=in.(${clientIds.join(',')})`),
+      fetchSB(SB_URL, SB_ANON, token, 'client_goals',
+        `client_id=in.(${clientIds.join(',')})`),
+      fetchSB(SB_URL, SB_ANON, token, 'data_sources',
+        `client_id=in.(${clientIds.join(',')})&connected=eq.true`),
+      fetchSB(SB_URL, SB_ANON, token, 'client_courses',
+        `client_id=in.(${clientIds.join(',')})`)
+    ]);
+
+    const healthMap = {};
+    healthRows.forEach(h => { healthMap[h.client_id] = h; });
+    const goalMap = {};
+    goalRows.forEach(g => { goalMap[g.client_id] = g; });
+    const connMap = {};
+    sourceRows.forEach(s => {
+      connMap[s.client_id] = (connMap[s.client_id] || 0) + 1;
+    });
+    const courseMap = {};
+    courseRows.forEach(c => { courseMap[c.client_id] = c; });
+
+    const seen = new Set();
+    body.innerHTML = clientIds.map(clientId => {
+      if (seen.has(clientId)) return '';
+      seen.add(clientId);
+      const prof = profiles.find(p => p.client_id === clientId);
+      const health = healthMap[clientId];
+      const goal = goalMap[clientId];
+      const connCount = connMap[clientId] || 0;
+      const course = courseMap[clientId];
+      const milestones = course?.milestones || [];
+      const idx = course?.current_milestone_index || 0;
+      const currentMs = milestones[idx];
+      const scoreColor = !health ? 'var(--text3)' :
+        health.score >= 70 ? 'var(--success)' :
+        health.score >= 55 ? 'var(--warning)' : 'var(--danger)';
+
+      return `<div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 80px;
+        padding:12px 16px;border-bottom:0.5px solid var(--border);
+        align-items:center;">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${prof?.full_name || clientId}</div>
+          <div style="font-size:11px;color:var(--text3);">${clientId}</div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
+          ${goal?.stated_goal ? goal.stated_goal.slice(0,50) + (goal.stated_goal.length > 50 ? '…' : '') : '—'}
+        </div>
+        <div style="font-size:12px;color:var(--text2);overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
+          ${currentMs?.display || '—'}
+        </div>
+        <div style="font-size:14px;font-weight:600;color:${scoreColor};">
+          ${health?.score ?? '—'}
+        </div>
+        <div style="font-size:12px;color:var(--text2);">
+          ${connCount} active
+        </div>
+        <div>
+          <button class="mbtn mbtn-muted"
+            style="font-size:11px;padding:4px 10px;"
+            onclick="openClientModal('${clientId}')">
+            Manage
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    body.innerHTML = '<div style="padding:24px;color:var(--danger);' +
+      'font-size:13px;">Error loading clients: ' + e.message + '</div>';
+  }
+}
+
+async function fetchSB(sbUrl, sbAnon, token, table, params) {
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/${table}?${params}`,
+      { headers: { apikey: sbAnon, Authorization: `Bearer ${token}` }});
+    const j = await r.json();
+    return Array.isArray(j) ? j : [];
+  } catch { return []; }
+}
+
+// ── Client Modal ──────────────────────────────────────────────
+async function openClientModal(clientId) {
+  _modalClientId = clientId;
+  _modalKeywords = [];
+
+  const backdrop = document.getElementById('client-modal-backdrop');
+  backdrop.classList.add('open');
+
+  document.getElementById('modal-client-id').textContent = clientId;
+  document.getElementById('modal-av').textContent =
+    clientId.slice(0,2).toUpperCase();
+  document.getElementById('modal-client-name').textContent = clientId;
+  switchModalTab('overview');
+
+  try {
+    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+    const SB_ANON = window.SUPABASE_ANON_KEY || '';
+    const token = SESSION_TOKEN;
+
+    const [profiles, health, goal, course, roadmap, keywords, sources] =
+      await Promise.all([
+        fetchSB(SB_URL, SB_ANON, token,
+          'user_profiles', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'client_health_scores', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'client_goals', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'client_courses', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'roadmaps', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'client_keywords', `client_id=eq.${clientId}&limit=1`),
+        fetchSB(SB_URL, SB_ANON, token,
+          'data_sources', `client_id=eq.${clientId}&connected=eq.true`)
+      ]);
+
+    const prof = profiles[0];
+    const h = health[0];
+    const g = goal[0];
+    const c = course[0];
+    const rm = roadmap[0];
+    const kw = keywords[0];
+    const connSources = sources;
+
+    _modalCourse = c;
+    _modalRoadmap = rm;
+    _modalKeywords = kw?.keywords || [];
+
+    const name = prof?.full_name || clientId;
+    document.getElementById('modal-client-name').textContent = name;
+    document.getElementById('modal-av').textContent =
+      name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+    document.getElementById('modal-goal').value = g?.stated_goal || '';
+    const scoreEl = document.getElementById('modal-health-score');
+    scoreEl.textContent = h?.score ?? '—';
+    scoreEl.style.color = !h ? 'var(--text3)' :
+      h.score >= 70 ? 'var(--success)' :
+      h.score >= 55 ? 'var(--warning)' : 'var(--danger)';
+
+    const milestones = c?.milestones || [];
+    const idx = c?.current_milestone_index || 0;
+    document.getElementById('modal-phase').textContent =
+      `${idx + 1} / ${milestones.length || 3}`;
+    document.getElementById('modal-program').textContent =
+      c?.course_display || '—';
+
+    renderModalRoadmap(rm, c);
+    renderModalKeywords();
+    renderModalConnections(connSources);
+
+  } catch(e) {
+    console.error('[modal]', e.message);
+  }
+}
+
+function closeClientModal(e) {
+  if (e && e.target !== document.getElementById('client-modal-backdrop'))
+    return;
+  document.getElementById('client-modal-backdrop')
+    .classList.remove('open');
+  _modalClientId = null;
+}
+
+function switchModalTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.modal-tab-panel').forEach(p =>
+    p.classList.toggle('active',
+      p.id === 'modal-tab-' + tab));
+}
+
+function renderModalRoadmap(rm, course) {
+  const el = document.getElementById('modal-roadmap-body');
+  if (!rm) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">' +
+      'No roadmap configured. Create one during client onboarding.</div>';
+    document.getElementById('modal-advance-btn').style.display = 'none';
+    return;
+  }
+
+  const current = rm.current_node || 1;
+  const nodes = [rm.milestone_1, rm.milestone_2, rm.milestone_3]
+    .filter(Boolean);
+
+  el.innerHTML = '<div class="milestone-list">' +
+    nodes.map((m, i) => {
+      const num = i + 1;
+      const status = num < current ? 'complete' :
+        num === current ? 'active' : 'pending';
+      return `<div class="milestone-item ${status}">
+        <div class="milestone-dot ${status}"></div>
+        <div class="milestone-text">
+          <div style="font-size:13px;font-weight:500;">
+            ${m.title || 'Milestone ' + num}
+          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px;">
+            ${m.description || ''}
+          </div>
+        </div>
+        <span class="milestone-status-lbl ms-${status}">
+          ${status === 'complete' ? 'Complete' :
+            status === 'active' ? 'Active' : 'Pending'}
+        </span>
+      </div>`;
+    }).join('') + '</div>';
+
+  const advBtn = document.getElementById('modal-advance-btn');
+  advBtn.style.display = current >= nodes.length ? 'none' : '';
+}
+
+function renderModalKeywords() {
+  const el = document.getElementById('modal-keyword-list');
+  el.innerHTML = _modalKeywords.map((kw, i) =>
+    `<span class="keyword-tag">
+      ${kw}
+      <button onclick="removeModalKeyword(${i})">×</button>
+    </span>`
+  ).join('') || '<span style="font-size:12px;color:var(--text3);">' +
+    'No keywords yet</span>';
+}
+
+function renderModalConnections(sources) {
+  const el = document.getElementById('modal-connections-body');
+  const ALL = [
+    { key: 'google_search_console', name: 'Google Search Console' },
+    { key: 'google_analytics', name: 'Google Analytics 4' },
+    { key: 'stripe', name: 'Stripe' },
+    { key: 'mailchimp', name: 'Mailchimp' },
+    { key: 'quickbooks', name: 'QuickBooks Online' },
+    { key: 'square', name: 'Square' },
+    { key: 'google_ads', name: 'Google Ads' },
+  ];
+  el.innerHTML = ALL.map(c => {
+    const src = sources.find(s => s.connector_key === c.key);
+    const connected = !!src;
+    const lastSync = src?.last_sync_at
+      ? new Date(src.last_sync_at).toLocaleDateString('en-US',
+          {month:'short',day:'numeric'})
+      : null;
+    return `<div class="conn-status-row">
+      <div>
+        <span class="conn-dot ${connected ? 'connected' : 'disconnected'}">
+        </span>
+        ${c.name}
+      </div>
+      <div style="font-size:11px;color:var(--text3);">
+        ${connected ? (lastSync ? 'Last sync: ' + lastSync : 'Connected') : 'Not connected'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addModalKeyword() {
+  const input = document.getElementById('modal-keyword-input');
+  const val = input?.value?.trim();
+  if (!val) return;
+  if (!_modalKeywords.includes(val)) {
+    _modalKeywords.push(val);
+    renderModalKeywords();
+  }
+  if (input) input.value = '';
+}
+
+function removeModalKeyword(i) {
+  _modalKeywords.splice(i, 1);
+  renderModalKeywords();
+}
+
+async function saveClientGoal() {
+  const goal = document.getElementById('modal-goal')?.value?.trim();
+  if (!goal || !_modalClientId) return;
+  try {
+    await fetch(`/api/onboard?action=goal&client=${_modalClientId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stated_goal: goal, set_by: 'resona_advisor' })
+    });
+    showToast('Goal updated');
+  } catch(e) { showToast('Failed to save goal'); }
+}
+
+async function saveClientKeywords() {
+  if (!_modalClientId) return;
+  try {
+    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+    const SB_ANON = window.SUPABASE_ANON_KEY || '';
+    const token = SESSION_TOKEN;
+    await fetch(`${SB_URL}/rest/v1/client_keywords`, {
+      method: 'POST',
+      headers: {
+        apikey: SB_ANON,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({
+        client_id: _modalClientId,
+        keywords: _modalKeywords,
+        updated_at: new Date().toISOString()
+      })
+    });
+    showToast('Keywords saved');
+  } catch(e) { showToast('Failed to save keywords'); }
+}
+
+async function advanceClientMilestone() {
+  if (!_modalClientId || !_modalRoadmap) return;
+  const rm = _modalRoadmap;
+  const current = rm.current_node || 1;
+  const nodes = [rm.milestone_1, rm.milestone_2, rm.milestone_3]
+    .filter(Boolean);
+  if (current >= nodes.length) {
+    showToast('Client is already on the final milestone');
+    return;
+  }
+  if (!confirm(`Advance ${_modalClientId} from Milestone ${current} to Milestone ${current + 1}?`))
+    return;
+
+  try {
+    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+    const SB_ANON = window.SUPABASE_ANON_KEY || '';
+    const token = SESSION_TOKEN;
+    await fetch(
+      `${SB_URL}/rest/v1/roadmaps?client_id=eq.${_modalClientId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: SB_ANON,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ current_node: current + 1 })
+      }
+    );
+    _modalRoadmap = { ...rm, current_node: current + 1 };
+    renderModalRoadmap(_modalRoadmap, _modalCourse);
+    showToast(`Advanced to Milestone ${current + 1}`);
+  } catch(e) { showToast('Failed to advance milestone'); }
+}
+
+function openInWorkbench() {
+  const clientId = _modalClientId;
+  closeClientModal();
+  document.querySelectorAll('.client-pill').forEach(p => {
+    if (p.dataset.client === clientId) p.click();
+  });
+  showView('view-workbench');
+}
+
+// ── Onboarding ────────────────────────────────────────────────
+async function submitOnboard() {
+  const btn = document.getElementById('ob-submit-btn');
+  const errEl = document.getElementById('ob-error');
+  const successEl = document.getElementById('ob-success');
+
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  const first = document.getElementById('ob-first')?.value?.trim();
+  const last = document.getElementById('ob-last')?.value?.trim();
+  const email = document.getElementById('ob-email')?.value?.trim();
+  const password = document.getElementById('ob-password')?.value;
+  const clientId = document.getElementById('ob-client-id')?.value?.trim()
+    .toLowerCase().replace(/\s+/g, '-');
+  const goal = document.getElementById('ob-goal')?.value?.trim();
+  const industry = document.getElementById('ob-industry')?.value;
+  const location = document.getElementById('ob-location')?.value?.trim();
+  const m1Title = document.getElementById('ob-m1-title')?.value?.trim();
+  const m1Desc = document.getElementById('ob-m1-desc')?.value?.trim();
+  const m2Title = document.getElementById('ob-m2-title')?.value?.trim();
+  const m2Desc = document.getElementById('ob-m2-desc')?.value?.trim();
+  const m3Title = document.getElementById('ob-m3-title')?.value?.trim();
+  const m3Desc = document.getElementById('ob-m3-desc')?.value?.trim();
+  const kwRaw = document.getElementById('ob-keywords')?.value?.trim();
+
+  if (!first || !last || !email || !password || !clientId || !goal) {
+    errEl.textContent = 'Please fill in all required fields.';
+    errEl.style.display = '';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = '';
+    return;
+  }
+
+  btn.textContent = 'Creating...';
+  btn.disabled = true;
+
+  try {
+    const onboardRes = await fetch('/api/onboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        full_name: first + ' ' + last,
+        client_id: clientId,
+        role: 'client_user',
+        stated_goal: goal,
+        industry: industry || null,
+        location: location || null
+      })
+    });
+    const onboardData = await onboardRes.json();
+    if (!onboardData.ok) throw new Error(onboardData.error || 'Onboard failed');
+
+    if (m1Title) {
+      const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+      const SB_ANON = window.SUPABASE_ANON_KEY || '';
+      const token = SESSION_TOKEN;
+      await fetch(`${SB_URL}/rest/v1/roadmaps`, {
+        method: 'POST',
+        headers: {
+          apikey: SB_ANON,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          current_node: 1,
+          milestone_1: { title: m1Title, description: m1Desc || '', status: 'in_progress' },
+          milestone_2: m2Title ? { title: m2Title, description: m2Desc || '', status: 'pending' } : null,
+          milestone_3: m3Title ? { title: m3Title, description: m3Desc || '', status: 'pending' } : null,
+        })
+      });
+    }
+
+    if (kwRaw) {
+      const keywords = kwRaw.split(',').map(k => k.trim()).filter(Boolean);
+      if (keywords.length) {
+        const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
+        const SB_ANON = window.SUPABASE_ANON_KEY || '';
+        const token = SESSION_TOKEN;
+        await fetch(`${SB_URL}/rest/v1/client_keywords`, {
+          method: 'POST',
+          headers: {
+            apikey: SB_ANON,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            keywords,
+            scraped_from: null
+          })
+        });
+      }
+    }
+
+    successEl.textContent = `✓ Client "${clientId}" created successfully!`;
+    successEl.style.display = '';
+    btn.textContent = 'Create Client';
+    btn.disabled = false;
+
+    ['ob-first','ob-last','ob-email','ob-password','ob-client-id',
+     'ob-goal','ob-keywords','ob-m1-title','ob-m1-desc',
+     'ob-m2-title','ob-m2-desc','ob-m3-title','ob-m3-desc']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+    setTimeout(() => showView('view-clients'), 1500);
+
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = '';
+    btn.textContent = 'Create Client';
+    btn.disabled = false;
+  }
+}
 </script>
 </body>
 </html>
