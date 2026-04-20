@@ -431,11 +431,9 @@ module.exports = async function handler(req, res) {
 
     // ── Cache check ───────────────────────────────────────────
     const weekStart = getMondayOfWeek();
-    if (from === weekStart) {
-      const cached = await getCachedReport(client, page);
-      if (cached) {
-        return res.status(200).json({ ...cached, page, client, from, to, generatedAt: cached.generatedAt || new Date().toISOString(), fromCache: true });
-      }
+    const cached = await getCachedReport(client, page);
+    if (cached) {
+      return res.status(200).json({ ...cached, page, client, from, to, generatedAt: cached.generatedAt || new Date().toISOString(), fromCache: true });
     }
 
     // ── Operations ────────────────────────────────────────────
@@ -473,7 +471,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { jobs: jobs.length, completed, rate, weekRev }, summary);
       data = { jobs, service_metrics, technicians, alerts, summary, actions, focus, strategyNotes, course: shapeCourse(course), milestone_just_advanced, goal, notes };
-      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
+      clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Marketing ─────────────────────────────────────────────
@@ -502,7 +500,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { leads: leads.length, converted, convRate, totalSpend, totalRevenue }, summary);
       data = { leads, campaigns, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes };
-      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
+      clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Finance ───────────────────────────────────────────────
@@ -529,7 +527,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { paid, outstanding, overdue, collRate }, summary);
       data = { invoices, snapshots, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes, totals: { paid, outstanding, overdue } };
-      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
+      clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     // ── Optimization ──────────────────────────────────────────
@@ -555,7 +553,7 @@ module.exports = async function handler(req, res) {
 
       saveSnapshot(client, from, to, page, { runs: automation_logs.length, successRate, totalTokens, potentialSavings }, summary);
       data = { automation_logs, ai_usage, opportunities, summary, actions, focus, strategyNotes, course: shapeCourse(course), goal, notes, totals: { totalTokens, totalCost, successRate, potentialSavings } };
-      if (from === weekStart) clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
+      clearOldCacheAndSave(client, page, weekStart, { ...data, generatedAt: new Date().toISOString() }, summary);
     }
 
     res.status(200).json({ ...data, page, client, from, to, generatedAt: new Date().toISOString() });

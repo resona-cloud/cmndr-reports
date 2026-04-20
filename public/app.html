@@ -583,17 +583,83 @@
     .sp-add-note-btn { width: 100%; margin-top: 6px; padding: 5px 8px; font-size: 11px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: none; color: var(--text3); cursor: pointer; text-align: left; }
     .sp-add-note-btn:hover { color: var(--text); background: var(--bg); }
 
-    /* ── History page ── */
-    .snap-grid { display: grid; gap: 8px; }
-    .snap-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
-    .snap-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
-    .snap-label { font-size: 13px; font-weight: 500; }
-    .snap-page { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--bg2); color: var(--text3); font-weight: 500; flex-shrink: 0; }
-    .snap-time { font-size: 11px; color: var(--text3); }
-    .snap-summary { font-size: 12px; color: var(--text2); line-height: 1.65; }
-    .snap-kpis { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-    .snap-kpi { font-size: 11px; color: var(--text2); }
-    .snap-kpi strong { color: var(--text); }
+    /* ── Archive page ── */
+    .archive-toolbar {
+      display: flex; gap: 10px; margin-bottom: 16px;
+      flex-wrap: wrap; align-items: center;
+    }
+    .archive-search {
+      flex: 1; min-width: 180px;
+      font-size: 13px; padding: 8px 12px;
+      background: var(--bg); border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md); color: var(--text);
+      outline: none; font-family: inherit;
+    }
+    .archive-search:focus { border-color: var(--info); }
+    .archive-filter {
+      font-size: 12px; padding: 8px 12px;
+      background: var(--bg); border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md); color: var(--text2);
+      cursor: pointer; outline: none;
+    }
+    .archive-filter:focus { border-color: var(--info); }
+    .archive-count {
+      font-size: 12px; color: var(--text3);
+      white-space: nowrap; align-self: center;
+    }
+    .snap-card {
+      background: var(--bg); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); margin-bottom: 8px;
+      overflow: hidden; cursor: pointer;
+      transition: border-color .15s;
+    }
+    .snap-card:hover { border-color: var(--border2); }
+    .snap-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; gap: 12px; user-select: none;
+    }
+    .snap-card-left {
+      display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+    }
+    .snap-page-pill {
+      font-size: 10px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .pill-operations { background: rgba(55,138,221,.12); color: var(--info); }
+    .pill-marketing { background: rgba(99,102,241,.12); color: #6366f1; }
+    .pill-finance { background: rgba(29,158,117,.12); color: var(--success); }
+    .pill-optimization { background: rgba(239,159,39,.12); color: var(--warning); }
+    .pill-overview { background: rgba(156,154,146,.12); color: var(--text2); }
+    .snap-card-date { font-size: 12px; color: var(--text2); }
+    .snap-card-metrics {
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .snap-metric {
+      font-size: 11px; color: var(--text3);
+    }
+    .snap-metric strong { color: var(--text); font-weight: 500; }
+    .snap-chevron {
+      color: var(--text3); transition: transform .2s; flex-shrink: 0;
+    }
+    .snap-card.open .snap-chevron { transform: rotate(180deg); }
+    .snap-card-body {
+      overflow: hidden; max-height: 0;
+      transition: max-height .3s ease;
+      border-top: 0px solid var(--border);
+    }
+    .snap-card.open .snap-card-body {
+      max-height: 400px;
+      border-top-width: 0.5px;
+    }
+    .snap-card-body-inner {
+      padding: 14px 16px;
+    }
+    .snap-summary { font-size: 13px; color: var(--text2); line-height: 1.7; }
+    .snap-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--text3); font-size: 13px;
+    }
 
     /* ── Welcome overlay ── */
     .welcome-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:flex; align-items:center; justify-content:center; }
@@ -725,12 +791,10 @@
       <div class="nav-item" data-page="forecast" onclick="nav('forecast')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 10.5l3.5-4 3 2.5 4-5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 13.5h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span class="nav-label">Forecast</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
       <div class="nav-item" data-page="roadmap" onclick="nav('roadmap')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 4.5h11M2 7.5h8M2 10.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span class="nav-label">3 Point Road Map</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
     </div>
   </div>
@@ -779,12 +843,10 @@
       <div class="nav-item" data-page="settings" onclick="nav('settings')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.5v1.2M7.5 12.3v1.2M1.5 7.5h1.2M12.3 7.5h1.2M3.3 3.3l.85.85M10.8 10.8l.85.85M3.3 11.7l.85-.85M10.8 4.2l.85-.85" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span class="nav-label">Settings</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
       <div class="nav-item" data-page="help" onclick="nav('help')">
         <svg class="nav-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 5.5a2 2 0 013.5 1.3c0 1.2-1.5 1.7-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7.5" cy="11" r=".6" fill="currentColor"/></svg>
         <span class="nav-label">Help</span>
-        <span class="coming-soon-badge">Soon</span>
       </div>
     </div>
   </div>
@@ -1720,11 +1782,11 @@ function nav(page) {
   } else if (page === 'roadmap') {
     rs.classList.remove('hidden-panel');
     main.classList.remove('no-panel');
-    document.getElementById('rs-progress-section').style.display = '';
-    document.getElementById('rs-goal-section').style.display = 'none';
-    document.getElementById('rs-messages-section').style.display = 'none';
-    openRsSection('progress');
-    showPanelSkeleton();
+    document.getElementById('rs-progress-section').style.display = 'none';
+    document.getElementById('rs-goal-section').style.display = '';
+    document.getElementById('rs-messages-section').style.display = '';
+    openRsSection('goal');
+    openRsSection('messages');
     loadRoadmap();
   } else if (page === 'overview') {
     rs.classList.remove('hidden-panel');
@@ -1738,8 +1800,13 @@ function nav(page) {
     updateOverviewFrame();
     loadOverviewPanel();
   } else if (page === 'forecast') {
-    rs.classList.add('hidden-panel');
-    main.classList.add('no-panel');
+    rs.classList.remove('hidden-panel');
+    main.classList.remove('no-panel');
+    document.getElementById('rs-progress-section').style.display = 'none';
+    document.getElementById('rs-goal-section').style.display = '';
+    document.getElementById('rs-messages-section').style.display = '';
+    openRsSection('goal');
+    openRsSection('messages');
     loadForecast();
   } else if (page === 'settings') {
     rs.classList.add('hidden-panel');
@@ -2483,32 +2550,139 @@ async function saveGoal() {
 
 // ── History page ──────────────────────────────────────────────
 function renderHistory(data) {
+  const el = document.getElementById('hist-body');
   const meta = document.getElementById('hist-meta');
-  if (meta) meta.textContent = `${(data.snapshots || []).length} snapshots`;
-  const body = document.getElementById('hist-body');
-  if (!body) return;
   const snaps = data.snapshots || [];
-  if (!snaps.length) { body.innerHTML = emptyState('history'); return; }
+  if (meta) meta.textContent = snaps.length + ' reports';
 
-  const pageColors = { operations: '#378ADD', marketing: '#7F77DD', finance: '#1D9E75', optimization: '#EF9F27' };
-  body.innerHTML = `<div class="snap-grid">${snaps.map(s => {
-    const kpis = s.snapshot_data?.kpis || {};
-    const page = s.snapshot_data?.page || '—';
-    const kpiPairs = Object.entries(kpis).slice(0, 4).map(([k, v]) =>
-      `<div class="snap-kpi"><strong>${typeof v === 'number' ? (k.includes('Rev') || k.includes('paid') ? '$' + Math.round(v).toLocaleString() : Math.round(v)) : v}</strong> ${k.replace(/([A-Z])/g, ' $1').toLowerCase()}</div>`
+  if (!snaps.length) {
+    el.innerHTML = '<div class="snap-empty">No archived reports yet. Reports are saved automatically each week.</div>';
+    return;
+  }
+
+  function pillClass(page) {
+    const map = {
+      operations: 'pill-operations', marketing: 'pill-marketing',
+      finance: 'pill-finance', optimization: 'pill-optimization',
+      overview: 'pill-overview'
+    };
+    return map[page] || 'pill-overview';
+  }
+
+  function formatDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  function getMetrics(snap) {
+    const kpis = snap.snapshot_data?.kpis || {};
+    const entries = Object.entries(kpis).slice(0, 3);
+    if (!entries.length) return '';
+    return entries.map(([k, v]) =>
+      `<span class="snap-metric"><strong>${v}</strong> ${k.replace(/_/g,' ')}</span>`
     ).join('');
-    return `<div class="snap-card">
-      <div class="snap-head">
-        <div>
-          <div class="snap-label">${s.period_label || '—'}</div>
-          <div class="snap-time">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
-        </div>
-        <span class="snap-page" style="background:${pageColors[page] || 'var(--bg2)'}15;color:${pageColors[page] || 'var(--text3)'}">${page}</span>
-      </div>
-      ${s.ai_summary ? `<div class="snap-summary">${s.ai_summary}</div>` : ''}
-      ${kpiPairs ? `<div class="snap-kpis">${kpiPairs}</div>` : ''}
-    </div>`;
-  }).join('')}</div>`;
+  }
+
+  function renderCards(list) {
+    if (!list.length) return '<div class="snap-empty">No reports match your filter.</div>';
+    return list.map((s, i) => {
+      const page = s.page || (s.period_label?.split('·')[0]?.trim()) || 'report';
+      const metrics = getMetrics(s);
+      const summary = s.ai_summary || s.snapshot_data?.summary || '';
+      return `
+        <div class="snap-card" id="snap-${i}" onclick="toggleSnap(${i})">
+          <div class="snap-card-header">
+            <div class="snap-card-left">
+              <span class="snap-page-pill ${pillClass(page)}">
+                ${page.charAt(0).toUpperCase() + page.slice(1)}
+              </span>
+              <div>
+                <div class="snap-card-date">
+                  ${formatDate(s.created_at)}
+                  ${s.period_from ? '· ' + s.period_from + (s.period_to !== s.period_from ? ' to ' + s.period_to : '') : ''}
+                </div>
+                ${metrics ? `<div class="snap-card-metrics" style="margin-top:4px;">${metrics}</div>` : ''}
+              </div>
+            </div>
+            <svg class="snap-chevron" width="14" height="14"
+              viewBox="0 0 14 14" fill="none">
+              <path d="M3 5l4 4 4-4" stroke="currentColor"
+                stroke-width="1.4" stroke-linecap="round"
+                stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="snap-card-body">
+            <div class="snap-card-body-inner">
+              ${summary
+                ? `<div class="snap-summary">${summary}</div>`
+                : '<div class="snap-summary" style="color:var(--text3);">No summary available for this report.</div>'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Get unique pages for filter dropdown
+  const pages = [...new Set(snaps.map(s =>
+    s.page || s.period_label?.split('·')[0]?.trim() || 'report'
+  ))];
+
+  el.innerHTML = `
+    <div class="archive-toolbar">
+      <input class="archive-search" type="text"
+        placeholder="Search reports..."
+        oninput="filterArchive()"
+        id="archive-search"/>
+      <select class="archive-filter" id="archive-type-filter"
+        onchange="filterArchive()">
+        <option value="">All report types</option>
+        ${pages.map(p =>
+          `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
+        ).join('')}
+      </select>
+      <span class="archive-count" id="archive-count">
+        ${snaps.length} reports
+      </span>
+    </div>
+    <div id="archive-cards">${renderCards(snaps)}</div>`;
+
+  // Store snaps on window for filtering
+  window._archiveSnaps = snaps;
+  window._renderArchiveCards = renderCards;
+  window._pillClass = pillClass;
+}
+
+function toggleSnap(i) {
+  const card = document.getElementById('snap-' + i);
+  if (!card) return;
+  card.classList.toggle('open');
+}
+
+function filterArchive() {
+  const search = document.getElementById('archive-search')?.value?.toLowerCase() || '';
+  const typeFilter = document.getElementById('archive-type-filter')?.value || '';
+  const snaps = window._archiveSnaps || [];
+
+  const filtered = snaps.filter(s => {
+    const page = s.page || s.period_label?.split('·')[0]?.trim() || '';
+    const summary = (s.ai_summary || '').toLowerCase();
+    const label = (s.period_label || '').toLowerCase();
+    const matchesSearch = !search ||
+      summary.includes(search) ||
+      label.includes(search) ||
+      page.toLowerCase().includes(search);
+    const matchesType = !typeFilter || page === typeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  const cardsEl = document.getElementById('archive-cards');
+  const countEl = document.getElementById('archive-count');
+  if (cardsEl && window._renderArchiveCards) {
+    cardsEl.innerHTML = window._renderArchiveCards(filtered);
+  }
+  if (countEl) countEl.textContent = filtered.length + ' reports';
 }
 
 // ── Welcome overlay ───────────────────────────────────────────
