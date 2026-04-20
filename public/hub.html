@@ -161,6 +161,19 @@
   .log-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
   .log-s { background: var(--success); } .log-e { background: var(--danger); } .log-i { background: var(--info); }
 
+  /* Collapsible workbench sections */
+  .wb-collapsible { border-bottom: 0.5px solid var(--border); }
+  .wb-collapsible-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; cursor: pointer; user-select: none; }
+  .wb-collapsible-header:hover .wb-label { color: var(--text); }
+  .wb-chevron { width: 14px; height: 14px; color: var(--text3); transition: transform .2s; flex-shrink: 0; }
+  .wb-collapsible.open .wb-chevron { transform: rotate(180deg); }
+  .wb-collapsible-body { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+  .wb-collapsible.open .wb-collapsible-body { max-height: 600px; }
+  .wb-collapsible-body > * { padding-bottom: 12px; }
+  .wb-sub-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .wb-archive-item { font-size: 11px; padding: 5px 8px; border-radius: var(--radius-md); background: var(--bg2); color: var(--text2); cursor: pointer; transition: background .1s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wb-archive-item:hover { background: var(--border2); color: var(--text); }
+
   .wb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
   .wb-title { font-size: 18px; font-weight: 500; }
   .wb-meta { font-size: 13px; color: var(--text2); margin-top: 2px; }
@@ -736,23 +749,78 @@
     <div class="wb-layout">
       <!-- Left panel -->
       <div class="wb-left">
-        <div class="wb-section">
-          <div class="wb-label">Client</div>
-          <div id="wb-client-list">
-            <div class="client-pill active" data-client="peak-flow" onclick="selectClient('peak-flow','Peak Flow Plumbing & HVAC','PF','Plumbing & HVAC','#378ADD')">
-              <div style="width:8px;height:8px;border-radius:50%;background:#378ADD;flex-shrink:0;"></div>
-              <div class="client-avatar" style="background:#378ADD;">PF</div>
-              <div><div class="client-cname">Peak Flow Plumbing</div><div class="client-ctype">Plumbing & HVAC</div></div>
-            </div>
-            <div class="client-pill" data-client="demo" onclick="selectClient('demo','Launchpad Apps','LA','SaaS Platform','#6366f1')">
-              <div style="width:8px;height:8px;border-radius:50%;background:#6366f1;flex-shrink:0;"></div>
-              <div class="client-avatar" style="background:#6366f1;">LA</div>
-              <div><div class="client-cname">Launchpad Apps</div><div class="client-ctype">SaaS Platform</div></div>
+
+        <!-- Client -->
+        <div class="wb-collapsible" id="wbs-client">
+          <div class="wb-collapsible-header" onclick="toggleWbSection('wbs-client')">
+            <span class="wb-label" style="margin:0;">Client</span>
+            <svg class="wb-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+          </div>
+          <div class="wb-collapsible-body">
+            <div id="wb-client-list">
+              <div class="client-pill active" data-client="peak-flow" onclick="selectClient('peak-flow','Peak Flow Plumbing & HVAC','PF','Plumbing & HVAC','#378ADD')">
+                <div style="width:8px;height:8px;border-radius:50%;background:#378ADD;flex-shrink:0;"></div>
+                <div class="client-avatar" style="background:#378ADD;">PF</div>
+                <div><div class="client-cname">Peak Flow Plumbing</div><div class="client-ctype">Plumbing & HVAC</div></div>
+              </div>
+              <div class="client-pill" data-client="demo" onclick="selectClient('demo','Launchpad Apps','LA','SaaS Platform','#6366f1')">
+                <div style="width:8px;height:8px;border-radius:50%;background:#6366f1;flex-shrink:0;"></div>
+                <div class="client-avatar" style="background:#6366f1;">LA</div>
+                <div><div class="client-cname">Launchpad Apps</div><div class="client-ctype">SaaS Platform</div></div>
+              </div>
             </div>
           </div>
-          <div id="wb-branding-section" style="display:none;margin-top:12px;">
-            <div class="wb-label">Edit branding</div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
+        </div>
+
+        <!-- Actions -->
+        <div class="wb-collapsible" id="wbs-actions">
+          <div class="wb-collapsible-header" onclick="toggleWbSection('wbs-actions')">
+            <span class="wb-label" style="margin:0;">Actions</span>
+            <svg class="wb-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+          </div>
+          <div class="wb-collapsible-body">
+            <div class="wb-sub-label">Reports</div>
+            <button class="wb-action wb-preview-btn" onclick="wbLoadPreview()">Preview report</button>
+            <button class="wb-action wb-send-btn" id="wb-send-btn" onclick="wbPrepareReport()">Prepare report</button>
+            <button class="wb-action wb-pdf-btn" onclick="wbPrintReport()">Download PDF</button>
+            <div class="wb-sub-label" style="margin-top:10px;">Archive</div>
+            <div id="wb-archive-list" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;">
+              <div style="font-size:11px;color:var(--text3);padding:4px 0;">Select a client to load archive</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="wb-collapsible" id="wbs-analytics">
+          <div class="wb-collapsible-header" onclick="toggleWbSection('wbs-analytics')">
+            <span class="wb-label" style="margin:0;">Analytics</span>
+            <svg class="wb-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+          </div>
+          <div class="wb-collapsible-body">
+            <div class="wb-sub-label">Activity Log</div>
+            <div id="wb-log-list" style="display:flex;flex-direction:column;gap:4px;">
+              <div class="log-entry"><span class="log-dot log-i"></span><span>Workbench ready</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control -->
+        <div class="wb-collapsible" id="wbs-control">
+          <div class="wb-collapsible-header" onclick="toggleWbSection('wbs-control')">
+            <span class="wb-label" style="margin:0;">Control</span>
+            <svg class="wb-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+          </div>
+          <div class="wb-collapsible-body">
+            <div class="wb-sub-label">Edit Branding</div>
+            <div id="wb-branding-section" style="display:flex;flex-direction:column;gap:6px;">
               <input class="wz-input" id="wb-brand-color" type="color" style="height:32px;padding:2px;" title="Accent color">
               <input class="wz-input" id="wb-brand-name" placeholder="Company name">
               <input class="wz-input" id="wb-brand-logo" placeholder="Logo URL">
@@ -761,8 +829,9 @@
           </div>
         </div>
 
-        <div class="wb-section">
-          <div class="wb-label">Date range</div>
+        <!-- Date Range (always visible at bottom) -->
+        <div style="margin-top:auto;padding-top:16px;border-top:0.5px solid var(--border);">
+          <div class="wb-label">Date Range</div>
           <div class="range-grid">
             <button class="range-btn active" data-range="7d" onclick="setRange('7d')">7 days</button>
             <button class="range-btn" data-range="30d" onclick="setRange('30d')">30 days</button>
@@ -776,19 +845,6 @@
           </div>
         </div>
 
-        <div class="wb-section">
-          <div class="wb-label">Actions</div>
-          <button class="wb-action wb-preview-btn" onclick="wbLoadPreview()">Preview report</button>
-          <button class="wb-action wb-send-btn" id="wb-send-btn" onclick="wbPrepareReport()">Prepare report</button>
-          <button class="wb-action wb-pdf-btn" onclick="wbPrintReport()">Download PDF</button>
-        </div>
-
-        <div class="wb-log">
-          <div class="wb-label">Activity log</div>
-          <div id="wb-log-entries">
-            <div class="log-entry"><span class="log-dot log-i"></span><span>Workbench ready</span></div>
-          </div>
-        </div>
       </div>
 
       <!-- Right panel -->
@@ -979,28 +1035,50 @@
 
       <div class="onboard-section-title">Strategy</div>
       <div class="mform-group">
-        <label class="mform-label">Roadmap — Milestone 1 *</label>
-        <input class="mform-input" id="ob-m1-title" type="text"
-          placeholder="e.g. Build the Foundation"/>
-        <textarea class="mform-textarea" id="ob-m1-desc"
-          style="margin-top:6px;"
-          placeholder="Describe what this phase involves..."></textarea>
+        <label class="mform-label">Strategy Template</label>
+        <select class="mform-select" id="ob-strategy-template"
+          onchange="applyStrategyTemplate(this.value)">
+          <option value="">— Choose a template or fill manually —</option>
+          <option value="lead_conversion">Lead Conversion Engine</option>
+          <option value="recurring_revenue">Recurring Revenue Builder</option>
+          <option value="brand_authority">Brand Authority &amp; SEO</option>
+          <option value="operational_scale">Operational Scale-Up</option>
+          <option value="digital_presence">Digital Presence Launch</option>
+          <option value="customer_retention">Customer Retention &amp; LTV</option>
+        </select>
       </div>
-      <div class="mform-group">
-        <label class="mform-label">Roadmap — Milestone 2</label>
-        <input class="mform-input" id="ob-m2-title" type="text"
-          placeholder="e.g. Scale Demand"/>
-        <textarea class="mform-textarea" id="ob-m2-desc"
-          style="margin-top:6px;"
-          placeholder="Describe what this phase involves..."></textarea>
-      </div>
-      <div class="mform-group">
-        <label class="mform-label">Roadmap — Milestone 3</label>
-        <input class="mform-input" id="ob-m3-title" type="text"
-          placeholder="e.g. Optimize Operations"/>
-        <textarea class="mform-textarea" id="ob-m3-desc"
-          style="margin-top:6px;"
-          placeholder="Describe what this phase involves..."></textarea>
+      <div class="mform-group" id="ob-milestone-container"
+        style="display:flex;flex-direction:column;gap:12px;">
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text3);
+            text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">
+            Phase 1
+          </div>
+          <input class="mform-input" id="ob-m1-title" type="text"
+            placeholder="e.g. Build the Foundation" style="margin-bottom:6px;"/>
+          <textarea class="mform-textarea" id="ob-m1-desc"
+            placeholder="Describe what this phase involves..."></textarea>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text3);
+            text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">
+            Phase 2
+          </div>
+          <input class="mform-input" id="ob-m2-title" type="text"
+            placeholder="e.g. Scale Demand" style="margin-bottom:6px;"/>
+          <textarea class="mform-textarea" id="ob-m2-desc"
+            placeholder="Describe what this phase involves..."></textarea>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text3);
+            text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">
+            Phase 3
+          </div>
+          <input class="mform-input" id="ob-m3-title" type="text"
+            placeholder="e.g. Optimize Operations" style="margin-bottom:6px;"/>
+          <textarea class="mform-textarea" id="ob-m3-desc"
+            placeholder="Describe what this phase involves..."></textarea>
+        </div>
       </div>
 
       <div class="onboard-section-title">Forecast Keywords</div>
@@ -1299,6 +1377,11 @@ function showView(name) {
     const input = document.getElementById('strategy-input');
     if (input) input.focus();
   }
+  if (name === 'workbench') {
+    // Open Client section by default
+    const clientSec = document.getElementById('wbs-client');
+    if (clientSec && !clientSec.classList.contains('open')) clientSec.classList.add('open');
+  }
 }
 
 function openWorkbench(clientId) {
@@ -1320,7 +1403,7 @@ function toast(msg) {
 
 // ── Workbench logic ───────────────────────────────────────────
 function wbAddLog(msg, type) {
-  const log = document.getElementById('wb-log-entries');
+  const log = document.getElementById('wb-log-list');
   const entry = document.createElement('div');
   entry.className = 'log-entry';
   const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1338,12 +1421,59 @@ function selectClient(id, name, initials, type, color) {
   document.getElementById('wb-title').textContent = name;
   document.getElementById('wb-meta').textContent = 'Client selected — click Preview report to load';
   wbAddLog('Client selected: ' + name, 'i');
+  // Load archive for this client
+  loadWbArchive(id);
+  // Open Actions section so archive is visible
+  const actionsSection = document.getElementById('wbs-actions');
+  if (actionsSection && !actionsSection.classList.contains('open')) {
+    actionsSection.classList.add('open');
+  }
   // Show branding panel for resona_admin
   const brandSection = document.getElementById('wb-branding-section');
   if (brandSection && wbUserRole === 'resona_admin') {
-    brandSection.style.display = 'block';
+    brandSection.style.display = 'flex';
     loadClientBranding(id);
   }
+}
+
+function toggleWbSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+
+async function loadWbArchive(clientId) {
+  const container = document.getElementById('wb-archive-list');
+  if (!container) return;
+  container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">Loading…</div>';
+  try {
+    const { data: snaps, error } = await supabase
+      .from('report_snapshots')
+      .select('id, period_from, page, created_at')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error || !snaps?.length) {
+      container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">No archived reports</div>';
+      return;
+    }
+    container.innerHTML = snaps.map(s => {
+      const d = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const page = s.page ? s.page.charAt(0).toUpperCase() + s.page.slice(1) : 'Report';
+      return `<div class="wb-archive-item" onclick="loadArchivedReport('${clientId}','${s.id}')">${page} — ${d}</div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--danger);padding:4px 0;">Failed to load</div>';
+  }
+}
+
+async function loadArchivedReport(clientId, snapshotId) {
+  const iframe = document.getElementById('wb-iframe');
+  if (!iframe) return;
+  wbAddLog('Loading archived report…', 'i');
+  const url = `/app?client=${clientId}&snapshot=${snapshotId}`;
+  iframe.src = url;
+  document.getElementById('wb-meta').textContent = 'Archived report loaded';
 }
 
 async function loadClientBranding(clientId) {
@@ -2093,20 +2223,13 @@ async function loadClients() {
     'color:var(--text3);font-size:13px;">Loading...</div>';
 
   try {
-    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-    const SB_ANON = window.SUPABASE_ANON_KEY ||
-      document.querySelector('script[src*="supabase"]')?.src?.match(/key=([^&]+)/)?.[1] || '';
-    const token = SESSION_TOKEN;
+    const { data: profiles, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('role', 'client_user');
 
-    const profilesRes = await fetch(
-      `${SB_URL}/rest/v1/user_profiles?role=eq.client_user&select=*`,
-      { headers: {
-        apikey: SB_ANON,
-        Authorization: `Bearer ${token}`
-      }}
-    );
-    const profiles = await profilesRes.json();
-    if (!Array.isArray(profiles) || !profiles.length) {
+    if (error) throw new Error(error.message);
+    if (!profiles || !profiles.length) {
       body.innerHTML = '<div style="padding:32px;text-align:center;' +
         'color:var(--text3);font-size:13px;">No clients yet. ' +
         '<span style="color:var(--info);cursor:pointer;" ' +
@@ -2117,27 +2240,28 @@ async function loadClients() {
 
     const clientIds = [...new Set(profiles.map(p => p.client_id))];
 
-    const [healthRows, goalRows, sourceRows, courseRows] = await Promise.all([
-      fetchSB(SB_URL, SB_ANON, token, 'client_health_scores',
-        `client_id=in.(${clientIds.join(',')})`),
-      fetchSB(SB_URL, SB_ANON, token, 'client_goals',
-        `client_id=in.(${clientIds.join(',')})`),
-      fetchSB(SB_URL, SB_ANON, token, 'data_sources',
-        `client_id=in.(${clientIds.join(',')})&connected=eq.true`),
-      fetchSB(SB_URL, SB_ANON, token, 'client_courses',
-        `client_id=in.(${clientIds.join(',')})`)
+    const [
+      { data: healthRows },
+      { data: goalRows },
+      { data: sourceRows },
+      { data: courseRows }
+    ] = await Promise.all([
+      supabase.from('client_health_scores').select('*').in('client_id', clientIds),
+      supabase.from('client_goals').select('*').in('client_id', clientIds),
+      supabase.from('data_sources').select('*').in('client_id', clientIds).eq('connected', true),
+      supabase.from('client_courses').select('*').in('client_id', clientIds)
     ]);
 
     const healthMap = {};
-    healthRows.forEach(h => { healthMap[h.client_id] = h; });
+    (healthRows || []).forEach(h => { healthMap[h.client_id] = h; });
     const goalMap = {};
-    goalRows.forEach(g => { goalMap[g.client_id] = g; });
+    (goalRows || []).forEach(g => { goalMap[g.client_id] = g; });
     const connMap = {};
-    sourceRows.forEach(s => {
+    (sourceRows || []).forEach(s => {
       connMap[s.client_id] = (connMap[s.client_id] || 0) + 1;
     });
     const courseMap = {};
-    courseRows.forEach(c => { courseMap[c.client_id] = c; });
+    (courseRows || []).forEach(c => { courseMap[c.client_id] = c; });
 
     const seen = new Set();
     body.innerHTML = clientIds.map(clientId => {
@@ -2148,23 +2272,24 @@ async function loadClients() {
       const goal = goalMap[clientId];
       const connCount = connMap[clientId] || 0;
       const course = courseMap[clientId];
-      const milestones = course?.milestones || [];
-      const idx = course?.current_milestone_index || 0;
-      const currentMs = milestones[idx];
+      const name = prof?.full_name || clientId;
       const scoreColor = !health ? 'var(--text3)' :
         health.score >= 70 ? 'var(--success)' :
         health.score >= 55 ? 'var(--warning)' : 'var(--danger)';
+      const milestones = course?.milestones || [];
+      const idx = course?.current_milestone_index || 0;
+      const currentMs = milestones[idx];
 
       return `<div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 80px;
-        padding:12px 16px;border-bottom:0.5px solid var(--border);
-        align-items:center;">
+        padding:12px 16px;border-bottom:0.5px solid var(--border);align-items:center;">
         <div>
-          <div style="font-size:13px;font-weight:500;">${prof?.full_name || clientId}</div>
+          <div style="font-size:13px;font-weight:500;">${name}</div>
           <div style="font-size:11px;color:var(--text3);">${clientId}</div>
         </div>
         <div style="font-size:12px;color:var(--text2);overflow:hidden;
           text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
-          ${goal?.stated_goal ? goal.stated_goal.slice(0,50) + (goal.stated_goal.length > 50 ? '…' : '') : '—'}
+          ${goal?.stated_goal ? goal.stated_goal.slice(0,50) +
+            (goal.stated_goal.length > 50 ? '…' : '') : '—'}
         </div>
         <div style="font-size:12px;color:var(--text2);overflow:hidden;
           text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
@@ -2173,9 +2298,7 @@ async function loadClients() {
         <div style="font-size:14px;font-weight:600;color:${scoreColor};">
           ${health?.score ?? '—'}
         </div>
-        <div style="font-size:12px;color:var(--text2);">
-          ${connCount} active
-        </div>
+        <div style="font-size:12px;color:var(--text2);">${connCount} active</div>
         <div>
           <button class="mbtn mbtn-muted"
             style="font-size:11px;padding:4px 10px;"
@@ -2187,7 +2310,7 @@ async function loadClients() {
     }).join('');
   } catch(e) {
     body.innerHTML = '<div style="padding:24px;color:var(--danger);' +
-      'font-size:13px;">Error loading clients: ' + e.message + '</div>';
+      'font-size:13px;">Error: ' + e.message + '</div>';
   }
 }
 
@@ -2215,35 +2338,31 @@ async function openClientModal(clientId) {
   switchModalTab('overview');
 
   try {
-    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-    const SB_ANON = window.SUPABASE_ANON_KEY || '';
-    const token = SESSION_TOKEN;
+    const [
+      { data: profiles },
+      { data: health },
+      { data: goal },
+      { data: course },
+      { data: roadmap },
+      { data: keywords },
+      { data: sources }
+    ] = await Promise.all([
+      supabase.from('user_profiles').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('client_health_scores').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('client_goals').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('client_courses').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('roadmaps').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('client_keywords').select('*').eq('client_id', clientId).limit(1),
+      supabase.from('data_sources').select('*').eq('client_id', clientId).eq('connected', true)
+    ]);
 
-    const [profiles, health, goal, course, roadmap, keywords, sources] =
-      await Promise.all([
-        fetchSB(SB_URL, SB_ANON, token,
-          'user_profiles', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'client_health_scores', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'client_goals', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'client_courses', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'roadmaps', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'client_keywords', `client_id=eq.${clientId}&limit=1`),
-        fetchSB(SB_URL, SB_ANON, token,
-          'data_sources', `client_id=eq.${clientId}&connected=eq.true`)
-      ]);
-
-    const prof = profiles[0];
-    const h = health[0];
-    const g = goal[0];
-    const c = course[0];
-    const rm = roadmap[0];
-    const kw = keywords[0];
-    const connSources = sources;
+    const prof = profiles?.[0];
+    const h = health?.[0];
+    const g = goal?.[0];
+    const c = course?.[0];
+    const rm = roadmap?.[0];
+    const kw = keywords?.[0];
+    const connSources = sources || [];
 
     _modalCourse = c;
     _modalRoadmap = rm;
@@ -2406,23 +2525,12 @@ async function saveClientGoal() {
 async function saveClientKeywords() {
   if (!_modalClientId) return;
   try {
-    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-    const SB_ANON = window.SUPABASE_ANON_KEY || '';
-    const token = SESSION_TOKEN;
-    await fetch(`${SB_URL}/rest/v1/client_keywords`, {
-      method: 'POST',
-      headers: {
-        apikey: SB_ANON,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        client_id: _modalClientId,
-        keywords: _modalKeywords,
-        updated_at: new Date().toISOString()
-      })
-    });
+    const { error } = await supabase
+      .from('client_keywords')
+      .upsert({ client_id: _modalClientId, keywords: _modalKeywords,
+        updated_at: new Date().toISOString() },
+        { onConflict: 'client_id' });
+    if (error) throw new Error(error.message);
     showToast('Keywords saved');
   } catch(e) { showToast('Failed to save keywords'); }
 }
@@ -2441,22 +2549,11 @@ async function advanceClientMilestone() {
     return;
 
   try {
-    const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-    const SB_ANON = window.SUPABASE_ANON_KEY || '';
-    const token = SESSION_TOKEN;
-    await fetch(
-      `${SB_URL}/rest/v1/roadmaps?client_id=eq.${_modalClientId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          apikey: SB_ANON,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({ current_node: current + 1 })
-      }
-    );
+    const { error } = await supabase
+      .from('roadmaps')
+      .update({ current_node: current + 1 })
+      .eq('client_id', _modalClientId);
+    if (error) throw new Error(error.message);
     _modalRoadmap = { ...rm, current_node: current + 1 };
     renderModalRoadmap(_modalRoadmap, _modalCourse);
     showToast(`Advanced to Milestone ${current + 1}`);
@@ -2473,6 +2570,50 @@ function openInWorkbench() {
 }
 
 // ── Onboarding ────────────────────────────────────────────────
+const STRATEGY_TEMPLATES = {
+  lead_conversion: {
+    m1: { title: 'Build the Foundation', desc: 'Set up CRM, lead capture forms, and tracking. Establish baseline conversion metrics and map the full lead journey from awareness to close.' },
+    m2: { title: 'Activate Lead Channels', desc: 'Launch paid ads, SEO content, and referral programs. A/B test landing pages and optimize top-of-funnel cost per lead.' },
+    m3: { title: 'Optimize & Scale', desc: 'Automate follow-up sequences, score leads by intent, and double down on the highest-ROI channels. Build a repeatable pipeline.' }
+  },
+  recurring_revenue: {
+    m1: { title: 'Package & Price', desc: 'Define service tiers, create subscription agreements, and set up recurring billing infrastructure. Audit current client contracts for upgrade opportunities.' },
+    m2: { title: 'Convert & Retain', desc: 'Migrate one-time clients to retainer agreements. Implement a client health score and proactive check-in cadence to reduce churn.' },
+    m3: { title: 'Expand Revenue Per Client', desc: 'Launch upsell and cross-sell campaigns. Introduce add-on services, annual plan discounts, and a referral incentive program.' }
+  },
+  brand_authority: {
+    m1: { title: 'Establish Brand Identity', desc: 'Audit and refresh brand assets, messaging, and positioning. Define the ideal customer profile and core differentiators.' },
+    m2: { title: 'Build Content Engine', desc: 'Launch blog, video, or podcast cadence. Optimize site for target keywords and earn backlinks through PR and partnerships.' },
+    m3: { title: 'Amplify & Own the Niche', desc: 'Pursue speaking, awards, and media placements. Build an email list and community to create a direct-owned audience.' }
+  },
+  operational_scale: {
+    m1: { title: 'Audit & Standardize', desc: 'Document all core processes and identify bottlenecks. Standardize SOPs and onboard team into a shared project management system.' },
+    m2: { title: 'Automate & Delegate', desc: 'Automate repetitive tasks with software tools. Hire or outsource roles that are bottlenecking growth. Implement reporting dashboards.' },
+    m3: { title: 'Scale Output', desc: 'Double capacity without doubling headcount. Launch new service lines or geographies using systemized delivery playbooks.' }
+  },
+  digital_presence: {
+    m1: { title: 'Launch Digital Foundation', desc: 'Build or redesign website with clear CTAs, SEO structure, and mobile optimization. Set up Google Business Profile and core social accounts.' },
+    m2: { title: 'Drive Traffic & Engagement', desc: 'Run local SEO, Google Ads, and social content campaigns. Set up retargeting pixels and email capture flows.' },
+    m3: { title: 'Convert & Measure', desc: 'Optimize conversion paths, run A/B tests on key pages, and build a monthly reporting rhythm tied to business goals.' }
+  },
+  customer_retention: {
+    m1: { title: 'Map the Customer Journey', desc: 'Identify drop-off points post-sale. Survey recent churned customers and define the ideal 90-day onboarding experience.' },
+    m2: { title: 'Implement Retention Systems', desc: 'Launch automated onboarding sequences, milestone check-ins, and a loyalty or rewards program to increase stickiness.' },
+    m3: { title: 'Maximize LTV', desc: 'Segment customers by value tier. Run win-back campaigns for lapsed clients and upsell programs for high-LTV segments.' }
+  }
+};
+
+function applyStrategyTemplate(key) {
+  if (!key || !STRATEGY_TEMPLATES[key]) return;
+  const t = STRATEGY_TEMPLATES[key];
+  document.getElementById('ob-m1-title').value = t.m1.title;
+  document.getElementById('ob-m1-desc').value  = t.m1.desc;
+  document.getElementById('ob-m2-title').value = t.m2.title;
+  document.getElementById('ob-m2-desc').value  = t.m2.desc;
+  document.getElementById('ob-m3-title').value = t.m3.title;
+  document.getElementById('ob-m3-desc').value  = t.m3.desc;
+}
+
 async function submitOnboard() {
   const btn = document.getElementById('ob-submit-btn');
   const errEl = document.getElementById('ob-error');
@@ -2531,47 +2672,28 @@ async function submitOnboard() {
     if (!onboardData.ok) throw new Error(onboardData.error || 'Onboard failed');
 
     if (m1Title) {
-      const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-      const SB_ANON = window.SUPABASE_ANON_KEY || '';
-      const token = SESSION_TOKEN;
-      await fetch(`${SB_URL}/rest/v1/roadmaps`, {
-        method: 'POST',
-        headers: {
-          apikey: SB_ANON,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({
+      const { error: rmErr } = await supabase
+        .from('roadmaps')
+        .insert({
           client_id: clientId,
           current_node: 1,
-          milestone_1: { title: m1Title, description: m1Desc || '', status: 'in_progress' },
-          milestone_2: m2Title ? { title: m2Title, description: m2Desc || '', status: 'pending' } : null,
-          milestone_3: m3Title ? { title: m3Title, description: m3Desc || '', status: 'pending' } : null,
-        })
-      });
+          milestone_1: { title: m1Title, description: m1Desc || '',
+            status: 'in_progress', target_date: null },
+          milestone_2: m2Title ? { title: m2Title, description: m2Desc || '',
+            status: 'pending', target_date: null } : null,
+          milestone_3: m3Title ? { title: m3Title, description: m3Desc || '',
+            status: 'pending', target_date: null } : null,
+        });
+      if (rmErr) console.warn('[onboard] roadmap insert:', rmErr.message);
     }
 
     if (kwRaw) {
       const keywords = kwRaw.split(',').map(k => k.trim()).filter(Boolean);
       if (keywords.length) {
-        const SB_URL = 'https://fklijhgqsjdlwvmwarwh.supabase.co';
-        const SB_ANON = window.SUPABASE_ANON_KEY || '';
-        const token = SESSION_TOKEN;
-        await fetch(`${SB_URL}/rest/v1/client_keywords`, {
-          method: 'POST',
-          headers: {
-            apikey: SB_ANON,
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal'
-          },
-          body: JSON.stringify({
-            client_id: clientId,
-            keywords,
-            scraped_from: null
-          })
-        });
+        const { error: kwErr } = await supabase
+          .from('client_keywords')
+          .insert({ client_id: clientId, keywords, scraped_from: null });
+        if (kwErr) console.warn('[onboard] keywords insert:', kwErr.message);
       }
     }
 
