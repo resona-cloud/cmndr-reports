@@ -111,8 +111,23 @@ function getMondayOfWeek() {
 }
 
 async function getCachedReport(client, page) {
-  const weekStart = getMondayOfWeek();
   try {
+    // Demo account: always serve latest is_current snapshot
+    // regardless of week date — never generate fresh
+    if (client === 'demo') {
+      const res = await fetch(
+        `${SB_URL}/rest/v1/report_snapshots?client_id=eq.${client}&page=eq.${page}&is_current=eq.true&order=created_at.desc&limit=1`,
+        { headers: SB_HEADERS }
+      );
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length && rows[0].snapshot_data) {
+        return { ...rows[0].snapshot_data, ai_summary: rows[0].ai_summary, from_cache: true, is_demo: true };
+      }
+      return null;
+    }
+
+    // All other clients: match current week
+    const weekStart = getMondayOfWeek();
     const res = await fetch(
       `${SB_URL}/rest/v1/report_snapshots?client_id=eq.${client}&page=eq.${page}&is_current=eq.true&period_from=eq.${weekStart}&order=created_at.desc&limit=1`,
       { headers: SB_HEADERS }
@@ -169,6 +184,45 @@ function saveSnapshot(client, from, to, page, kpis, summary) {
 const HEADERS = SB_HEADERS; // alias used inside handleForecast
 
 async function handleForecast(req, res, client) {
+  if (client === 'demo') {
+    return res.status(200).json({
+      page: 'forecast',
+      client: 'demo',
+      is_demo: true,
+      from_cache: true,
+      keywords: ['SaaS platform', 'app marketplace', 'developer tools',
+        'no-code builder', 'workflow automation', 'team collaboration',
+        'app integration', 'startup tools', 'product analytics',
+        'user onboarding'],
+      trend_data: [
+        { date: '2025-05', values: [{ extracted_value: 48 }] },
+        { date: '2025-06', values: [{ extracted_value: 52 }] },
+        { date: '2025-07', values: [{ extracted_value: 49 }] },
+        { date: '2025-08', values: [{ extracted_value: 55 }] },
+        { date: '2025-09', values: [{ extracted_value: 61 }] },
+        { date: '2025-10', values: [{ extracted_value: 58 }] },
+        { date: '2025-11', values: [{ extracted_value: 63 }] },
+        { date: '2025-12', values: [{ extracted_value: 67 }] },
+        { date: '2026-01', values: [{ extracted_value: 71 }] },
+        { date: '2026-02', values: [{ extracted_value: 69 }] },
+        { date: '2026-03', values: [{ extracted_value: 74 }] },
+        { date: '2026-04', values: [{ extracted_value: 78 }] }
+      ],
+      serp_data: [
+        { title: 'Bubble — Visual programming platform', domain: 'bubble.io', position: 1 },
+        { title: 'Webflow — No-Code Web Design Tool', domain: 'webflow.com', position: 2 },
+        { title: 'Glide — Build Apps from Spreadsheets', domain: 'glideapps.com', position: 3 },
+        { title: 'Adalo — Build Your Own App', domain: 'adalo.com', position: 4 },
+        { title: 'AppGyver — Professional No-Code', domain: 'appgyver.com', position: 5 }
+      ],
+      market_share: 34,
+      wallet_share: 28,
+      competitive_cpc: 4.80,
+      ai_summary: 'Launchpad Apps operates in a growing SaaS tools market with strong upward trend over the past 12 months — search interest is up 63% year-over-year. Your primary competitors are Bubble, Webflow, and Glide. At an estimated 34% market share in your target keyword set, there is meaningful room to grow. The highest opportunity is in the "workflow automation" and "product analytics" keyword clusters where CPC is lower and conversion intent is higher. Recommend increasing content investment in these two areas before Q3.',
+      generatedAt: new Date().toISOString()
+    });
+  }
+
   try {
     const kwRes = await fetch(
       `${SB_URL}/rest/v1/client_keywords?client_id=eq.${client}&select=*`,
@@ -411,6 +465,57 @@ module.exports = async function handler(req, res) {
     // ── Forecast ──────────────────────────────────────────────
     if (page === 'forecast') {
       return handleForecast(req, res, client);
+    }
+
+    // ── Demo short-circuit: serve static snapshots + live data ───
+    if (client === 'demo' && page !== 'forecast' && page !== 'cmndr-history') {
+      const cached = await getCachedReport(client, page);
+      if (cached) {
+        const [
+          goal, course, health, roadmap, notifications,
+          jobs, technicians, pipeline, alerts,
+          leads, campaigns, invoices, revenueSnaps,
+          logs, opportunities, makeHealth, serviceMetrics
+        ] = await Promise.all([
+          safeQueryOne('client_goals', `client_id=eq.${client}`),
+          safeQueryOne('client_courses', `client_id=eq.${client}`),
+          safeQueryOne('client_health_scores', `client_id=eq.${client}&order=calculated_at.desc`),
+          safeQueryOne('roadmaps', `client_id=eq.${client}`),
+          safeQuery('client_notifications', `client_id=eq.${client}&dismissed=eq.false&order=created_at.desc&limit=5`),
+          safeQuery('jobs', `client_id=eq.${client}&order=scheduled_date.desc&limit=25`),
+          safeQuery('technicians', `client_id=eq.${client}`),
+          safeQuery('pipeline_stages', `client_id=eq.${client}&order=week_label.asc`),
+          safeQuery('alerts', `client_id=eq.${client}&resolved=eq.false`),
+          safeQuery('leads', `client_id=eq.${client}&order=created_at.desc&limit=30`),
+          safeQuery('campaigns', `client_id=eq.${client}&active=eq.true`),
+          safeQuery('invoices', `client_id=eq.${client}&order=issued_date.desc&limit=20`),
+          safeQuery('revenue_snapshots', `client_id=eq.${client}&order=period_start.desc&limit=6`),
+          safeQuery('automation_logs', `client_id=eq.${client}&order=ran_at.desc&limit=50`),
+          safeQuery('automation_opportunities', `client_id=eq.${client}&status=neq.dismissed`),
+          safeQuery('make_scenario_health', `client_id=eq.${client}`),
+          safeQuery('service_metrics', `client_id=eq.${client}&order=week_label.desc&limit=8`)
+        ]);
+
+        return res.status(200).json({
+          ...cached,
+          page,
+          client,
+          is_demo: true,
+          from_cache: true,
+          jobs, technicians, pipeline, alerts,
+          leads, campaigns,
+          invoices,
+          snapshots: revenueSnaps,
+          logs, opportunities, make_health: makeHealth,
+          service_metrics: serviceMetrics,
+          goal: goal || null,
+          course: shapeCourse(course),
+          health: health || null,
+          roadmap: roadmap || null,
+          notifications: notifications || [],
+          generatedAt: new Date().toISOString()
+        });
+      }
     }
 
     // ── Common context (every page) ───────────────────────────
