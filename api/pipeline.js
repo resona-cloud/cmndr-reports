@@ -2,6 +2,15 @@ const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 
+async function sbFetch(table, params = '') {
+  const r = await fetch(
+    `${SB_URL}/rest/v1/${table}?${params}`,
+    { headers: HEADERS }
+  );
+  const j = await r.json();
+  return Array.isArray(j) ? j : [];
+}
+
 async function verifyResona(req) {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return false;
@@ -207,6 +216,195 @@ module.exports = async function handler(req, res) {
       });
 
       return res.status(200).json({ notifications });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub clients roster ───────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-clients') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const [profiles, health, goals, sources, courses] = await Promise.all([
+        sbFetch('user_profiles', 'role=eq.client_user&select=*'),
+        sbFetch('client_health_scores', 'select=client_id,score,score_label'),
+        sbFetch('client_goals', 'select=client_id,stated_goal'),
+        sbFetch('data_sources', 'connected=eq.true&select=client_id,connector_key'),
+        sbFetch('client_courses', 'select=client_id,course_display,current_milestone_index,milestones')
+      ]);
+
+      const healthMap = {};
+      health.forEach(h => { healthMap[h.client_id] = h; });
+      const goalMap = {};
+      goals.forEach(g => { goalMap[g.client_id] = g; });
+      const connMap = {};
+      sources.forEach(s => { connMap[s.client_id] = (connMap[s.client_id] || 0) + 1; });
+      const courseMap = {};
+      courses.forEach(c => { courseMap[c.client_id] = c; });
+
+      const seen = new Set();
+      const clients = [];
+      for (const p of profiles) {
+        const cid = p.client_id;
+        if (!cid || seen.has(cid)) continue;
+        seen.add(cid);
+        const h = healthMap[cid];
+        const g = goalMap[cid];
+        const c = courseMap[cid];
+        const milestones = c?.milestones || [];
+        const idx = c?.current_milestone_index || 0;
+        clients.push({
+          client_id: cid,
+          full_name: p.full_name || cid,
+          stated_goal: g?.stated_goal || null,
+          health_score: h?.score ?? null,
+          health_label: h?.score_label || null,
+          connected_count: connMap[cid] || 0,
+          current_milestone: milestones[idx]?.display || null,
+          course_display: c?.course_display || null
+        });
+      }
+      return res.status(200).json({ clients });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub client detail ────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-client-detail') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const clientId = req.query.client_id;
+    if (!clientId) return res.status(400).json({ error: 'client_id required' });
+    try {
+      const [profiles, health, goal, course, roadmap, keywords, sources] = await Promise.all([
+        sbFetch('user_profiles', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('client_health_scores', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('client_goals', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('client_courses', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('roadmaps', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('client_keywords', `client_id=eq.${clientId}&limit=1`),
+        sbFetch('data_sources', `client_id=eq.${clientId}&connected=eq.true`)
+      ]);
+      return res.status(200).json({
+        profile: profiles[0] || null,
+        health: health[0] || null,
+        goal: goal[0] || null,
+        course: course[0] || null,
+        roadmap: roadmap[0] || null,
+        keywords: keywords[0] || null,
+        sources
+      });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub archive ──────────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-archive') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const clientId = req.query.client_id;
+    if (!clientId) return res.status(400).json({ error: 'client_id required' });
+    try {
+      const snaps = await sbFetch('report_snapshots',
+        `client_id=eq.${clientId}&order=created_at.desc&limit=20&select=id,page,period_label,period_from,period_to,created_at,ai_summary`
+      );
+      return res.status(200).json({ snapshots: snaps });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub save keywords ───────────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-save-keywords') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const body = req.body || {};
+    if (!body.client_id) return res.status(400).json({ error: 'client_id required' });
+    try {
+      await fetch(`${SB_URL}/rest/v1/client_keywords`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({
+          client_id: body.client_id,
+          keywords: body.keywords,
+          updated_at: new Date().toISOString()
+        })
+      });
+      return res.status(200).json({ success: true });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub advance milestone ───────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-advance-milestone') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const body = req.body || {};
+    if (!body.client_id) return res.status(400).json({ error: 'client_id required' });
+    try {
+      await fetch(
+        `${SB_URL}/rest/v1/roadmaps?client_id=eq.${body.client_id}`,
+        {
+          method: 'PATCH',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({ current_node: body.current_node + 1 })
+        }
+      );
+      return res.status(200).json({ success: true, new_node: body.current_node + 1 });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub create client ───────────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-create-client') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const body = req.body || {};
+    if (!body.email || !body.client_id) return res.status(400).json({ error: 'email and client_id required' });
+    try {
+      const BASE = process.env.VERCEL_URL
+        ? 'https://' + process.env.VERCEL_URL
+        : 'http://localhost:3000';
+      const onboardRes = await fetch(`${BASE}/api/onboard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: body.email,
+          password: body.password,
+          full_name: body.full_name,
+          client_id: body.client_id,
+          role: 'client_user',
+          stated_goal: body.stated_goal
+        })
+      });
+      const onboardData = await onboardRes.json();
+      if (!onboardData.ok) throw new Error(onboardData.error || 'Onboard failed');
+
+      if (body.milestone_1) {
+        await fetch(`${SB_URL}/rest/v1/roadmaps`, {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            client_id: body.client_id,
+            current_node: 1,
+            milestone_1: body.milestone_1 || null,
+            milestone_2: body.milestone_2 || null,
+            milestone_3: body.milestone_3 || null
+          })
+        });
+      }
+
+      if (body.keywords && body.keywords.length) {
+        await fetch(`${SB_URL}/rest/v1/client_keywords`, {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            client_id: body.client_id,
+            keywords: body.keywords
+          })
+        });
+      }
+
+      return res.status(200).json({ success: true, client_id: body.client_id });
     } catch(e) {
       return res.status(500).json({ error: e.message });
     }

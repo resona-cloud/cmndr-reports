@@ -1443,37 +1443,52 @@ function toggleWbSection(id) {
 }
 
 async function loadWbArchive(clientId) {
-  const container = document.getElementById('wb-archive-list');
-  if (!container) return;
-  container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">Loading…</div>';
+  const el = document.getElementById('wb-archive-list');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text3);">Loading...</div>';
   try {
-    const { data: snaps, error } = await supabase
-      .from('report_snapshots')
-      .select('id, period_from, page, created_at')
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (error || !snaps?.length) {
-      container.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">No archived reports</div>';
+    const r = await fetch(
+      `/api/pipeline?action=hub-archive&client_id=${clientId}`,
+      { headers: { Authorization: `Bearer ${SESSION_TOKEN}` } }
+    );
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const snaps = data.snapshots || [];
+
+    if (!snaps.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--text3);' +
+        'padding:6px 0;">No archived reports yet</div>';
       return;
     }
-    container.innerHTML = snaps.map(s => {
-      const d = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const page = s.page ? s.page.charAt(0).toUpperCase() + s.page.slice(1) : 'Report';
-      return `<div class="wb-archive-item" onclick="loadArchivedReport('${clientId}','${s.id}')">${page} — ${d}</div>`;
+
+    el.innerHTML = snaps.map(s => {
+      const page = s.page ||
+        s.period_label?.split('·')[0]?.trim() || 'report';
+      const date = s.created_at
+        ? new Date(s.created_at).toLocaleDateString('en-US',
+            {month:'short',day:'numeric',year:'numeric'})
+        : '—';
+      return `<div style="padding:7px 0;border-bottom:0.5px solid
+        var(--border);cursor:pointer;"
+        onclick="loadArchivedReport('${clientId}','${s.id}',
+          '${s.period_from || ''}','${s.period_to || ''}','${page}')">
+        <div style="font-size:12px;font-weight:500;color:var(--text);">
+          ${page.charAt(0).toUpperCase() + page.slice(1)}
+        </div>
+        <div style="font-size:11px;color:var(--text3);">${date}</div>
+      </div>`;
     }).join('');
   } catch(e) {
-    container.innerHTML = '<div style="font-size:11px;color:var(--danger);padding:4px 0;">Failed to load</div>';
+    el.innerHTML = '<div style="font-size:12px;color:var(--danger);">Failed to load</div>';
   }
 }
 
-async function loadArchivedReport(clientId, snapshotId) {
-  const iframe = document.getElementById('wb-iframe');
-  if (!iframe) return;
-  wbAddLog('Loading archived report…', 'i');
-  const url = `/app?client=${clientId}&snapshot=${snapshotId}`;
-  iframe.src = url;
-  document.getElementById('wb-meta').textContent = 'Archived report loaded';
+function loadArchivedReport(clientId, snapId, from, to, page) {
+  const frame = document.querySelector('#wb-right iframe');
+  if (frame) {
+    frame.src = `/index.html?client=${clientId}&from=${from}&to=${to}`;
+  }
+  showToast(`Loaded ${page} report from ${from}`);
 }
 
 async function loadClientBranding(clientId) {
@@ -2221,88 +2236,54 @@ async function loadClients() {
   if (!body) return;
   body.innerHTML = '<div style="padding:24px;text-align:center;' +
     'color:var(--text3);font-size:13px;">Loading...</div>';
-
   try {
-    const { data: profiles, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('role', 'client_user');
+    const r = await fetch('/api/pipeline?action=hub-clients', {
+      headers: { Authorization: `Bearer ${SESSION_TOKEN}` }
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    const clients = data.clients || [];
 
-    if (error) throw new Error(error.message);
-    if (!profiles || !profiles.length) {
+    if (!clients.length) {
       body.innerHTML = '<div style="padding:32px;text-align:center;' +
         'color:var(--text3);font-size:13px;">No clients yet. ' +
         '<span style="color:var(--info);cursor:pointer;" ' +
-        'onclick="showView(\'view-onboard\')">Add your first client →</span>' +
-        '</div>';
+        'onclick="showView(\'view-onboard\')">Add your first client →' +
+        '</span></div>';
       return;
     }
 
-    const clientIds = [...new Set(profiles.map(p => p.client_id))];
-
-    const [
-      { data: healthRows },
-      { data: goalRows },
-      { data: sourceRows },
-      { data: courseRows }
-    ] = await Promise.all([
-      supabase.from('client_health_scores').select('*').in('client_id', clientIds),
-      supabase.from('client_goals').select('*').in('client_id', clientIds),
-      supabase.from('data_sources').select('*').in('client_id', clientIds).eq('connected', true),
-      supabase.from('client_courses').select('*').in('client_id', clientIds)
-    ]);
-
-    const healthMap = {};
-    (healthRows || []).forEach(h => { healthMap[h.client_id] = h; });
-    const goalMap = {};
-    (goalRows || []).forEach(g => { goalMap[g.client_id] = g; });
-    const connMap = {};
-    (sourceRows || []).forEach(s => {
-      connMap[s.client_id] = (connMap[s.client_id] || 0) + 1;
-    });
-    const courseMap = {};
-    (courseRows || []).forEach(c => { courseMap[c.client_id] = c; });
-
-    const seen = new Set();
-    body.innerHTML = clientIds.map(clientId => {
-      if (seen.has(clientId)) return '';
-      seen.add(clientId);
-      const prof = profiles.find(p => p.client_id === clientId);
-      const health = healthMap[clientId];
-      const goal = goalMap[clientId];
-      const connCount = connMap[clientId] || 0;
-      const course = courseMap[clientId];
-      const name = prof?.full_name || clientId;
-      const scoreColor = !health ? 'var(--text3)' :
-        health.score >= 70 ? 'var(--success)' :
-        health.score >= 55 ? 'var(--warning)' : 'var(--danger)';
-      const milestones = course?.milestones || [];
-      const idx = course?.current_milestone_index || 0;
-      const currentMs = milestones[idx];
-
-      return `<div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 80px;
-        padding:12px 16px;border-bottom:0.5px solid var(--border);align-items:center;">
+    body.innerHTML = clients.map(c => {
+      const scoreColor = !c.health_score ? 'var(--text3)' :
+        c.health_score >= 70 ? 'var(--success)' :
+        c.health_score >= 55 ? 'var(--warning)' : 'var(--danger)';
+      return `<div style="display:grid;
+        grid-template-columns:2fr 1.5fr 1.5fr 1fr 1fr 80px;
+        padding:12px 16px;border-bottom:0.5px solid var(--border);
+        align-items:center;">
         <div>
-          <div style="font-size:13px;font-weight:500;">${name}</div>
-          <div style="font-size:11px;color:var(--text3);">${clientId}</div>
+          <div style="font-size:13px;font-weight:500;">${c.full_name || c.client_id}</div>
+          <div style="font-size:11px;color:var(--text3);">${c.client_id}</div>
         </div>
         <div style="font-size:12px;color:var(--text2);overflow:hidden;
           text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
-          ${goal?.stated_goal ? goal.stated_goal.slice(0,50) +
-            (goal.stated_goal.length > 50 ? '…' : '') : '—'}
+          ${c.stated_goal ? c.stated_goal.slice(0,50) +
+            (c.stated_goal.length > 50 ? '…' : '') : '—'}
         </div>
         <div style="font-size:12px;color:var(--text2);overflow:hidden;
           text-overflow:ellipsis;white-space:nowrap;padding-right:12px;">
-          ${currentMs?.display || '—'}
+          ${c.current_milestone || '—'}
         </div>
         <div style="font-size:14px;font-weight:600;color:${scoreColor};">
-          ${health?.score ?? '—'}
+          ${c.health_score ?? '—'}
         </div>
-        <div style="font-size:12px;color:var(--text2);">${connCount} active</div>
+        <div style="font-size:12px;color:var(--text2);">
+          ${c.connected_count} active
+        </div>
         <div>
           <button class="mbtn mbtn-muted"
             style="font-size:11px;padding:4px 10px;"
-            onclick="openClientModal('${clientId}')">
+            onclick="openClientModal('${c.client_id}')">
             Manage
           </button>
         </div>
@@ -2330,7 +2311,6 @@ async function openClientModal(clientId) {
 
   const backdrop = document.getElementById('client-modal-backdrop');
   backdrop.classList.add('open');
-
   document.getElementById('modal-client-id').textContent = clientId;
   document.getElementById('modal-av').textContent =
     clientId.slice(0,2).toUpperCase();
@@ -2338,31 +2318,20 @@ async function openClientModal(clientId) {
   switchModalTab('overview');
 
   try {
-    const [
-      { data: profiles },
-      { data: health },
-      { data: goal },
-      { data: course },
-      { data: roadmap },
-      { data: keywords },
-      { data: sources }
-    ] = await Promise.all([
-      supabase.from('user_profiles').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('client_health_scores').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('client_goals').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('client_courses').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('roadmaps').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('client_keywords').select('*').eq('client_id', clientId).limit(1),
-      supabase.from('data_sources').select('*').eq('client_id', clientId).eq('connected', true)
-    ]);
+    const r = await fetch(
+      `/api/pipeline?action=hub-client-detail&client_id=${clientId}`,
+      { headers: { Authorization: `Bearer ${SESSION_TOKEN}` } }
+    );
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
 
-    const prof = profiles?.[0];
-    const h = health?.[0];
-    const g = goal?.[0];
-    const c = course?.[0];
-    const rm = roadmap?.[0];
-    const kw = keywords?.[0];
-    const connSources = sources || [];
+    const prof = data.profile;
+    const h = data.health;
+    const g = data.goal;
+    const c = data.course;
+    const rm = data.roadmap;
+    const kw = data.keywords;
+    const connSources = data.sources || [];
 
     _modalCourse = c;
     _modalRoadmap = rm;
@@ -2374,6 +2343,7 @@ async function openClientModal(clientId) {
       name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
     document.getElementById('modal-goal').value = g?.stated_goal || '';
+
     const scoreEl = document.getElementById('modal-health-score');
     scoreEl.textContent = h?.score ?? '—';
     scoreEl.style.color = !h ? 'var(--text3)' :
@@ -2393,6 +2363,8 @@ async function openClientModal(clientId) {
 
   } catch(e) {
     console.error('[modal]', e.message);
+    document.getElementById('modal-client-name').textContent =
+      'Error loading client';
   }
 }
 
@@ -2525,39 +2497,57 @@ async function saveClientGoal() {
 async function saveClientKeywords() {
   if (!_modalClientId) return;
   try {
-    const { error } = await supabase
-      .from('client_keywords')
-      .upsert({ client_id: _modalClientId, keywords: _modalKeywords,
-        updated_at: new Date().toISOString() },
-        { onConflict: 'client_id' });
-    if (error) throw new Error(error.message);
+    const r = await fetch('/api/pipeline?action=hub-save-keywords', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SESSION_TOKEN}`
+      },
+      body: JSON.stringify({
+        client_id: _modalClientId,
+        keywords: _modalKeywords
+      })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Save failed');
     showToast('Keywords saved');
-  } catch(e) { showToast('Failed to save keywords'); }
+  } catch(e) { showToast('Failed to save keywords: ' + e.message); }
 }
 
 async function advanceClientMilestone() {
   if (!_modalClientId || !_modalRoadmap) return;
-  const rm = _modalRoadmap;
-  const current = rm.current_node || 1;
-  const nodes = [rm.milestone_1, rm.milestone_2, rm.milestone_3]
-    .filter(Boolean);
+  const current = _modalRoadmap.current_node || 1;
+  const nodes = [
+    _modalRoadmap.milestone_1,
+    _modalRoadmap.milestone_2,
+    _modalRoadmap.milestone_3
+  ].filter(Boolean);
+
   if (current >= nodes.length) {
     showToast('Client is already on the final milestone');
     return;
   }
-  if (!confirm(`Advance ${_modalClientId} from Milestone ${current} to Milestone ${current + 1}?`))
+  if (!confirm(`Advance ${_modalClientId} to Milestone ${current + 1}?`))
     return;
 
   try {
-    const { error } = await supabase
-      .from('roadmaps')
-      .update({ current_node: current + 1 })
-      .eq('client_id', _modalClientId);
-    if (error) throw new Error(error.message);
-    _modalRoadmap = { ...rm, current_node: current + 1 };
+    const r = await fetch('/api/pipeline?action=hub-advance-milestone', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SESSION_TOKEN}`
+      },
+      body: JSON.stringify({
+        client_id: _modalClientId,
+        current_node: current
+      })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Failed');
+    _modalRoadmap = { ..._modalRoadmap, current_node: current + 1 };
     renderModalRoadmap(_modalRoadmap, _modalCourse);
     showToast(`Advanced to Milestone ${current + 1}`);
-  } catch(e) { showToast('Failed to advance milestone'); }
+  } catch(e) { showToast('Failed: ' + e.message); }
 }
 
 function openInWorkbench() {
@@ -2654,48 +2644,44 @@ async function submitOnboard() {
   btn.disabled = true;
 
   try {
-    const onboardRes = await fetch('/api/onboard', {
+    const keywords = kwRaw
+      ? kwRaw.split(',').map(k => k.trim()).filter(Boolean)
+      : [];
+
+    const r = await fetch('/api/pipeline?action=hub-create-client', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SESSION_TOKEN}`
+      },
       body: JSON.stringify({
         email,
         password,
         full_name: first + ' ' + last,
         client_id: clientId,
-        role: 'client_user',
         stated_goal: goal,
         industry: industry || null,
-        location: location || null
+        location: location || null,
+        milestone_1: m1Title ? {
+          title: m1Title,
+          description: m1Desc || '',
+          status: 'in_progress'
+        } : null,
+        milestone_2: m2Title ? {
+          title: m2Title,
+          description: m2Desc || '',
+          status: 'pending'
+        } : null,
+        milestone_3: m3Title ? {
+          title: m3Title,
+          description: m3Desc || '',
+          status: 'pending'
+        } : null,
+        keywords
       })
     });
-    const onboardData = await onboardRes.json();
-    if (!onboardData.ok) throw new Error(onboardData.error || 'Onboard failed');
-
-    if (m1Title) {
-      const { error: rmErr } = await supabase
-        .from('roadmaps')
-        .insert({
-          client_id: clientId,
-          current_node: 1,
-          milestone_1: { title: m1Title, description: m1Desc || '',
-            status: 'in_progress', target_date: null },
-          milestone_2: m2Title ? { title: m2Title, description: m2Desc || '',
-            status: 'pending', target_date: null } : null,
-          milestone_3: m3Title ? { title: m3Title, description: m3Desc || '',
-            status: 'pending', target_date: null } : null,
-        });
-      if (rmErr) console.warn('[onboard] roadmap insert:', rmErr.message);
-    }
-
-    if (kwRaw) {
-      const keywords = kwRaw.split(',').map(k => k.trim()).filter(Boolean);
-      if (keywords.length) {
-        const { error: kwErr } = await supabase
-          .from('client_keywords')
-          .insert({ client_id: clientId, keywords, scraped_from: null });
-        if (kwErr) console.warn('[onboard] keywords insert:', kwErr.message);
-      }
-    }
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Creation failed');
 
     successEl.textContent = `✓ Client "${clientId}" created successfully!`;
     successEl.style.display = '';
