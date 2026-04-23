@@ -54,6 +54,68 @@ function timeAgo(dateStr) {
   return Math.floor(h / 24) + 'd ago';
 }
 
+async function generateExtendedReportAsync(id, clientId, from, to, sections) {
+  try {
+    const [snaps, metrics, roadmap, goal] = await Promise.all([
+      sbFetch('report_snapshots', `client_id=eq.${clientId}&order=created_at.desc&limit=20`),
+      sbFetch('power_metric_entries', `client_id=eq.${clientId}&order=period_month.desc&limit=20`),
+      sbFetch('roadmaps', `client_id=eq.${clientId}&limit=1`),
+      sbFetch('client_goals', `client_id=eq.${clientId}&limit=1`)
+    ]);
+
+    const snapSummaries = snaps.slice(0, 4).map(s =>
+      `${s.page}: ${s.ai_summary || 'No summary'}`
+    ).join('\n');
+
+    const execPrompt = `You are writing an executive summary for a business intelligence report.
+Client goal: ${goal[0]?.stated_goal || 'Not specified'}
+Section summaries:
+${snapSummaries}
+
+Write a 3-4 sentence executive summary in plain text. Be specific and data-driven.`;
+
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: execPrompt }]
+      })
+    });
+    const aiData = await aiRes.json();
+    const execSummary = aiData.content?.find(b => b.type === 'text')?.text || '';
+
+    await fetch(`${SB_URL}/rest/v1/extended_reports?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...HEADERS, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        status: 'complete',
+        executive_summary: execSummary,
+        sections: {
+          operations: snaps.find(s => s.page === 'operations') || null,
+          marketing: snaps.find(s => s.page === 'marketing') || null,
+          finance: snaps.find(s => s.page === 'finance') || null,
+          optimization: snaps.find(s => s.page === 'optimization') || null
+        },
+        power_metrics: metrics,
+        generated_at: new Date().toISOString()
+      })
+    });
+  } catch(e) {
+    console.error('[extended-report]', e.message);
+    await fetch(`${SB_URL}/rest/v1/extended_reports?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...HEADERS, Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'error' })
+    });
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -405,6 +467,207 @@ module.exports = async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, client_id: body.client_id });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub power metrics ────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-power-metrics') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const client_id = req.query.client_id;
+    if (!client_id) return res.status(400).json({ error: 'client_id required' });
+    try {
+      const configs = await sbFetch('client_power_metrics',
+        `client_id=eq.${client_id}&is_active=eq.true&order=display_order.asc`
+      );
+      const defs = await sbFetch('power_metric_definitions', '');
+      const defMap = {};
+      defs.forEach(d => { defMap[d.key] = d; });
+      const metrics = configs.map(c => ({
+        ...defMap[c.key],
+        target_value: c.target_value,
+        target_label: c.target_label,
+        display_order: c.display_order
+      }));
+      return res.status(200).json({ metrics });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub metric history ───────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-metric-history') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const client_id = req.query.client_id;
+    if (!client_id) return res.status(400).json({ error: 'client_id required' });
+    try {
+      const entries = await sbFetch('power_metric_entries',
+        `client_id=eq.${client_id}&order=period_month.desc&limit=50`
+      );
+      const defs = await sbFetch('power_metric_definitions', '');
+      const defMap = {};
+      defs.forEach(d => { defMap[d.key] = d; });
+      const enriched = entries.map(e => ({
+        ...e,
+        metric_label: defMap[e.metric_key]?.label || e.metric_key,
+        unit: defMap[e.metric_key]?.unit || 'number'
+      }));
+      return res.status(200).json({ entries: enriched });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub log metric ──────────────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-log-metric') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const body = req.body || {};
+    try {
+      await fetch(`${SB_URL}/rest/v1/power_metric_entries`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          client_id: body.client_id,
+          metric_key: body.metric_key,
+          value: parseFloat(body.value),
+          period_label: body.period_label,
+          period_month: body.period_month,
+          notes: body.notes || null,
+          entered_by: 'advisor',
+          source: 'manual'
+        })
+      });
+      return res.status(200).json({ success: true });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub save quick report ───────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-save-quick-report') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const b = req.body || {};
+    try {
+      await fetch(`${SB_URL}/rest/v1/quick_reports`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          client_id: b.client_id,
+          title: b.title,
+          report_type: b.report_type || 'note',
+          priority: b.priority || 'normal',
+          body: b.body,
+          linked_metric: b.linked_metric || null,
+          linked_milestone: b.linked_milestone || null,
+          visible_to_client: b.visible_to_client || false,
+          created_by: 'advisor',
+          created_at: new Date().toISOString()
+        })
+      });
+      return res.status(200).json({ success: true });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub quick reports ────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-quick-reports') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const limit = req.query.limit || 10;
+    try {
+      const reports = await sbFetch('quick_reports',
+        `client_id=eq.${req.query.client_id}&order=created_at.desc&limit=${limit}`
+      );
+      return res.status(200).json({ reports });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub log action ──────────────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-log-action') {
+    await verifyResona(req); // soft check — don't fail hard
+    const b = req.body || {};
+    try {
+      await fetch(`${SB_URL}/rest/v1/agent_logs`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          client_id: b.client_id,
+          action: b.action,
+          detail: b.detail || null,
+          created_at: new Date().toISOString()
+        })
+      });
+      return res.status(200).json({ success: true });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub agent logs ───────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-agent-logs') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const limit = req.query.limit || 10;
+    try {
+      const logs = await sbFetch('agent_logs',
+        `client_id=eq.${req.query.client_id}&order=created_at.desc&limit=${limit}`
+      );
+      return res.status(200).json({ logs });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── GET: Hub client settings ──────────────────────────────────────────
+  if (req.method === 'GET' && action === 'hub-client-settings') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const client_id = req.query.client_id;
+    if (!client_id) return res.status(400).json({ error: 'client_id required' });
+    try {
+      const [settingsRows, profileRows, snapRows, kwRows] = await Promise.all([
+        sbFetch('client_settings', `client_id=eq.${client_id}&limit=1`),
+        sbFetch('user_profiles', `client_id=eq.${client_id}&select=id`),
+        sbFetch('report_snapshots', `client_id=eq.${client_id}&select=id`),
+        sbFetch('client_keywords', `client_id=eq.${client_id}&select=id`)
+      ]);
+      return res.status(200).json({
+        settings: settingsRows[0] || {},
+        meta: {
+          profile_count: profileRows.length,
+          snapshot_count: snapRows.length,
+          keyword_count: kwRows.length
+        }
+      });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── POST: Hub extended report ─────────────────────────────────────────
+  if (req.method === 'POST' && action === 'hub-extended-report') {
+    if (!(await verifyResona(req))) return res.status(403).json({ error: 'Forbidden' });
+    const b = req.body || {};
+    try {
+      const id = require('crypto').randomUUID();
+      await fetch(`${SB_URL}/rest/v1/extended_reports`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          id,
+          client_id: b.client_id,
+          title: `Extended Report — ${b.from} to ${b.to}`,
+          status: 'draft',
+          period_from: b.from,
+          period_to: b.to,
+          sections: b.sections || {},
+          created_by: 'advisor',
+          created_at: new Date().toISOString()
+        })
+      });
+      generateExtendedReportAsync(id, b.client_id, b.from, b.to, b.sections);
+      return res.status(200).json({ success: true, report_id: id, status: 'generating' });
     } catch(e) {
       return res.status(500).json({ error: e.message });
     }

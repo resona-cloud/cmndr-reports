@@ -2280,11 +2280,16 @@ async function loadClients() {
         <div style="font-size:12px;color:var(--text2);">
           ${c.connected_count} active
         </div>
-        <div>
+        <div style="display:flex;gap:6px;">
           <button class="mbtn mbtn-muted"
             style="font-size:11px;padding:4px 10px;"
             onclick="openClientModal('${c.client_id}')">
             Manage
+          </button>
+          <button class="mbtn mbtn-primary"
+            style="font-size:11px;padding:4px 10px;"
+            onclick="window.location.href='/workbench.html?client=${c.client_id}'">
+            Workbench →
           </button>
         </div>
       </div>`;
