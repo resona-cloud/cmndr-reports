@@ -910,8 +910,8 @@ let _currentPanel = 'overview';
 
 // ── Boot ──────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  // Get token from sessionStorage
-  SESSION_TOKEN = sessionStorage.getItem('cmndr_token');
+  // Get token from localStorage
+  SESSION_TOKEN = localStorage.getItem('cmndr_session');
   if (!SESSION_TOKEN) {
     window.location.href = '/login.html';
     return;
@@ -923,8 +923,13 @@ window.addEventListener('DOMContentLoaded', async () => {
       headers: { Authorization: `Bearer ${SESSION_TOKEN}` }
     });
     const d = await r.json();
-    if (!d.ok || d.role !== 'resona_advisor') {
+    if (!d.ok && !d.session) {
       window.location.href = '/login.html';
+      return;
+    }
+    const role = d.role || d.profile?.role || '';
+    if (role !== 'resona_advisor') {
+      window.location.href = '/hub.html';
       return;
     }
     document.getElementById('rail-av').textContent =
