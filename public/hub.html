@@ -97,9 +97,9 @@
 
   /* Assigned Tracker */
   .tracker-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-  .tracker-head { display: grid; grid-template-columns: 1.4fr 1.4fr 1.4fr 0.9fr 1.4fr 0.9fr; gap: 0; padding: 9px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
+  .tracker-head { display: grid; grid-template-columns: 1.4fr 1.4fr 1.4fr 0.9fr 1fr 1.4fr; gap: 0; padding: 9px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
   .th { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
-  .tracker-row { display: grid; grid-template-columns: 1.4fr 1.4fr 1.4fr 0.9fr 1.4fr 0.9fr; gap: 0; padding: 11px 14px; border-bottom: 0.5px solid var(--border); align-items: center; }
+  .tracker-row { display: grid; grid-template-columns: 1.4fr 1.4fr 1.4fr 0.9fr 1fr 1.4fr; gap: 0; padding: 11px 14px; border-bottom: 0.5px solid var(--border); align-items: center; }
   .tracker-row:last-child { border-bottom: none; }
   .td { font-size: 12px; color: var(--text); line-height: 1.4; padding-right: 8px; }
   .td.muted { color: var(--text2); }
@@ -1385,12 +1385,8 @@ function showView(name) {
 }
 
 function openWorkbench(clientId) {
-  showView('workbench');
-  const map = {
-    'peak-flow': ['peak-flow', 'Peak Flow Plumbing & HVAC', 'PF', 'Plumbing & HVAC', '#378ADD'],
-    'demo':      ['demo', 'Launchpad Apps', 'LA', 'SaaS Platform', '#6366f1']
-  };
-  if (map[clientId]) selectClient(...map[clientId]);
+  const url = '/workbench.html?client=' + clientId;
+  window.open(url, '_blank');
 }
 
 // ── Toast ─────────────────────────────────────────────────────
@@ -2280,16 +2276,16 @@ async function loadClients() {
         <div style="font-size:12px;color:var(--text2);">
           ${c.connected_count} active
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
           <button class="mbtn mbtn-muted"
-            style="font-size:11px;padding:4px 10px;"
+            style="font-size:11px;padding:4px 8px;width:100%;"
             onclick="openClientModal('${c.client_id}')">
             Manage
           </button>
           <button class="mbtn mbtn-primary"
-            style="font-size:11px;padding:4px 10px;"
-            onclick="window.location.href='/workbench.html?client=${c.client_id}'">
-            Workbench →
+            style="font-size:11px;padding:4px 8px;width:100%;"
+            onclick="openWorkbench('${c.client_id}')">
+            Workbench
           </button>
         </div>
       </div>`;
