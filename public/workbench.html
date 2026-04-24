@@ -922,20 +922,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     const r = await fetch('/api/auth?action=me', {
       headers: { Authorization: `Bearer ${SESSION_TOKEN}` }
     });
-    const d = await r.json();
-    if (!d.ok && !d.session) {
+    if (!r.ok) {
       window.location.href = '/login.html';
       return;
     }
-    const role = d.role || d.profile?.role || '';
-    if (role !== 'resona_advisor') {
-      window.location.href = '/hub.html';
+    const d = await r.json();
+    const profile = d.profile;
+    if (!profile) {
+      window.location.href = '/login.html';
       return;
     }
-    document.getElementById('rail-av').textContent =
-      (d.full_name || 'A').charAt(0).toUpperCase();
-    document.getElementById('rail-name').textContent =
-      d.full_name || d.email || 'Advisor';
+    if (!profile.role || !profile.role.startsWith('resona_')) {
+      window.location.href = '/login.html';
+      return;
+    }
+    const advisorName = profile.full_name || d.user?.email || 'Advisor';
+    const advisorInitial = advisorName.charAt(0).toUpperCase();
+    const railAv = document.getElementById('rail-av');
+    const railName = document.getElementById('rail-name');
+    if (railAv) railAv.textContent = advisorInitial;
+    if (railName) railName.textContent = advisorName;
   } catch(e) {
     window.location.href = '/login.html';
     return;
