@@ -1,1 +1,1761 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"/> <meta name="viewport" content="width=device-width,initial-scale=1.0"/> <title>CMNDR Workbench</title> <style> /* ── Reset & tokens ── */ *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;} :root{ --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--bg4:#343431; --text:#e8e6de;--text2:#9c9a92;--text3:#6b6b67; --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14); --success:#1D9E75;--warning:#EF9F27;--danger:#E24B4A;--info:#378ADD; --radius-sm:6px;--radius-md:8px;--radius-lg:12px; --left-w:220px;--right-w:300px; } body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg3);color:var(--text);height:100vh; display:flex;overflow:hidden;} /* ── Left Rail ── */ .left-rail{ width:var(--left-w);flex-shrink:0; background:var(--bg);border-right:0.5px solid var(--border); display:flex;flex-direction:column;height:100vh;overflow:hidden; } .rail-header{ padding:16px 14px 12px; border-bottom:0.5px solid var(--border); flex-shrink:0; } .rail-back{ display:flex;align-items:center;gap:6px; font-size:11px;color:var(--text3);cursor:pointer; background:none;border:none;margin-bottom:12px; transition:color .12s; } .rail-back:hover{color:var(--text);} .rail-client-name{font-size:14px;font-weight:600;margin-bottom:2px;} .rail-client-id{font-size:11px;color:var(--text3);} .rail-health{ display:flex;align-items:center;gap:6px; margin-top:8px;padding:6px 8px; background:var(--bg2);border-radius:var(--radius-md); } .rail-health-score{font-size:16px;font-weight:700;} .rail-health-label{font-size:11px;color:var(--text2);} .rail-nav{flex:1;overflow-y:auto;padding:8px 0;} .rail-nav-item{ display:flex;align-items:center;gap:9px; padding:9px 14px;font-size:13px;color:var(--text2); cursor:pointer;transition:all .12s;border-left:2px solid transparent; user-select:none; } .rail-nav-item:hover{color:var(--text);background:var(--bg2);} .rail-nav-item.active{ color:var(--info);background:rgba(55,138,221,.08); border-left-color:var(--info);font-weight:500; } .rail-nav-icon{font-size:14px;flex-shrink:0;} .rail-nav-sep{ height:0.5px;background:var(--border); margin:6px 14px; } .rail-footer{ padding:12px 14px;border-top:0.5px solid var(--border); flex-shrink:0; } .rail-user{ display:flex;align-items:center;gap:8px; font-size:12px;color:var(--text2); } .rail-av{ width:26px;height:26px;border-radius:50%; background:var(--info);color:#fff; display:flex;align-items:center;justify-content:center; font-size:9px;font-weight:700;flex-shrink:0; } /* ── Main Content ── */ .main-content{ flex:1;overflow-y:auto; height:100vh; background:var(--bg3); } .panel{display:none;padding:24px;min-height:100%;} .panel.active{display:block;} .panel-title{ font-size:20px;font-weight:600;margin-bottom:4px; } .panel-meta{font-size:13px;color:var(--text2);margin-bottom:24px;} /* ── Right CMNDR Rail ── */ .right-rail{ width:var(--right-w);flex-shrink:0; background:var(--bg);border-left:0.5px solid var(--border); display:flex;flex-direction:column;height:100vh;overflow:hidden; } .rr-header{ padding:14px 16px;border-bottom:0.5px solid var(--border); flex-shrink:0; } .rr-title{font-size:12px;font-weight:600;color:var(--info); text-transform:uppercase;letter-spacing:.07em;} .rr-tabs{ display:flex;border-bottom:0.5px solid var(--border); flex-shrink:0; } .rr-tab{ flex:1;padding:9px 8px;font-size:11px;color:var(--text3); cursor:pointer;text-align:center; border-bottom:2px solid transparent; transition:all .12s;user-select:none; } .rr-tab:hover{color:var(--text2);} .rr-tab.active{color:var(--info);border-bottom-color:var(--info);} .rr-panel{display:none;flex:1;overflow-y:auto;padding:14px;} .rr-panel.active{display:flex;flex-direction:column;} /* CMNDR chat in right rail */ .cmndr-thread{ flex:1;overflow-y:auto; display:flex;flex-direction:column;gap:10px; padding-bottom:8px; } .cmndr-msg-user{ align-self:flex-end;background:var(--info); color:#fff;font-size:12px;padding:8px 11px; border-radius:10px 10px 2px 10px;max-width:85%; line-height:1.5; } .cmndr-msg-ai{ align-self:flex-start;background:var(--bg2); font-size:12px;padding:8px 11px; border-radius:10px 10px 10px 2px;max-width:92%; line-height:1.6;color:var(--text); } .cmndr-msg-lbl{ font-size:9px;font-weight:700;color:var(--info); text-transform:uppercase;letter-spacing:.07em; margin-bottom:4px; } .cmndr-input-wrap{ display:flex;gap:6px;padding-top:8px; border-top:0.5px solid var(--border); flex-shrink:0; } .cmndr-input{ flex:1;font-size:12px;padding:7px 9px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none;font-family:inherit;resize:none; min-height:34px;max-height:80px; } .cmndr-input:focus{border-color:var(--info);} .cmndr-send{ padding:7px 11px;background:var(--info);color:#fff; border:none;border-radius:var(--radius-md); cursor:pointer;font-size:12px;font-weight:600; flex-shrink:0;align-self:flex-end; } /* Quick Report panel in right rail */ .qr-form{display:flex;flex-direction:column;gap:10px;} .qr-label{font-size:11px;color:var(--text3);margin-bottom:3px;display:block;} .qr-input{ width:100%;font-size:12px;padding:7px 9px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none;font-family:inherit; } .qr-input:focus{border-color:var(--info);} .qr-select{ width:100%;font-size:12px;padding:7px 9px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none; } .qr-textarea{ width:100%;font-size:12px;padding:7px 9px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none;font-family:inherit;resize:vertical; min-height:80px;line-height:1.5; } .qr-textarea:focus{border-color:var(--info);} /* Cards */ .card{ background:var(--bg);border:0.5px solid var(--border); border-radius:var(--radius-lg);padding:16px; margin-bottom:12px; } .card-title{font-size:13px;font-weight:600;margin-bottom:10px;} .sec-label{ font-size:10px;font-weight:600;color:var(--text3); text-transform:uppercase;letter-spacing:.07em; margin:16px 0 8px; } .sec-label:first-child{margin-top:0;} /* Metric cards */ .metric-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; margin-bottom:16px; } .metric-card{ background:var(--bg);border:0.5px solid var(--border); border-radius:var(--radius-lg);padding:14px; position:relative;overflow:hidden; } .metric-label{font-size:11px;color:var(--text2);margin-bottom:4px;} .metric-val{font-size:22px;font-weight:700;margin-bottom:2px;} .metric-target{font-size:10px;color:var(--text3);} .metric-trend{ display:flex;align-items:center;gap:4px; font-size:11px;margin-top:6px; } .trend-up{color:var(--success);} .trend-down{color:var(--danger);} .metric-bar{ position:absolute;bottom:0;left:0;right:0; height:3px;background:var(--bg3); } .metric-bar-fill{height:100%;border-radius:0 0 0 0;transition:width .4s;} /* Form elements (shared) */ .form-group{margin-bottom:14px;} .form-label{ display:block;font-size:11px;font-weight:500; color:var(--text2);margin-bottom:5px; } .form-input{ width:100%;font-size:13px;padding:8px 10px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none;font-family:inherit; } .form-input:focus{border-color:var(--info);} .form-textarea{ width:100%;font-size:13px;padding:8px 10px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none;font-family:inherit;resize:vertical; min-height:80px;line-height:1.5; } .form-textarea:focus{border-color:var(--info);} .form-select{ width:100%;font-size:13px;padding:8px 10px; background:var(--bg2);border:0.5px solid var(--border2); border-radius:var(--radius-md);color:var(--text); outline:none; } .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;} /* Buttons */ .btn{ font-size:13px;padding:8px 16px;border-radius:var(--radius-md); border:none;cursor:pointer;font-weight:500; transition:opacity .15s; } .btn:hover{opacity:.85;} .btn-primary{background:var(--info);color:#fff;} .btn-success{background:var(--success);color:#fff;} .btn-muted{ background:var(--bg2);color:var(--text2); border:0.5px solid var(--border2)!important; } .btn-danger{background:none;border:0.5px solid var(--danger)!important;color:var(--danger);} .btn-sm{font-size:12px;padding:5px 12px;} .btn-full{width:100%;} .btn-row{display:flex;gap:8px;margin-top:16px;} /* Report type badges */ .report-type-badge{ font-size:10px;font-weight:600;padding:2px 8px; border-radius:10px;text-transform:uppercase; letter-spacing:.04em; } .rtype-ops{background:rgba(55,138,221,.12);color:var(--info);} .rtype-mktg{background:rgba(99,102,241,.12);color:#6366f1;} .rtype-fin{background:rgba(29,158,117,.12);color:var(--success);} .rtype-opt{background:rgba(239,159,39,.12);color:var(--warning);} .rtype-ext{background:rgba(226,75,74,.12);color:var(--danger);} /* Milestone steps */ .step-list{list-style:none;padding:0;} .step-item{ display:flex;align-items:flex-start;gap:10px; padding:8px 0;border-bottom:0.5px solid var(--border); font-size:13px;color:var(--text2); } .step-item:last-child{border:none;} .step-num{ width:20px;height:20px;border-radius:50%; background:var(--bg2);color:var(--text3); font-size:10px;font-weight:700; display:flex;align-items:center;justify-content:center; flex-shrink:0;margin-top:1px; } /* Automation health */ .auto-row{ display:flex;align-items:center;gap:10px; padding:9px 0;border-bottom:0.5px solid var(--border); font-size:12px; } .auto-row:last-child{border:none;} .auto-dot{ width:8px;height:8px;border-radius:50%;flex-shrink:0; } .auto-name{flex:1;color:var(--text);} .auto-stat{color:var(--text3);font-size:11px;} /* Log entries */ .log-row{ display:flex;align-items:flex-start;gap:8px; padding:7px 0;border-bottom:0.5px solid var(--border); font-size:12px; } .log-row:last-child{border:none;} .log-dot{ width:6px;height:6px;border-radius:50%; flex-shrink:0;margin-top:3px; } .log-success{background:var(--success);} .log-error{background:var(--danger);} .log-info{background:var(--info);} .log-warn{background:var(--warning);} .log-time{font-size:10px;color:var(--text3);white-space:nowrap;} /* Toast */ .toast{ position:fixed;bottom:20px;right:20px; background:var(--text);color:var(--bg); font-size:13px;padding:10px 18px; border-radius:var(--radius-md); opacity:0;transition:opacity .25s; pointer-events:none;z-index:999; } .toast.show{opacity:1;} /* Spinner */ .spinner{ width:16px;height:16px;border-radius:50%; border:2px solid var(--border2); border-top-color:var(--info); animation:spin .6s linear infinite; display:inline-block; } @keyframes spin{to{transform:rotate(360deg);}} /* Generating state */ .generating-bar{ height:3px;background:var(--bg2);border-radius:2px; margin-bottom:16px;overflow:hidden; } .generating-fill{ height:100%;background:var(--info); border-radius:2px;width:0; transition:width 30s linear; } </style> </head> <body> <!-- ── LEFT RAIL ───────────────────────────────────── --> <div class="left-rail"> <div class="rail-header"> <button class="rail-back" onclick="goBack()"> ← Hub </button> <div class="rail-client-name" id="rail-client-name">Loading...</div> <div class="rail-client-id" id="rail-client-id"></div> <div class="rail-health"> <div class="rail-health-score" id="rail-health-score" style="color:var(--text3);">—</div> <div class="rail-health-label">Health Score</div> </div> </div> <nav class="rail-nav"> <div class="rail-nav-item active" data-panel="overview" onclick="switchPanel('overview')"> <span class="rail-nav-icon">⬡</span> Overview </div> <div class="rail-nav-item" data-panel="reports" onclick="switchPanel('reports')"> <span class="rail-nav-icon">📊</span> Reports </div> <div class="rail-nav-item" data-panel="metrics" onclick="switchPanel('metrics')"> <span class="rail-nav-icon">📈</span> Power Metrics </div> <div class="rail-nav-sep"></div> <div class="rail-nav-item" data-panel="strategy" onclick="switchPanel('strategy')"> <span class="rail-nav-icon">🗺</span> Strategy </div> <div class="rail-nav-item" data-panel="automations" onclick="switchPanel('automations')"> <span class="rail-nav-icon">⚡</span> Automations </div> <div class="rail-nav-sep"></div> <div class="rail-nav-item" data-panel="connections" onclick="switchPanel('connections')"> <span class="rail-nav-icon">🔗</span> Connections </div> <div class="rail-nav-item" data-panel="settings" onclick="switchPanel('settings')"> <span class="rail-nav-icon">⚙</span> Settings & Logs </div> </nav> <div class="rail-footer"> <div class="rail-user"> <div class="rail-av" id="rail-av">—</div> <div> <div style="font-size:12px;font-weight:500;" id="rail-name">Loading</div> <div style="font-size:10px;color:var(--text3);" id="rail-role">—</div> </div> </div> </div> </div> <!-- ── MAIN CONTENT ────────────────────────────────── --> <div class="main-content" id="main-content"> <!-- Overview Panel --> <div class="panel active" id="panel-overview"> <div class="panel-title">Overview</div> <div class="panel-meta" id="overview-meta">Client summary</div> <div style="display:grid;grid-template-columns:repeat(4,1fr); gap:10px;margin-bottom:20px;" id="overview-kpis"> <div class="card" style="padding:14px;"> <div class="metric-label">Health Score</div> <div class="metric-val" id="ov-health">—</div> </div> <div class="card" style="padding:14px;"> <div class="metric-label">Current Phase</div> <div class="metric-val" id="ov-phase" style="font-size:16px;">—</div> </div> <div class="card" style="padding:14px;"> <div class="metric-label">Program</div> <div class="metric-val" id="ov-program" style="font-size:13px;line-height:1.4;">—</div> </div> <div class="card" style="padding:14px;"> <div class="metric-label">Connected Sources</div> <div class="metric-val" id="ov-connections">—</div> </div> </div> <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"> <div> <div class="sec-label">Current Goal</div> <div class="card"> <div id="ov-goal" style="font-size:13px;color:var(--text2);line-height:1.7;"> Loading... </div> </div> <div class="sec-label">Current Milestone</div> <div class="card"> <div id="ov-milestone" style="font-size:13px;color:var(--text2);">—</div> </div> <div class="sec-label">Quick Reports</div> <div id="ov-quick-reports"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <div> <div class="sec-label">Recent Activity</div> <div class="card"> <div id="ov-activity"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <div class="sec-label">Alerts</div> <div id="ov-alerts"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> </div> </div> <!-- Reports Panel --> <div class="panel" id="panel-reports"> <div class="panel-title">Reports</div> <div class="panel-meta">Generate, preview and send client reports</div> <div class="sec-label">Generate Report</div> <div class="card"> <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px; margin-bottom:14px;"> <div> <div class="form-label">Report Type</div> <select class="form-select" id="rpt-type"> <option value="operations">Operations</option> <option value="marketing">Marketing</option> <option value="finance">Finance</option> <option value="optimization">Optimization</option> </select> </div> <div> <div class="form-label">Date Range</div> <select class="form-select" id="rpt-range"> <option value="7d">Last 7 days</option> <option value="30d" selected>Last 30 days</option> <option value="mtd">Month to date</option> <option value="qtd">Quarter to date</option> </select> </div> </div> <div id="rpt-generating" style="display:none;"> <div class="generating-bar"> <div class="generating-fill" id="rpt-progress"></div> </div> <div style="font-size:12px;color:var(--text3);" id="rpt-status"> Generating report... </div> </div> <div class="btn-row" style="margin-top:0;"> <button class="btn btn-primary" onclick="generateReport()"> Generate Report </button> <button class="btn btn-muted" onclick="previewReport()"> Preview Live </button> </div> </div> <div class="sec-label">Extended Report</div> <div class="card"> <div style="font-size:13px;color:var(--text2);margin-bottom:14px; line-height:1.6;"> Comprehensive PDF report including all sections, Power Metrics, and extended roadmap. AI-generated executive summary included. </div> <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px; margin-bottom:14px;"> <div> <div class="form-label">Period From</div> <input type="date" class="form-input" id="ext-from"/> </div> <div> <div class="form-label">Period To</div> <input type="date" class="form-input" id="ext-to"/> </div> </div> <div id="ext-sections" style="display:grid;grid-template-columns:1fr 1fr; gap:6px;margin-bottom:14px;"> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-ops"/> Operations </label> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-mktg"/> Marketing </label> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-fin"/> Finance </label> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-opt"/> Optimization </label> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-metrics"/> Power Metrics </label> <label style="display:flex;align-items:center;gap:6px; font-size:12px;color:var(--text2);"> <input type="checkbox" checked id="ext-roadmap"/> Roadmap </label> </div> <div id="ext-status" style="font-size:12px;color:var(--text3); margin-bottom:10px;display:none;"></div> <div class="btn-row" style="margin-top:0;"> <button class="btn btn-primary" onclick="generateExtendedReport()"> Build Extended Report </button> </div> </div> <div class="sec-label">Report Archive</div> <div id="rpt-archive"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <!-- Power Metrics Panel --> <div class="panel" id="panel-metrics"> <div class="panel-title">Power Metrics</div> <div class="panel-meta">Track KPIs tied to client strategy</div> <div style="display:flex;justify-content:space-between; align-items:center;margin-bottom:16px;"> <div style="font-size:13px;color:var(--text2);"> Monthly snapshots — enter values to track progress over time </div> <button class="btn btn-primary btn-sm" onclick="openMetricEntry()"> + Log Metric </button> </div> <div class="metric-grid" id="metrics-grid"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <div class="sec-label">Metric History</div> <div id="metrics-history"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <!-- Log metric modal --> <div id="metric-entry-modal" style="display:none;position:fixed; inset:0;background:rgba(0,0,0,.6);z-index:200; display:none;align-items:center;justify-content:center;"> <div style="background:var(--bg);border:0.5px solid var(--border2); border-radius:var(--radius-lg);padding:24px;width:360px;"> <div style="font-size:15px;font-weight:600;margin-bottom:16px;"> Log Power Metric </div> <div class="form-group"> <label class="form-label">Metric</label> <select class="form-select" id="me-key"></select> </div> <div class="form-group"> <label class="form-label">Value</label> <input class="form-input" id="me-value" type="number" placeholder="Enter value"/> </div> <div class="form-group"> <label class="form-label">Period</label> <input class="form-input" id="me-period" type="month"/> </div> <div class="form-group"> <label class="form-label">Notes (optional)</label> <textarea class="form-textarea" id="me-notes" placeholder="Any context for this reading..." style="min-height:60px;"></textarea> </div> <div class="btn-row"> <button class="btn btn-primary btn-full" onclick="submitMetricEntry()">Save</button> <button class="btn btn-muted" onclick="closeMetricEntry()">Cancel</button> </div> </div> </div> </div> <!-- Strategy Panel --> <div class="panel" id="panel-strategy"> <div class="panel-title">Strategy</div> <div class="panel-meta">Extended roadmap and methodology</div> <div id="strategy-body"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <!-- Automations Panel --> <div class="panel" id="panel-automations"> <div class="panel-title">Automations</div> <div class="panel-meta">Make.com scenario health and run history</div> <div class="sec-label">Scenario Health</div> <div class="card" id="auto-health"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <div class="sec-label">Recent Runs</div> <div class="card" id="auto-runs"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <div class="sec-label">Opportunities</div> <div id="auto-opps"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <!-- Connections Panel --> <div class="panel" id="panel-connections"> <div class="panel-title">Connections</div> <div class="panel-meta">Manage data sources for this client</div> <div class="card" id="conn-body"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <div style="margin-top:12px;"> <a href="/connections.html" target="_blank" style="text-decoration:none;"> <button class="btn btn-primary"> Manage Connections → </button> </a> </div> </div> <!-- Settings & Logs Panel --> <div class="panel" id="panel-settings"> <div class="panel-title">Settings & Logs</div> <div class="panel-meta">Client metadata, configuration and debug</div> <div class="sec-label">Client Settings</div> <div class="card"> <div id="settings-body"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <div class="sec-label">Agent Logs</div> <div class="card" id="agent-logs-body"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> <div class="sec-label">System Metadata</div> <div class="card"> <div id="meta-body"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> </div> </div><!-- /main-content --> <!-- ── RIGHT RAIL (CMNDR) ──────────────────────────── --> <div class="right-rail"> <div class="rr-header"> <div class="rr-title">⬡ CMNDR</div> </div> <div class="rr-tabs"> <div class="rr-tab active" data-rr="chat" onclick="switchRR('chat')">Chat</div> <div class="rr-tab" data-rr="quickreport" onclick="switchRR('quickreport')">Quick Report</div> <div class="rr-tab" data-rr="reports" onclick="switchRR('reports')">Notes</div> </div> <!-- Chat panel --> <div class="rr-panel active" id="rr-chat"> <div class="cmndr-thread" id="cmndr-thread"> <div class="cmndr-msg-ai"> <div class="cmndr-msg-lbl">CMNDR</div> Ask me anything about this client — their metrics, strategy, risks, or next steps. </div> </div> <div class="cmndr-input-wrap"> <textarea class="cmndr-input" id="cmndr-input" placeholder="Ask about this client..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCmndr();}"> </textarea> <button class="cmndr-send" onclick="sendCmndr()">↑</button> </div> </div> <!-- Quick Report panel --> <div class="rr-panel" id="rr-quickreport" style="overflow-y:auto;"> <div class="qr-form"> <div style="font-size:12px;color:var(--text2);margin-bottom:4px;"> Log a note, win, concern or action item for this client. </div> <div> <label class="qr-label">Title</label> <input class="qr-input" id="qr-title" placeholder="Short descriptive title"/> </div> <div> <label class="qr-label">Type</label> <select class="qr-select" id="qr-type"> <option value="check_in">Check-in</option> <option value="win">Win 🎉</option> <option value="concern">Concern ⚠️</option> <option value="escalation">Escalation 🚨</option> <option value="action_item">Action Item</option> <option value="note">General Note</option> </select> </div> <div> <label class="qr-label">Priority</label> <select class="qr-select" id="qr-priority"> <option value="low">Low</option> <option value="normal" selected>Normal</option> <option value="high">High</option> <option value="urgent">Urgent</option> </select> </div> <div> <label class="qr-label">Linked Metric (optional)</label> <select class="qr-select" id="qr-metric"> <option value="">None</option> <option value="cac">CAC</option> <option value="clv">CLV</option> <option value="nps">NPS</option> <option value="conversion_rate">Conversion Rate</option> <option value="churn_rate">Churn Rate</option> <option value="retention_rate">Retention Rate</option> <option value="tat">Turnaround Time</option> </select> </div> <div> <label class="qr-label">Linked Milestone (optional)</label> <select class="qr-select" id="qr-milestone"> <option value="">None</option> <option value="1">Milestone 1</option> <option value="2">Milestone 2</option> <option value="3">Milestone 3</option> </select> </div> <div> <label class="qr-label">Notes</label> <textarea class="qr-textarea" id="qr-body" placeholder="What happened? What's the context? What action is needed?"></textarea> </div> <div> <label class="qr-label"> <input type="checkbox" id="qr-visible" style="margin-right:5px;"/> Visible to client </label> </div> <button class="btn btn-primary btn-full" onclick="submitQuickReport()" style="margin-top:4px;"> Save Report </button> </div> <div class="sec-label" style="margin-top:16px;">Recent</div> <div id="qr-recent"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> <!-- Notes panel --> <div class="rr-panel" id="rr-reports" style="overflow-y:auto;"> <div style="font-size:12px;color:var(--text2);margin-bottom:12px;"> Previous quick reports and notes for this client. </div> <div id="notes-list"> <div style="font-size:12px;color:var(--text3);">Loading...</div> </div> </div> </div><!-- /right-rail --> <div class="toast" id="toast"></div> <script> // ── State ───────────────────────────────────────────────────── let CLIENT_ID = null; let SESSION_TOKEN = null; let _clientData = {}; let _currentPanel = 'overview'; // ── Boot ────────────────────────────────────────────────────── window.addEventListener('DOMContentLoaded', async () => { SESSION_TOKEN = sessionStorage.getItem('cmndr_token'); if (!SESSION_TOKEN) return redirect('/login.html'); // Verify auth try { const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${SESSION_TOKEN}` }}); const d = await r.json(); if (!d.ok || d.role !== 'resona_advisor') return redirect('/login.html'); document.getElementById('rail-name').textContent = d.full_name || d.email || 'Advisor'; document.getElementById('rail-role').textContent = 'Resona Advisor'; document.getElementById('rail-av').textContent = (d.full_name || 'A').charAt(0).toUpperCase(); } catch(e) { return redirect('/login.html'); } // Get client from URL const params = new URLSearchParams(window.location.search); CLIENT_ID = params.get('client'); if (!CLIENT_ID) return redirect('/hub.html'); // Set default dates for extended report const today = new Date(); const monthAgo = new Date(Date.now() - 30*24*60*60*1000); document.getElementById('ext-to').value = today.toISOString().split('T')[0]; document.getElementById('ext-from').value = monthAgo.toISOString().split('T')[0]; // Set default period for metric entry document.getElementById('me-period').value = today.toISOString().slice(0,7); await loadClientData(); await loadPanel('overview'); }); function redirect(url) { window.location.href = url; } // ── Hub back button ─────────────────────────────────────────── function goBack() { window.location.href = '/hub.html'; } // ── API helper ──────────────────────────────────────────────── async function api(path, opts = {}) { const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SESSION_TOKEN}`, ...(opts.headers || {}) } }); return res.json(); } function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); } // ── Load client base data ───────────────────────────────────── async function loadClientData() { try { const data = await api( `/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}` ); _clientData = data; // Rail header const name = data.profile?.full_name || CLIENT_ID; document.getElementById('rail-client-name').textContent = name; document.getElementById('rail-client-id').textContent = CLIENT_ID; const health = data.health?.score; const scoreEl = document.getElementById('rail-health-score'); scoreEl.textContent = health ?? '—'; scoreEl.style.color = !health ? 'var(--text3)' : health >= 70 ? 'var(--success)' : health >= 55 ? 'var(--warning)' : 'var(--danger)'; document.title = `CMNDR — ${name}`; } catch(e) { console.error('[workbench] loadClientData:', e.message); } } // ── Panel switching ─────────────────────────────────────────── function switchPanel(name) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.rail-nav-item').forEach(n => n.classList.remove('active')); const panel = document.getElementById('panel-' + name); if (panel) panel.classList.add('active'); const navItem = document.querySelector(`[data-panel="${name}"]`); if (navItem) navItem.classList.add('active'); _currentPanel = name; loadPanel(name); } async function loadPanel(name) { const loaders = { overview: loadOverview, reports: loadReports, metrics: loadMetrics, strategy: loadStrategy, automations: loadAutomations, connections: loadConnections, settings: loadSettings }; if (loaders[name]) await loaders[name](); } // ── Right rail switching ────────────────────────────────────── function switchRR(name) { document.querySelectorAll('.rr-tab').forEach(t => t.classList.toggle('active', t.dataset.rr === name)); document.querySelectorAll('.rr-panel').forEach(p => p.classList.toggle('active', p.id === 'rr-' + name)); if (name === 'reports') loadNotes(); if (name === 'quickreport') loadRecentQR(); } // ── Overview ────────────────────────────────────────────────── async function loadOverview() { const d = _clientData; const profile = d.profile; const health = d.health; const goal = d.goal; const course = d.course; const roadmap = d.roadmap; const sources = d.sources || []; // KPIs document.getElementById('ov-health').textContent = health?.score ?? '—'; const phaseNum = (roadmap?.current_node || 1); document.getElementById('ov-phase').textContent = `Phase ${phaseNum} / 3`; document.getElementById('ov-program').textContent = course?.course_display || '—'; document.getElementById('ov-connections').textContent = sources.length; document.getElementById('overview-meta').textContent = profile?.full_name || CLIENT_ID; // Goal document.getElementById('ov-goal').textContent = goal?.stated_goal || 'No goal set'; // Current milestone const msNode = roadmap?.current_node || 1; const ms = roadmap?.[`milestone_${msNode}`]; document.getElementById('ov-milestone').innerHTML = ms ? `<div style="font-size:13px;font-weight:500;margin-bottom:4px;"> ${ms.title}</div> <div style="font-size:12px;color:var(--text2);">${ms.description || ''}</div>` : '<span style="color:var(--text3);">No roadmap configured</span>'; // Load quick reports try { const qrRes = await api( `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=3` ); const qrs = qrRes.reports || []; const qrEl = document.getElementById('ov-quick-reports'); qrEl.innerHTML = qrs.length ? qrs.map(q => ` <div class="card" style="margin-bottom:8px;"> <div style="display:flex;align-items:center;gap:8px; margin-bottom:6px;"> <span style="font-size:12px;font-weight:500;">${q.title}</span> <span style="font-size:10px;padding:2px 6px;border-radius:8px; background:var(--bg2);color:var(--text3);">${q.report_type}</span> </div> <div style="font-size:12px;color:var(--text2);line-height:1.5;"> ${q.body.slice(0,120)}${q.body.length > 120 ? '…' : ''} </div> </div>`).join('') : '<div class="card"><div style="font-size:12px;color:var(--text3);">No quick reports yet</div></div>'; } catch(e) {} // Load alerts try { const alertsRes = await api( `/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}` ); // alerts come from existing data } catch(e) {} // Activity log (recent agent_logs) try { const logsRes = await api( `/api/pipeline?action=hub-agent-logs&client_id=${CLIENT_ID}&limit=5` ); const logs = logsRes.logs || []; document.getElementById('ov-activity').innerHTML = logs.length ? logs.map(l => ` <div class="log-row"> <span class="log-dot log-info"></span> <div style="flex:1;"> <div style="font-size:12px;">${l.action}</div> <div style="font-size:11px;color:var(--text3);">${l.detail || ''}</div> </div> <span class="log-time"> ${new Date(l.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric'})} </span> </div>`).join('') : '<div style="font-size:12px;color:var(--text3);">No activity yet</div>'; } catch(e) {} } // ── Reports ─────────────────────────────────────────────────── async function loadReports() { try { const res = await api( `/api/pipeline?action=hub-archive&client_id=${CLIENT_ID}` ); const snaps = res.snapshots || []; const el = document.getElementById('rpt-archive'); if (!snaps.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);">No archived reports yet</div>'; return; } el.innerHTML = snaps.map(s => { const page = s.page || 'report'; const date = new Date(s.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); const typeClass = { operations:'rtype-ops',marketing:'rtype-mktg', finance:'rtype-fin',optimization:'rtype-opt' }[page] || 'rtype-ops'; return `<div class="card" style="display:flex;align-items:center; gap:12px;padding:12px;"> <span class="report-type-badge ${typeClass}">${page}</span> <div style="flex:1;"> <div style="font-size:12px;font-weight:500;">${date}</div> <div style="font-size:11px;color:var(--text3);"> ${s.ai_summary ? s.ai_summary.slice(0,80) + '…' : 'No summary'} </div> </div> <button class="btn btn-muted btn-sm" onclick="previewArchivedReport('${s.id}','${s.period_from}','${page}')"> View </button> </div>`; }).join(''); } catch(e) {} } async function generateReport() { const type = document.getElementById('rpt-type').value; const range = document.getElementById('rpt-range').value; const genEl = document.getElementById('rpt-generating'); const statusEl = document.getElementById('rpt-status'); const progressEl = document.getElementById('rpt-progress'); genEl.style.display = 'block'; statusEl.textContent = `Generating ${type} report...`; requestAnimationFrame(() => { progressEl.style.width = '90%'; }); try { // Get date range const today = new Date(); let from, to = today.toISOString().split('T')[0]; if (range === '7d') from = new Date(Date.now()-7*86400000).toISOString().split('T')[0]; else if (range === '30d') from = new Date(Date.now()-30*86400000).toISOString().split('T')[0]; else if (range === 'mtd') from = new Date(today.getFullYear(),today.getMonth(),1).toISOString().split('T')[0]; else from = new Date(today.getFullYear(),Math.floor(today.getMonth()/3)*3,1).toISOString().split('T')[0]; // Call pages API with force=true to bypass cache const res = await fetch( `/api/pages?page=${type}&client=${CLIENT_ID}&from=${from}&to=${to}&force=true` ); const data = await res.json(); progressEl.style.width = '100%'; statusEl.textContent = '✓ Report generated successfully'; // Log action logAction(`Generated ${type} report`, `Range: ${from} to ${to}`); showToast(`${type} report generated`); setTimeout(() => { genEl.style.display = 'none'; progressEl.style.width = '0'; loadReports(); }, 1500); } catch(e) { statusEl.textContent = 'Error: ' + e.message; showToast('Generation failed'); } } async function generateExtendedReport() { const from = document.getElementById('ext-from').value; const to = document.getElementById('ext-to').value; const statusEl = document.getElementById('ext-status'); if (!from || !to) { showToast('Please set date range'); return; } const sections = { operations: document.getElementById('ext-ops').checked, marketing: document.getElementById('ext-mktg').checked, finance: document.getElementById('ext-fin').checked, optimization: document.getElementById('ext-opt').checked, power_metrics: document.getElementById('ext-metrics').checked, roadmap: document.getElementById('ext-roadmap').checked }; statusEl.style.display = 'block'; statusEl.textContent = 'Building extended report... this may take 30-60 seconds.'; try { const res = await api( `/api/pipeline?action=hub-extended-report`, { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, from, to, sections }) } ); if (res.success) { statusEl.textContent = '✓ Extended report created — ' + res.report_id; showToast('Extended report ready'); logAction('Generated extended report', `${from} to ${to}`); } else { statusEl.textContent = 'Error: ' + (res.error || 'Unknown error'); } } catch(e) { statusEl.textContent = 'Error: ' + e.message; } } function previewReport() { const range = document.getElementById('rpt-range').value; const today = new Date(); let from, to = today.toISOString().split('T')[0]; if (range === '7d') from = new Date(Date.now()-7*86400000).toISOString().split('T')[0]; else if (range === '30d') from = new Date(Date.now()-30*86400000).toISOString().split('T')[0]; else from = to; window.open( `/app.html?client=${CLIENT_ID}&from=${from}&to=${to}`, '_blank' ); } function previewArchivedReport(id, from, page) { window.open(`/app.html?client=${CLIENT_ID}&from=${from}&to=${from}`, '_blank'); } // ── Power Metrics ───────────────────────────────────────────── async function loadMetrics() { try { const [configRes, historyRes] = await Promise.all([ api(`/api/pipeline?action=hub-power-metrics&client_id=${CLIENT_ID}`), api(`/api/pipeline?action=hub-metric-history&client_id=${CLIENT_ID}`) ]); const metrics = configRes.metrics || []; const history = historyRes.entries || []; // Build metric select for entry modal const meKey = document.getElementById('me-key'); meKey.innerHTML = metrics.map(m => `<option value="${m.key}">${m.label}</option>` ).join(''); // Render metric cards const gridEl = document.getElementById('metrics-grid'); if (!metrics.length) { gridEl.innerHTML = '<div style="font-size:12px;color:var(--text3);">No metrics configured</div>'; } else { gridEl.innerHTML = metrics.map(m => { const entries = history.filter(e => e.metric_key === m.key) .sort((a,b) => new Date(b.period_month) - new Date(a.period_month)); const latest = entries[0]; const prev = entries[1]; const val = latest?.value; const prevVal = prev?.value; const trend = val && prevVal ? ((val - prevVal) / prevVal * 100).toFixed(1) : null; const trendUp = trend > 0; const goodUp = m.higher_is_better; const trendGood = trend === null ? null : (trendUp === goodUp); const pct = m.target_value && val ? Math.min(100, Math.round(val / m.target_value * 100)) : 0; const barColor = !trendGood ? 'var(--text3)' : trendGood ? 'var(--success)' : 'var(--danger)'; const fmt = (v) => { if (!v && v !== 0) return '—'; if (m.unit === 'currency') return '$' + Number(v).toLocaleString(); if (m.unit === 'percent') return v + '%'; if (m.unit === 'days') return v + 'd'; return String(v); }; return `<div class="metric-card"> <div class="metric-label">${m.label}</div> <div class="metric-val" style="color:${barColor};"> ${fmt(val)} </div> <div class="metric-target">Target: ${fmt(m.target_value)} · ${m.target_label || ''}</div> ${trend !== null ? ` <div class="metric-trend ${trendGood ? 'trend-up' : 'trend-down'}"> ${trendUp ? '↑' : '↓'} ${Math.abs(trend)}% vs last month </div>` : ''} <div class="metric-bar"> <div class="metric-bar-fill" style="width:${pct}%;background:${barColor};"></div> </div> </div>`; }).join(''); } // History table const histEl = document.getElementById('metrics-history'); if (!history.length) { histEl.innerHTML = '<div style="font-size:12px;color:var(--text3);">No history yet — log your first metric above</div>'; } else { const sorted = [...history].sort((a,b) => new Date(b.period_month) - new Date(a.period_month)); histEl.innerHTML = `<div class="card">` + sorted.map(e => ` <div class="log-row"> <div style="flex:1;"> <span style="font-size:12px;font-weight:500;">${e.metric_label || e.metric_key}</span> <span style="font-size:11px;color:var(--text3);margin-left:8px;">${e.period_label || e.period_month}</span> </div> <div style="font-size:13px;font-weight:600;">${e.value}</div> </div>`).join('') + `</div>`; } } catch(e) { console.error('[metrics]', e.message); } } function openMetricEntry() { document.getElementById('metric-entry-modal').style.display = 'flex'; } function closeMetricEntry() { document.getElementById('metric-entry-modal').style.display = 'none'; } async function submitMetricEntry() { const key = document.getElementById('me-key').value; const value = parseFloat(document.getElementById('me-value').value); const period = document.getElementById('me-period').value; const notes = document.getElementById('me-notes').value; if (!key || isNaN(value) || !period) { showToast('Please fill in metric, value and period'); return; } try { const res = await api('/api/pipeline?action=hub-log-metric', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, metric_key: key, value, period_label: new Date(period + '-01').toLocaleDateString('en-US', {month:'long',year:'numeric'}), period_month: period + '-01', notes }) }); if (res.success) { closeMetricEntry(); document.getElementById('me-value').value = ''; document.getElementById('me-notes').value = ''; showToast('Metric logged'); logAction(`Logged ${key}`, `Value: ${value}`); await loadMetrics(); } else { showToast('Error: ' + (res.error || 'Failed')); } } catch(e) { showToast('Error: ' + e.message); } } // ── Strategy ────────────────────────────────────────────────── async function loadStrategy() { const el = document.getElementById('strategy-body'); const d = _clientData; const rm = d.roadmap; const goal = d.goal; const course = d.course; if (!rm) { el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No roadmap configured for this client.</div>'; return; } const nodes = [rm.milestone_1, rm.milestone_2, rm.milestone_3].filter(Boolean); const current = rm.current_node || 1; el.innerHTML = ` <!-- Methodology --> <div class="sec-label">Strategy & Methodology</div> <div class="card"> <div style="font-size:13px;color:var(--text2);line-height:1.7;"> ${rm.methodology || '<span style="color:var(--text3);">No methodology documented yet</span>'} </div> ${rm.estimated_duration ? ` <div style="margin-top:10px;font-size:11px;color:var(--text3);"> Estimated duration: ${rm.estimated_duration} </div>` : ''} </div> <!-- Milestones --> <div class="sec-label">Milestones</div> ${nodes.map((ms, i) => { const num = i + 1; const statusColor = num < current ? 'var(--success)' : num === current ? 'var(--info)' : 'var(--text3)'; const statusLabel = num < current ? 'Complete' : num === current ? 'Active' : 'Pending'; const steps = rm[`milestone_${num}_steps`] || []; const support = rm[`milestone_${num}_support`] || []; const criteria = rm[`milestone_${num}_criteria`] || ''; return ` <div class="card" style="margin-bottom:12px; border-color:${num === current ? 'rgba(55,138,221,.3)' : 'var(--border)'};"> <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"> <div style="width:28px;height:28px;border-radius:50%; background:${statusColor};display:flex;align-items:center; justify-content:center;color:#fff;font-size:11px; font-weight:700;flex-shrink:0;">${num}</div> <div style="flex:1;"> <div style="font-size:14px;font-weight:600;">${ms.title}</div> <div style="font-size:11px;color:${statusColor}; font-weight:500;">${statusLabel}</div> </div> </div> <div style="font-size:13px;color:var(--text2); line-height:1.6;margin-bottom:12px;"> ${ms.description || ''} </div> ${steps.length ? ` <div style="font-size:11px;font-weight:600;color:var(--text3); text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;"> Projected Steps </div> <ul class="step-list"> ${steps.map((s, si) => ` <li class="step-item"> <span class="step-num">${si+1}</span> <span>${s.step}</span> </li>`).join('')} </ul>` : ''} ${support.length ? ` <div style="font-size:11px;font-weight:600;color:var(--text3); text-transform:uppercase;letter-spacing:.06em; margin:12px 0 8px;"> Support Measures </div> <ul class="step-list"> ${support.map(s => ` <li class="step-item"> <span class="step-num">✓</span> <span>${s.measure}</span> </li>`).join('')} </ul>` : ''} ${criteria ? ` <div style="margin-top:12px;padding:10px; background:var(--bg2);border-radius:var(--radius-md); font-size:12px;color:var(--text2);"> <span style="font-weight:600;color:var(--success);"> Success Criteria: </span> ${criteria} </div>` : ''} </div>`; }).join('')} ${rm.agent_notes ? ` <div class="sec-label">Agent Notes (Internal)</div> <div class="card" style="border-color:rgba(239,159,39,.2); background:rgba(239,159,39,.04);"> <div style="font-size:12px;color:var(--text2);line-height:1.6;"> ${rm.agent_notes} </div> </div>` : ''} ${rm.escalation_triggers?.length ? ` <div class="sec-label">Escalation Triggers</div> <div class="card"> <ul class="step-list"> ${rm.escalation_triggers.map(t => ` <li class="step-item"> <span class="step-num" style="background:rgba(226,75,74,.12); color:var(--danger);">!</span> <span>${t}</span> </li>`).join('')} </ul> </div>` : ''} <div class="btn-row"> <button class="btn btn-success" onclick="advanceMilestone()"> Advance to Milestone ${Math.min(current+1,3)} </button> <button class="btn btn-muted" onclick="editStrategy()"> Edit Strategy </button> </div>`; } async function advanceMilestone() { const rm = _clientData.roadmap; if (!rm) return; const current = rm.current_node || 1; if (current >= 3) { showToast('Already on final milestone'); return; } if (!confirm(`Advance ${CLIENT_ID} to Milestone ${current+1}?`)) return; const res = await api('/api/pipeline?action=hub-advance-milestone', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, current_node: current }) }); if (res.success) { _clientData.roadmap = { ...rm, current_node: current + 1 }; showToast(`Advanced to Milestone ${current+1}`); logAction('Advanced milestone', `Phase ${current} → ${current+1}`); loadStrategy(); } else { showToast('Failed: ' + (res.error || 'Unknown')); } } function editStrategy() { showToast('Strategy editor coming soon'); } // ── Automations ─────────────────────────────────────────────── async function loadAutomations() { try { const detail = await api( `/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}` ); const scenarios = detail.make_health || []; const logs = detail.logs || []; const opps = detail.opportunities || []; // Scenario health const healthEl = document.getElementById('auto-health'); healthEl.innerHTML = scenarios.length ? scenarios.map(s => { const color = s.status === 'active' ? 'var(--success)' : s.status === 'error' ? 'var(--danger)' : 'var(--text3)'; return `<div class="auto-row"> <div class="auto-dot" style="background:${color};"></div> <div class="auto-name">${s.scenario_name || s.scenario_id}</div> <div class="auto-stat">${s.success_rate || 0}% success</div> <div class="auto-stat">${s.total_runs || 0} runs</div> </div>`; }).join('') : '<div style="font-size:12px;color:var(--text3);">No scenarios connected</div>'; // Recent runs const runsEl = document.getElementById('auto-runs'); runsEl.innerHTML = logs.slice(0,10).length ? logs.slice(0,10).map(l => { const color = l.status === 'success' ? 'log-success' : l.status === 'error' ? 'log-error' : 'log-info'; return `<div class="log-row"> <span class="log-dot ${color}"></span> <div style="flex:1;font-size:12px;">${l.scenario_name || 'Automation'}</div> <span class="log-time">${new Date(l.ran_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span> </div>`; }).join('') : '<div style="font-size:12px;color:var(--text3);">No runs logged</div>'; // Opportunities const oppsEl = document.getElementById('auto-opps'); oppsEl.innerHTML = opps.length ? opps.map(o => ` <div class="card" style="margin-bottom:8px;"> <div style="display:flex;align-items:center;gap:8px; margin-bottom:6px;"> <div style="font-size:13px;font-weight:500;flex:1;"> ${o.title} </div> <div style="font-size:11px;color:var(--success);"> ${Math.round(o.estimated_cost_saving || 0).toLocaleString()}/yr </div> </div> <div style="font-size:12px;color:var(--text2);"> ${o.description} </div> </div>`).join('') : '<div style="font-size:12px;color:var(--text3);">No opportunities identified</div>'; } catch(e) { console.error('[automations]', e.message); } } // ── Connections ─────────────────────────────────────────────── async function loadConnections() { const ALL = [ {key:'google_search_console',name:'Google Search Console',cat:'Authority'}, {key:'google_analytics',name:'Google Analytics 4',cat:'Marketing'}, {key:'stripe',name:'Stripe',cat:'Finance'}, {key:'mailchimp',name:'Mailchimp',cat:'Marketing'}, {key:'quickbooks',name:'QuickBooks Online',cat:'Finance'}, {key:'square',name:'Square',cat:'Finance'}, {key:'google_ads',name:'Google Ads',cat:'Marketing'}, ]; const sources = _clientData.sources || []; const el = document.getElementById('conn-body'); el.innerHTML = ALL.map(c => { const src = sources.find(s => s.connector_key === c.key); const connected = !!src; const lastSync = src?.last_sync_at ? new Date(src.last_sync_at).toLocaleDateString('en-US', {month:'short',day:'numeric'}) : null; return `<div class="auto-row"> <div class="auto-dot" style="background:${connected ? 'var(--success)' : 'var(--text3)'};" > </div> <div class="auto-name">${c.name}</div> <div class="auto-stat" style="font-size:10px;"> ${c.cat} </div> <div class="auto-stat"> ${connected ? (lastSync || 'Connected') : 'Not connected'} </div> </div>`; }).join(''); } // ── Settings & Logs ─────────────────────────────────────────── async function loadSettings() { try { const res = await api( `/api/pipeline?action=hub-client-settings&client_id=${CLIENT_ID}` ); const settings = res.settings || {}; const meta = res.meta || {}; // Settings document.getElementById('settings-body').innerHTML = ` <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Plan Tier</div> <div style="font-size:12px;font-weight:500;"> ${settings.plan_tier || 'starter'} </div> </div> <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Timezone</div> <div style="font-size:12px;">${settings.timezone || '—'}</div> </div> <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Report Day</div> <div style="font-size:12px;"> ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][settings.report_day] || '—'} </div> </div> <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Advisor</div> <div style="font-size:12px;">${settings.advisor_name || '—'}</div> </div> <div class="log-row" style="border:none;"> <div style="flex:1;font-size:12px;color:var(--text2);">Onboarded</div> <div style="font-size:12px;"> ${settings.onboarded_at ? new Date(settings.onboarded_at).toLocaleDateString() : '—'} </div> </div>`; // Meta document.getElementById('meta-body').innerHTML = ` <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Client ID</div> <div style="font-size:11px;font-family:monospace; background:var(--bg2);padding:2px 6px;border-radius:4px;"> ${CLIENT_ID} </div> </div> <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Profile</div> <div style="font-size:12px;">${meta.profile_count || 0} user(s)</div> </div> <div class="log-row"> <div style="flex:1;font-size:12px;color:var(--text2);">Snapshots</div> <div style="font-size:12px;">${meta.snapshot_count || 0}</div> </div> <div class="log-row" style="border:none;"> <div style="flex:1;font-size:12px;color:var(--text2);">Keywords</div> <div style="font-size:12px;">${meta.keyword_count || 0}</div> </div>`; // Agent logs const logsRes = await api( `/api/pipeline?action=hub-agent-logs&client_id=${CLIENT_ID}&limit=20` ); const logs = logsRes.logs || []; document.getElementById('agent-logs-body').innerHTML = logs.length ? logs.map(l => ` <div class="log-row"> <span class="log-dot log-info"></span> <div style="flex:1;"> <div style="font-size:12px;">${l.action}</div> <div style="font-size:11px;color:var(--text3);">${l.detail || ''}</div> </div> <span class="log-time"> ${new Date(l.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} </span> </div>`).join('') : '<div style="font-size:12px;color:var(--text3);">No agent logs yet</div>'; } catch(e) { console.error('[settings]', e.message); } } // ── CMNDR Chat ──────────────────────────────────────────────── async function sendCmndr() { const input = document.getElementById('cmndr-input'); const question = input?.value?.trim(); if (!question) return; input.value = ''; const thread = document.getElementById('cmndr-thread'); thread.innerHTML += `<div class="cmndr-msg-user">${question}</div>`; thread.innerHTML += `<div class="cmndr-msg-ai" id="cmndr-typing"> <div class="cmndr-msg-lbl">CMNDR</div> <span class="spinner"></span> </div>`; thread.scrollTop = thread.scrollHeight; try { const res = await api('/api/ask', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, page: _currentPanel, question, context: 'advisor_workbench' }) }); const typing = document.getElementById('cmndr-typing'); if (typing) { typing.id = ''; typing.innerHTML = `<div class="cmndr-msg-lbl">CMNDR</div>${res.answer || 'No response'}`; } thread.scrollTop = thread.scrollHeight; } catch(e) { const typing = document.getElementById('cmndr-typing'); if (typing) { typing.id = ''; typing.innerHTML = `<div class="cmndr-msg-lbl">CMNDR</div>Error: ${e.message}`; } } } // ── Quick Report ────────────────────────────────────────────── async function submitQuickReport() { const title = document.getElementById('qr-title').value.trim(); const type = document.getElementById('qr-type').value; const priority = document.getElementById('qr-priority').value; const body = document.getElementById('qr-body').value.trim(); const metric = document.getElementById('qr-metric').value; const milestone = document.getElementById('qr-milestone').value; const visible = document.getElementById('qr-visible').checked; if (!title || !body) { showToast('Title and notes are required'); return; } try { const res = await api('/api/pipeline?action=hub-save-quick-report', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, title, report_type: type, priority, body, linked_metric: metric || null, linked_milestone: milestone ? parseInt(milestone) : null, visible_to_client: visible }) }); if (res.success) { document.getElementById('qr-title').value = ''; document.getElementById('qr-body').value = ''; showToast('Quick report saved'); logAction('Quick report: ' + type, title); loadRecentQR(); } else { showToast('Error: ' + (res.error || 'Failed')); } } catch(e) { showToast('Error: ' + e.message); } } async function loadRecentQR() { try { const res = await api( `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=5` ); const qrs = res.reports || []; const el = document.getElementById('qr-recent'); el.innerHTML = qrs.length ? qrs.map(q => ` <div style="padding:8px 0;border-bottom:0.5px solid var(--border);"> <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"> <span style="font-size:12px;font-weight:500;">${q.title}</span> <span style="font-size:9px;padding:1px 5px;border-radius:6px; background:var(--bg2);color:var(--text3);">${q.report_type}</span> </div> <div style="font-size:11px;color:var(--text3);"> ${new Date(q.created_at).toLocaleDateString()} </div> </div>`).join('') : '<div style="font-size:12px;color:var(--text3);">None yet</div>'; } catch(e) {} } async function loadNotes() { try { const res = await api( `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=20` ); const qrs = res.reports || []; const el = document.getElementById('notes-list'); el.innerHTML = qrs.length ? qrs.map(q => { const typeColors = { win:'var(--success)',concern:'var(--warning)', escalation:'var(--danger)',check_in:'var(--info)', action_item:'var(--info)',note:'var(--text3)' }; return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border);"> <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"> <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0; background:${typeColors[q.report_type] || 'var(--text3)'};"> </div> <span style="font-size:13px;font-weight:500;">${q.title}</span> </div> <div style="font-size:12px;color:var(--text2);line-height:1.5; margin-bottom:4px;"> ${q.body.slice(0,150)}${q.body.length > 150 ? '…' : ''} </div> <div style="font-size:10px;color:var(--text3);"> ${q.report_type} · ${q.priority} · ${new Date(q.created_at).toLocaleDateString()} </div> </div>`; }).join('') : '<div style="font-size:12px;color:var(--text3);">No notes yet</div>'; } catch(e) {} } // ── Agent log helper ────────────────────────────────────────── async function logAction(action, detail) { try { await api('/api/pipeline?action=hub-log-action', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, action, detail }) }); } catch(e) {} } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CMNDR Workbench</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+  --text: #1a1a18; --text2: #6b6b67; --text3: #9c9a92;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --success: #1D9E75; --warning: #EF9F27;
+  --danger: #E24B4A; --info: #378ADD;
+  --radius-md: 8px; --radius-lg: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+    --text: #e8e6de; --text2: #9c9a92; --text3: #6b6b67;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+  }
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg3); color: var(--text);
+  height: 100vh; display: flex; overflow: hidden;
+}
+
+/* ── Left Rail ── */
+.left-rail {
+  width: 240px; flex-shrink: 0;
+  background: var(--bg); border-right: 0.5px solid var(--border);
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+}
+.rail-header {
+  padding: 20px 16px 16px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+.wordmark {
+  font-size: 13px; font-weight: 500; color: var(--text3);
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.wordmark span { color: var(--text); }
+.rail-back {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text3); cursor: pointer;
+  background: none; border: none; margin-bottom: 14px;
+  padding: 0; transition: color .12s;
+}
+.rail-back:hover { color: var(--text); }
+.user-block {
+  background: var(--bg2); border-radius: var(--radius-md);
+  padding: 10px; margin-bottom: 0;
+}
+.user-row { display: flex; align-items: center; gap: 8px; }
+.user-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--info); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; flex-shrink: 0;
+}
+.user-name { font-size: 12px; font-weight: 500; line-height: 1.3; }
+.role-pill {
+  display: inline-block; margin-top: 4px; font-size: 10px;
+  padding: 1px 7px; border-radius: 10px;
+  background: rgba(55,138,221,0.12); color: var(--info);
+  font-weight: 500;
+}
+
+/* Client context block */
+.client-block {
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+.client-block-name {
+  font-size: 14px; font-weight: 600; margin-bottom: 2px;
+}
+.client-block-id {
+  font-size: 11px; color: var(--text3); margin-bottom: 8px;
+}
+.health-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; padding: 3px 9px;
+  background: var(--bg2); border-radius: 20px;
+}
+.health-chip-score { font-weight: 700; }
+
+/* Nav */
+.rail-nav { flex: 1; overflow-y: auto; padding: 8px 10px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: var(--radius-md);
+  cursor: pointer; font-size: 13px; color: var(--text2);
+  margin-bottom: 1px; transition: background .1s, color .1s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg2); color: var(--text); }
+.nav-item.active {
+  background: var(--bg2); color: var(--text); font-weight: 500;
+}
+.nav-icon { flex-shrink: 0; opacity: .6; }
+.nav-item.active .nav-icon,
+.nav-item:hover .nav-icon { opacity: 1; }
+.nav-divider {
+  height: 0.5px; background: var(--border); margin: 6px 0;
+}
+.nav-item.danger { color: var(--text3); }
+.nav-item.danger:hover {
+  color: var(--danger); background: rgba(226,75,74,0.07);
+}
+
+.rail-footer {
+  padding: 12px 16px;
+  border-top: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Main Content ── */
+.main-content {
+  flex: 1; overflow-y: auto;
+  height: 100vh; background: var(--bg3);
+}
+.panel { display: none; padding: 28px; min-height: 100%; }
+.panel.active { display: block; }
+.panel-title { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+.panel-meta {
+  font-size: 13px; color: var(--text2); margin-bottom: 24px;
+}
+
+/* ── Right Rail ── */
+.right-rail {
+  width: 280px; flex-shrink: 0;
+  background: var(--bg); border-left: 0.5px solid var(--border);
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+}
+.rr-header {
+  padding: 14px 16px 0;
+  flex-shrink: 0;
+}
+.rr-title {
+  font-size: 10px; font-weight: 700; color: var(--info);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 10px;
+}
+.rr-tabs {
+  display: flex; border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+.rr-tab {
+  flex: 1; padding: 9px 6px; font-size: 11px; color: var(--text3);
+  cursor: pointer; text-align: center;
+  border-bottom: 2px solid transparent;
+  transition: all .12s; user-select: none;
+}
+.rr-tab:hover { color: var(--text2); }
+.rr-tab.active {
+  color: var(--info); border-bottom-color: var(--info);
+  font-weight: 500;
+}
+.rr-panel {
+  display: none; flex: 1; overflow-y: auto; padding: 14px;
+}
+.rr-panel.active { display: flex; flex-direction: column; }
+
+/* CMNDR Chat */
+.cmndr-thread {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  padding-bottom: 8px; min-height: 0;
+}
+.cmndr-msg-user {
+  align-self: flex-end; background: var(--info);
+  color: #fff; font-size: 12px; padding: 8px 11px;
+  border-radius: 10px 10px 2px 10px; max-width: 85%;
+  line-height: 1.5;
+}
+.cmndr-msg-ai {
+  align-self: flex-start; background: var(--bg2);
+  font-size: 12px; padding: 8px 11px;
+  border-radius: 10px 10px 10px 2px; max-width: 92%;
+  line-height: 1.6; color: var(--text);
+}
+.cmndr-msg-lbl {
+  font-size: 9px; font-weight: 700; color: var(--info);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 4px;
+}
+.cmndr-input-wrap {
+  display: flex; gap: 6px; padding-top: 8px;
+  border-top: 0.5px solid var(--border); flex-shrink: 0;
+}
+.cmndr-input {
+  flex: 1; font-size: 12px; padding: 7px 9px;
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-md); color: var(--text);
+  outline: none; font-family: inherit;
+  resize: none; min-height: 34px; max-height: 80px;
+}
+.cmndr-input:focus { border-color: var(--info); }
+.cmndr-send {
+  padding: 7px 11px; background: var(--info); color: #fff;
+  border: none; border-radius: var(--radius-md);
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  flex-shrink: 0; align-self: flex-end;
+}
+
+/* Quick Report */
+.qr-label {
+  font-size: 11px; color: var(--text3);
+  margin-bottom: 3px; display: block;
+}
+.qr-input, .qr-select, .qr-textarea {
+  width: 100%; font-size: 12px; padding: 7px 9px;
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-md); color: var(--text);
+  outline: none; font-family: inherit; margin-bottom: 8px;
+}
+.qr-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.qr-input:focus, .qr-select:focus,
+.qr-textarea:focus { border-color: var(--info); }
+
+/* Cards */
+.card {
+  background: var(--bg); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+  margin-bottom: 12px;
+}
+.sec-label {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin: 16px 0 8px;
+}
+.sec-label:first-child { margin-top: 0; }
+
+/* Metric grid */
+.metric-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 16px;
+}
+.metric-card {
+  background: var(--bg); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px;
+  position: relative; overflow: hidden;
+}
+.metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.metric-val { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+.metric-target { font-size: 10px; color: var(--text3); }
+.metric-trend {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; margin-top: 6px;
+}
+.trend-up { color: var(--success); }
+.trend-down { color: var(--danger); }
+.metric-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: var(--bg3);
+}
+.metric-bar-fill { height: 100%; transition: width .4s; }
+
+/* Form elements */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 500;
+  color: var(--text2); margin-bottom: 5px;
+}
+.form-input, .form-select {
+  width: 100%; font-size: 13px; padding: 8px 10px;
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-md); color: var(--text);
+  outline: none; font-family: inherit;
+}
+.form-input:focus, .form-select:focus { border-color: var(--info); }
+.form-textarea {
+  width: 100%; font-size: 13px; padding: 8px 10px;
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-md); color: var(--text);
+  outline: none; font-family: inherit;
+  resize: vertical; min-height: 80px; line-height: 1.5;
+}
+.form-textarea:focus { border-color: var(--info); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Buttons */
+.btn {
+  font-size: 13px; padding: 8px 16px;
+  border-radius: var(--radius-md); border: none;
+  cursor: pointer; font-weight: 500; transition: opacity .15s;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: var(--info); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-muted {
+  background: var(--bg2); color: var(--text2);
+  border: 0.5px solid var(--border2) !important;
+}
+.btn-danger {
+  background: none;
+  border: 0.5px solid var(--danger) !important;
+  color: var(--danger);
+}
+.btn-sm { font-size: 12px; padding: 5px 12px; }
+.btn-full { width: 100%; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+
+/* Report badges */
+.report-type-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.rtype-ops { background: rgba(55,138,221,.12); color: var(--info); }
+.rtype-mktg { background: rgba(99,102,241,.12); color: #6366f1; }
+.rtype-fin { background: rgba(29,158,117,.12); color: var(--success); }
+.rtype-opt { background: rgba(239,159,39,.12); color: var(--warning); }
+
+/* Milestone steps */
+.step-list { list-style: none; padding: 0; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 0.5px solid var(--border);
+  font-size: 13px; color: var(--text2);
+}
+.step-item:last-child { border: none; }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bg2); color: var(--text3);
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+/* Log rows */
+.log-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 0; border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+}
+.log-row:last-child { border: none; }
+.log-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 3px;
+}
+.log-success { background: var(--success); }
+.log-error { background: var(--danger); }
+.log-info { background: var(--info); }
+.log-warn { background: var(--warning); }
+.log-time { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+/* Auto rows */
+.auto-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+}
+.auto-row:last-child { border: none; }
+.auto-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.auto-name { flex: 1; color: var(--text); }
+.auto-stat { color: var(--text3); font-size: 11px; }
+
+/* Generating bar */
+.generating-bar {
+  height: 3px; background: var(--bg2); border-radius: 2px;
+  margin-bottom: 12px; overflow: hidden;
+}
+.generating-fill {
+  height: 100%; background: var(--info); border-radius: 2px;
+  width: 0; transition: width 30s linear;
+}
+
+/* Spinner */
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border2);
+  border-top-color: var(--info);
+  animation: spin .6s linear infinite;
+  display: inline-block; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--text); color: var(--bg);
+  font-size: 13px; padding: 10px 18px;
+  border-radius: var(--radius-md);
+  opacity: 0; transition: opacity .25s;
+  pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; }
+
+/* Metric entry modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 200; display: none; align-items: center;
+  justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: var(--bg); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 24px; width: 360px;
+}
+.modal-title {
+  font-size: 15px; font-weight: 600; margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── LEFT RAIL ─────────────────────────────────────── -->
+<div class="left-rail">
+  <div class="rail-header">
+    <div class="wordmark">CMNDR <span>Workbench</span></div>
+    <button class="rail-back" onclick="goBack()">
+      ← Back to Hub
+    </button>
+    <div class="user-block">
+      <div class="user-row">
+        <div class="user-av" id="rail-av">—</div>
+        <div>
+          <div class="user-name" id="rail-name">Loading</div>
+          <span class="role-pill">Resona Advisor</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="client-block">
+    <div class="client-block-name" id="rail-client-name">Loading...</div>
+    <div class="client-block-id" id="rail-client-id"></div>
+    <div class="health-chip">
+      <span class="health-chip-score" id="rail-health-score"
+        style="color:var(--text3);">—</span>
+      <span style="font-size:11px;color:var(--text2);">Health Score</span>
+    </div>
+  </div>
+
+  <nav class="rail-nav">
+    <div class="nav-item active" data-panel="overview"
+      onclick="switchPanel('overview')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1"
+          stroke="currentColor" stroke-width="1.2"/>
+        <rect x="9" y="1" width="5" height="5" rx="1"
+          stroke="currentColor" stroke-width="1.2"/>
+        <rect x="1" y="9" width="5" height="5" rx="1"
+          stroke="currentColor" stroke-width="1.2"/>
+        <rect x="9" y="9" width="5" height="5" rx="1"
+          stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Overview
+    </div>
+    <div class="nav-item" data-panel="reports"
+      onclick="switchPanel('reports')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <rect x="2" y="1" width="11" height="13" rx="1"
+          stroke="currentColor" stroke-width="1.2"/>
+        <path d="M5 5h5M5 8h5M5 11h3"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round"/>
+      </svg>
+      Reports
+    </div>
+    <div class="nav-item" data-panel="metrics"
+      onclick="switchPanel('metrics')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <path d="M1 11l4-4 3 3 3-5 3 2"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Power Metrics
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-panel="strategy"
+      onclick="switchPanel('strategy')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <circle cx="7.5" cy="7.5" r="6"
+          stroke="currentColor" stroke-width="1.2"/>
+        <path d="M7.5 4v4l2.5 1.5"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round"/>
+      </svg>
+      Strategy
+    </div>
+    <div class="nav-item" data-panel="automations"
+      onclick="switchPanel('automations')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <path d="M7.5 1v3M7.5 11v3M1 7.5h3M11 7.5h3"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round"/>
+        <circle cx="7.5" cy="7.5" r="2.5"
+          stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Automations
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-panel="connections"
+      onclick="switchPanel('connections')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <path d="M5 7.5h5M9 5.5l2 2-2 2"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="3.5" cy="7.5" r="1.5"
+          stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="11.5" cy="7.5" r="1.5"
+          stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Connections
+    </div>
+    <div class="nav-item" data-panel="settings"
+      onclick="switchPanel('settings')">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <circle cx="7.5" cy="7.5" r="2"
+          stroke="currentColor" stroke-width="1.2"/>
+        <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.2 3.2l.7.7M11.1 11.1l.7.7M11.1 3.9l-.7.7M3.9 11.1l-.7.7"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round"/>
+      </svg>
+      Settings &amp; Logs
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item danger" onclick="goBack()">
+      <svg class="nav-icon" width="15" height="15"
+        viewBox="0 0 15 15" fill="none">
+        <path d="M6 3L2 7.5L6 12M2 7.5h11"
+          stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back to Hub
+    </div>
+  </nav>
+
+  <div class="rail-footer">
+    <div style="font-size:11px;color:var(--text3);text-align:center;">
+      CMNDR Workbench
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN CONTENT ──────────────────────────────────── -->
+<div class="main-content" id="main-content">
+
+  <!-- Overview Panel -->
+  <div class="panel active" id="panel-overview">
+    <div class="panel-title">Overview</div>
+    <div class="panel-meta" id="overview-meta">Client summary</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;" id="overview-kpis">
+      <div class="card" style="padding:14px;">
+        <div class="metric-label">Health Score</div>
+        <div class="metric-val" id="ov-health">—</div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <div class="metric-label">Current Phase</div>
+        <div class="metric-val" id="ov-phase" style="font-size:16px;">—</div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <div class="metric-label">Program</div>
+        <div class="metric-val" id="ov-program" style="font-size:13px;line-height:1.4;">—</div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <div class="metric-label">Connected Sources</div>
+        <div class="metric-val" id="ov-connections">—</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="sec-label">Current Goal</div>
+        <div class="card">
+          <div id="ov-goal" style="font-size:13px;color:var(--text2);line-height:1.7;">Loading...</div>
+        </div>
+        <div class="sec-label">Current Milestone</div>
+        <div class="card">
+          <div id="ov-milestone" style="font-size:13px;color:var(--text2);">—</div>
+        </div>
+        <div class="sec-label">Quick Reports</div>
+        <div id="ov-quick-reports">
+          <div style="font-size:12px;color:var(--text3);">Loading...</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Recent Activity</div>
+        <div class="card">
+          <div id="ov-activity">
+            <div style="font-size:12px;color:var(--text3);">Loading...</div>
+          </div>
+        </div>
+        <div class="sec-label">Alerts</div>
+        <div id="ov-alerts">
+          <div style="font-size:12px;color:var(--text3);">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Panel -->
+  <div class="panel" id="panel-reports">
+    <div class="panel-title">Reports</div>
+    <div class="panel-meta">Generate, preview and send client reports</div>
+    <div class="sec-label">Generate Report</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <div class="form-label">Report Type</div>
+          <select class="form-select" id="rpt-type">
+            <option value="operations">Operations</option>
+            <option value="marketing">Marketing</option>
+            <option value="finance">Finance</option>
+            <option value="optimization">Optimization</option>
+          </select>
+        </div>
+        <div>
+          <div class="form-label">Date Range</div>
+          <select class="form-select" id="rpt-range">
+            <option value="7d">Last 7 days</option>
+            <option value="30d" selected>Last 30 days</option>
+            <option value="mtd">Month to date</option>
+            <option value="qtd">Quarter to date</option>
+          </select>
+        </div>
+      </div>
+      <div id="rpt-generating" style="display:none;">
+        <div class="generating-bar">
+          <div class="generating-fill" id="rpt-progress"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);" id="rpt-status">Generating report...</div>
+      </div>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
+        <button class="btn btn-muted" onclick="previewReport()">Preview Live</button>
+      </div>
+    </div>
+    <div class="sec-label">Extended Report</div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+        Comprehensive report including all sections, Power Metrics, and extended roadmap.
+        AI-generated executive summary included.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <div class="form-label">Period From</div>
+          <input type="date" class="form-input" id="ext-from"/>
+        </div>
+        <div>
+          <div class="form-label">Period To</div>
+          <input type="date" class="form-input" id="ext-to"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-ops"/> Operations
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-mktg"/> Marketing
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-fin"/> Finance
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-opt"/> Optimization
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-metrics"/> Power Metrics
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <input type="checkbox" checked id="ext-roadmap"/> Roadmap
+        </label>
+      </div>
+      <div id="ext-status" style="font-size:12px;color:var(--text3);margin-bottom:10px;display:none;"></div>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-primary" onclick="generateExtendedReport()">Build Extended Report</button>
+      </div>
+    </div>
+    <div class="sec-label">Report Archive</div>
+    <div id="rpt-archive">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Power Metrics Panel -->
+  <div class="panel" id="panel-metrics">
+    <div class="panel-title">Power Metrics</div>
+    <div class="panel-meta">Track KPIs tied to client strategy</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:13px;color:var(--text2);">
+        Monthly snapshots — enter values to track progress over time
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openMetricEntry()">+ Log Metric</button>
+    </div>
+    <div class="metric-grid" id="metrics-grid">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+    <div class="sec-label">Metric History</div>
+    <div id="metrics-history">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Strategy Panel -->
+  <div class="panel" id="panel-strategy">
+    <div class="panel-title">Strategy</div>
+    <div class="panel-meta">Extended roadmap and methodology</div>
+    <div id="strategy-body">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Automations Panel -->
+  <div class="panel" id="panel-automations">
+    <div class="panel-title">Automations</div>
+    <div class="panel-meta">Make.com scenario health and run history</div>
+    <div class="sec-label">Scenario Health</div>
+    <div class="card" id="auto-health">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+    <div class="sec-label">Recent Runs</div>
+    <div class="card" id="auto-runs">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+    <div class="sec-label">Opportunities</div>
+    <div id="auto-opps">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Connections Panel -->
+  <div class="panel" id="panel-connections">
+    <div class="panel-title">Connections</div>
+    <div class="panel-meta">Manage data sources for this client</div>
+    <div class="card" id="conn-body">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+    <div style="margin-top:12px;">
+      <a href="/connections.html" target="_blank" style="text-decoration:none;">
+        <button class="btn btn-primary">Manage Connections →</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- Settings & Logs Panel -->
+  <div class="panel" id="panel-settings">
+    <div class="panel-title">Settings &amp; Logs</div>
+    <div class="panel-meta">Client metadata, configuration and debug</div>
+    <div class="sec-label">Client Settings</div>
+    <div class="card">
+      <div id="settings-body">
+        <div style="font-size:12px;color:var(--text3);">Loading...</div>
+      </div>
+    </div>
+    <div class="sec-label">Agent Logs</div>
+    <div class="card" id="agent-logs-body">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+    <div class="sec-label">System Metadata</div>
+    <div class="card">
+      <div id="meta-body">
+        <div style="font-size:12px;color:var(--text3);">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-content -->
+
+<!-- ── RIGHT RAIL (CMNDR) ─────────────────────────────── -->
+<div class="right-rail">
+  <div class="rr-header">
+    <div class="rr-title">⬡ CMNDR</div>
+  </div>
+  <div class="rr-tabs">
+    <div class="rr-tab active" data-rr="chat" onclick="switchRR('chat')">Chat</div>
+    <div class="rr-tab" data-rr="quickreport" onclick="switchRR('quickreport')">Quick Report</div>
+    <div class="rr-tab" data-rr="notes" onclick="switchRR('notes')">Notes</div>
+  </div>
+
+  <!-- Chat -->
+  <div class="rr-panel active" id="rr-chat">
+    <div class="cmndr-thread" id="cmndr-thread">
+      <div class="cmndr-msg-ai">
+        <div class="cmndr-msg-lbl">CMNDR</div>
+        Ask me anything about this client — their metrics, strategy, risks, or next steps.
+      </div>
+    </div>
+    <div class="cmndr-input-wrap">
+      <textarea class="cmndr-input" id="cmndr-input"
+        placeholder="Ask about this client..."
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCmndr();}">
+      </textarea>
+      <button class="cmndr-send" onclick="sendCmndr()">↑</button>
+    </div>
+  </div>
+
+  <!-- Quick Report -->
+  <div class="rr-panel" id="rr-quickreport">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">
+      Log a note, win, concern or action item.
+    </div>
+    <label class="qr-label">Title</label>
+    <input class="qr-input" id="qr-title" placeholder="Short descriptive title"/>
+    <label class="qr-label">Type</label>
+    <select class="qr-select" id="qr-type">
+      <option value="check_in">Check-in</option>
+      <option value="win">Win 🎉</option>
+      <option value="concern">Concern ⚠️</option>
+      <option value="escalation">Escalation 🚨</option>
+      <option value="action_item">Action Item</option>
+      <option value="note">General Note</option>
+    </select>
+    <label class="qr-label">Priority</label>
+    <select class="qr-select" id="qr-priority">
+      <option value="low">Low</option>
+      <option value="normal" selected>Normal</option>
+      <option value="high">High</option>
+      <option value="urgent">Urgent</option>
+    </select>
+    <label class="qr-label">Linked Metric</label>
+    <select class="qr-select" id="qr-metric">
+      <option value="">None</option>
+      <option value="cac">CAC</option>
+      <option value="clv">CLV</option>
+      <option value="nps">NPS</option>
+      <option value="conversion_rate">Conversion Rate</option>
+      <option value="churn_rate">Churn Rate</option>
+      <option value="retention_rate">Retention Rate</option>
+      <option value="tat">Turnaround Time</option>
+    </select>
+    <label class="qr-label">Linked Milestone</label>
+    <select class="qr-select" id="qr-milestone">
+      <option value="">None</option>
+      <option value="1">Milestone 1</option>
+      <option value="2">Milestone 2</option>
+      <option value="3">Milestone 3</option>
+    </select>
+    <label class="qr-label">Notes</label>
+    <textarea class="qr-textarea" id="qr-body"
+      placeholder="What happened? What action is needed?">
+    </textarea>
+    <label class="qr-label" style="display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="qr-visible"/>
+      Visible to client
+    </label>
+    <button class="btn btn-primary btn-full"
+      onclick="submitQuickReport()" style="margin-top:10px;">
+      Save Report
+    </button>
+    <div class="sec-label" style="margin-top:14px;">Recent</div>
+    <div id="qr-recent">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="rr-panel" id="rr-notes">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">
+      All quick reports and notes for this client.
+    </div>
+    <div id="notes-list">
+      <div style="font-size:12px;color:var(--text3);">Loading...</div>
+    </div>
+  </div>
+</div><!-- /right-rail -->
+
+<!-- Metric Entry Modal -->
+<div id="metric-entry-modal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-title">Log Power Metric</div>
+    <div class="form-group">
+      <label class="form-label">Metric</label>
+      <select class="form-select" id="me-key"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Value</label>
+      <input class="form-input" id="me-value" type="number" placeholder="Enter value"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Period</label>
+      <input class="form-input" id="me-period" type="month"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <textarea class="form-textarea" id="me-notes"
+        placeholder="Any context for this reading..."
+        style="min-height:60px;"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-full" onclick="submitMetricEntry()">Save</button>
+      <button class="btn btn-muted" onclick="closeMetricEntry()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────
+let CLIENT_ID = null;
+let SESSION_TOKEN = null;
+let _clientData = {};
+let _currentPanel = 'overview';
+
+// ── Boot ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Get token from sessionStorage
+  SESSION_TOKEN = sessionStorage.getItem('cmndr_token');
+  if (!SESSION_TOKEN) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  // Verify auth
+  try {
+    const r = await fetch('/api/auth?action=me', {
+      headers: { Authorization: `Bearer ${SESSION_TOKEN}` }
+    });
+    const d = await r.json();
+    if (!d.ok || d.role !== 'resona_advisor') {
+      window.location.href = '/login.html';
+      return;
+    }
+    document.getElementById('rail-av').textContent =
+      (d.full_name || 'A').charAt(0).toUpperCase();
+    document.getElementById('rail-name').textContent =
+      d.full_name || d.email || 'Advisor';
+  } catch(e) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  // Get client from URL
+  const params = new URLSearchParams(window.location.search);
+  CLIENT_ID = params.get('client');
+  if (!CLIENT_ID) {
+    window.location.href = '/hub.html';
+    return;
+  }
+
+  // Set default dates
+  const today = new Date();
+  const monthAgo = new Date(Date.now() - 30*24*60*60*1000);
+  const extFrom = document.getElementById('ext-from');
+  const extTo = document.getElementById('ext-to');
+  const mePeriod = document.getElementById('me-period');
+  if (extFrom) extFrom.value = monthAgo.toISOString().split('T')[0];
+  if (extTo) extTo.value = today.toISOString().split('T')[0];
+  if (mePeriod) mePeriod.value = today.toISOString().slice(0,7);
+
+  // Load client data then render overview
+  await loadClientData();
+  await loadPanel('overview');
+});
+
+function goBack() { window.location.href = '/hub.html'; }
+
+// ── API helper ────────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = {
+    Authorization: `Bearer ${SESSION_TOKEN}`,
+    ...opts.headers
+  };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const res = await fetch(path, { ...opts, headers });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Load client base data ─────────────────────────────
+async function loadClientData() {
+  try {
+    const data = await api(
+      `/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}`
+    );
+    _clientData = data;
+    const name = data.profile?.full_name || CLIENT_ID;
+    document.getElementById('rail-client-name').textContent = name;
+    document.getElementById('rail-client-id').textContent = CLIENT_ID;
+    const health = data.health?.score;
+    const scoreEl = document.getElementById('rail-health-score');
+    scoreEl.textContent = health ?? '—';
+    scoreEl.style.color = !health ? 'var(--text3)'
+      : health >= 70 ? 'var(--success)'
+      : health >= 55 ? 'var(--warning)'
+      : 'var(--danger)';
+    document.title = `CMNDR — ${name}`;
+  } catch(e) {
+    console.error('[workbench] loadClientData:', e.message);
+  }
+}
+
+// ── Panel switching ───────────────────────────────────
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  const navItem = document.querySelector(`[data-panel="${name}"]`);
+  if (navItem) navItem.classList.add('active');
+  _currentPanel = name;
+  loadPanel(name);
+}
+
+async function loadPanel(name) {
+  const loaders = {
+    overview: loadOverview,
+    reports: loadReports,
+    metrics: loadMetrics,
+    strategy: loadStrategy,
+    automations: loadAutomations,
+    connections: loadConnections,
+    settings: loadSettings
+  };
+  if (loaders[name]) await loaders[name]();
+}
+
+// ── Right rail switching ──────────────────────────────
+function switchRR(name) {
+  document.querySelectorAll('.rr-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.rr === name));
+  document.querySelectorAll('.rr-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'rr-' + name));
+  if (name === 'notes') loadNotes();
+  if (name === 'quickreport') loadRecentQR();
+}
+
+// ── Overview ──────────────────────────────────────────
+async function loadOverview() {
+  const d = _clientData;
+  const profile = d.profile;
+  const health = d.health;
+  const goal = d.goal;
+  const course = d.course;
+  const roadmap = d.roadmap;
+  const sources = d.sources || [];
+
+  document.getElementById('ov-health').textContent = health?.score ?? '—';
+  const phaseNum = (roadmap?.current_node || 1);
+  document.getElementById('ov-phase').textContent = `Phase ${phaseNum} / 3`;
+  document.getElementById('ov-program').textContent = course?.course_display || '—';
+  document.getElementById('ov-connections').textContent = sources.length;
+  document.getElementById('overview-meta').textContent = profile?.full_name || CLIENT_ID;
+  document.getElementById('ov-goal').textContent = goal?.stated_goal || 'No goal set';
+
+  const msNode = roadmap?.current_node || 1;
+  const ms = roadmap?.[`milestone_${msNode}`];
+  document.getElementById('ov-milestone').innerHTML = ms
+    ? `<div style="font-size:13px;font-weight:500;margin-bottom:4px;">${ms.title}</div>
+       <div style="font-size:12px;color:var(--text2);">${ms.description || ''}</div>`
+    : '<span style="color:var(--text3);">No roadmap configured</span>';
+
+  try {
+    const qrRes = await api(
+      `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=3`
+    );
+    const qrs = qrRes.reports || [];
+    const qrEl = document.getElementById('ov-quick-reports');
+    qrEl.innerHTML = qrs.length
+      ? qrs.map(q => `
+        <div class="card" style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:12px;font-weight:500;">${q.title}</span>
+            <span style="font-size:10px;padding:2px 6px;border-radius:8px;
+              background:var(--bg2);color:var(--text3);">${q.report_type}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">
+            ${q.body.slice(0,120)}${q.body.length > 120 ? '…' : ''}
+          </div>
+        </div>`).join('')
+      : '<div class="card"><div style="font-size:12px;color:var(--text3);">No quick reports yet</div></div>';
+  } catch(e) {}
+
+  try {
+    const logsRes = await api(
+      `/api/pipeline?action=hub-agent-logs&client_id=${CLIENT_ID}&limit=5`
+    );
+    const logs = logsRes.logs || [];
+    document.getElementById('ov-activity').innerHTML = logs.length
+      ? logs.map(l => `
+        <div class="log-row">
+          <span class="log-dot log-info"></span>
+          <div style="flex:1;">
+            <div style="font-size:12px;">${l.action}</div>
+            <div style="font-size:11px;color:var(--text3);">${l.detail || ''}</div>
+          </div>
+          <span class="log-time">
+            ${new Date(l.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+          </span>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No activity yet</div>';
+  } catch(e) {}
+}
+
+// ── Reports ───────────────────────────────────────────
+async function loadReports() {
+  try {
+    const res = await api(
+      `/api/pipeline?action=hub-archive&client_id=${CLIENT_ID}`
+    );
+    const snaps = res.snapshots || [];
+    const el = document.getElementById('rpt-archive');
+    if (!snaps.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--text3);">No archived reports yet</div>';
+      return;
+    }
+    el.innerHTML = snaps.map(s => {
+      const page = s.page || 'report';
+      const date = new Date(s.created_at).toLocaleDateString('en-US',
+        {month:'short',day:'numeric',year:'numeric'});
+      const typeClass = {
+        operations:'rtype-ops', marketing:'rtype-mktg',
+        finance:'rtype-fin', optimization:'rtype-opt'
+      }[page] || 'rtype-ops';
+      return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:12px;">
+        <span class="report-type-badge ${typeClass}">${page}</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:500;">${date}</div>
+          <div style="font-size:11px;color:var(--text3);">
+            ${s.ai_summary ? s.ai_summary.slice(0,80) + '…' : 'No summary'}
+          </div>
+        </div>
+        <button class="btn btn-muted btn-sm"
+          onclick="previewArchivedReport('${s.id}','${s.period_from}','${page}')">
+          View
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function generateReport() {
+  const type = document.getElementById('rpt-type').value;
+  const range = document.getElementById('rpt-range').value;
+  const genEl = document.getElementById('rpt-generating');
+  const statusEl = document.getElementById('rpt-status');
+  const progressEl = document.getElementById('rpt-progress');
+  genEl.style.display = 'block';
+  statusEl.textContent = `Generating ${type} report...`;
+  requestAnimationFrame(() => { progressEl.style.width = '90%'; });
+  try {
+    const today = new Date();
+    let from, to = today.toISOString().split('T')[0];
+    if (range === '7d') from = new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+    else if (range === '30d') from = new Date(Date.now()-30*86400000).toISOString().split('T')[0];
+    else if (range === 'mtd') from = new Date(today.getFullYear(),today.getMonth(),1).toISOString().split('T')[0];
+    else from = new Date(today.getFullYear(),Math.floor(today.getMonth()/3)*3,1).toISOString().split('T')[0];
+    await fetch(`/api/pages?page=${type}&client=${CLIENT_ID}&from=${from}&to=${to}&force=true`);
+    progressEl.style.width = '100%';
+    statusEl.textContent = '✓ Report generated successfully';
+    logAction(`Generated ${type} report`, `Range: ${from} to ${to}`);
+    showToast(`${type} report generated`);
+    setTimeout(() => {
+      genEl.style.display = 'none';
+      progressEl.style.width = '0';
+      loadReports();
+    }, 1500);
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+    showToast('Generation failed');
+  }
+}
+
+async function generateExtendedReport() {
+  const from = document.getElementById('ext-from').value;
+  const to = document.getElementById('ext-to').value;
+  const statusEl = document.getElementById('ext-status');
+  if (!from || !to) { showToast('Please set date range'); return; }
+  const sections = {
+    operations: document.getElementById('ext-ops').checked,
+    marketing: document.getElementById('ext-mktg').checked,
+    finance: document.getElementById('ext-fin').checked,
+    optimization: document.getElementById('ext-opt').checked,
+    power_metrics: document.getElementById('ext-metrics').checked,
+    roadmap: document.getElementById('ext-roadmap').checked
+  };
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Building extended report... this may take 30-60 seconds.';
+  try {
+    const res = await api('/api/pipeline?action=hub-extended-report', {
+      method: 'POST',
+      body: JSON.stringify({ client_id: CLIENT_ID, from, to, sections })
+    });
+    if (res.success) {
+      statusEl.textContent = '✓ Extended report created — ' + res.report_id;
+      showToast('Extended report ready');
+      logAction('Generated extended report', `${from} to ${to}`);
+    } else {
+      statusEl.textContent = 'Error: ' + (res.error || 'Unknown error');
+    }
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function previewReport() {
+  const range = document.getElementById('rpt-range').value;
+  const today = new Date();
+  let from, to = today.toISOString().split('T')[0];
+  if (range === '7d') from = new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+  else if (range === '30d') from = new Date(Date.now()-30*86400000).toISOString().split('T')[0];
+  else from = to;
+  window.open(`/app.html?client=${CLIENT_ID}&from=${from}&to=${to}`, '_blank');
+}
+
+function previewArchivedReport(id, from, page) {
+  window.open(`/app.html?client=${CLIENT_ID}&from=${from}&to=${from}`, '_blank');
+}
+
+// ── Power Metrics ─────────────────────────────────────
+async function loadMetrics() {
+  try {
+    const [configRes, historyRes] = await Promise.all([
+      api(`/api/pipeline?action=hub-power-metrics&client_id=${CLIENT_ID}`),
+      api(`/api/pipeline?action=hub-metric-history&client_id=${CLIENT_ID}`)
+    ]);
+    const metrics = configRes.metrics || [];
+    const history = historyRes.entries || [];
+
+    const meKey = document.getElementById('me-key');
+    meKey.innerHTML = metrics.map(m =>
+      `<option value="${m.key}">${m.label}</option>`
+    ).join('');
+
+    const gridEl = document.getElementById('metrics-grid');
+    if (!metrics.length) {
+      gridEl.innerHTML = '<div style="font-size:12px;color:var(--text3);">No metrics configured</div>';
+    } else {
+      gridEl.innerHTML = metrics.map(m => {
+        const entries = history.filter(e => e.metric_key === m.key)
+          .sort((a,b) => new Date(b.period_month) - new Date(a.period_month));
+        const latest = entries[0];
+        const prev = entries[1];
+        const val = latest?.value;
+        const prevVal = prev?.value;
+        const trend = val && prevVal
+          ? ((val - prevVal) / prevVal * 100).toFixed(1) : null;
+        const trendUp = trend > 0;
+        const goodUp = m.higher_is_better;
+        const trendGood = trend === null ? null : (trendUp === goodUp);
+        const pct = m.target_value && val
+          ? Math.min(100, Math.round(val / m.target_value * 100)) : 0;
+        const barColor = !trendGood ? 'var(--text3)'
+          : trendGood ? 'var(--success)' : 'var(--danger)';
+        const fmt = (v) => {
+          if (!v && v !== 0) return '—';
+          if (m.unit === 'currency') return '$' + Number(v).toLocaleString();
+          if (m.unit === 'percent') return v + '%';
+          if (m.unit === 'days') return v + 'd';
+          return String(v);
+        };
+        return `<div class="metric-card">
+          <div class="metric-label">${m.label}</div>
+          <div class="metric-val" style="color:${barColor};">${fmt(val)}</div>
+          <div class="metric-target">Target: ${fmt(m.target_value)} · ${m.target_label || ''}</div>
+          ${trend !== null ? `
+            <div class="metric-trend ${trendGood ? 'trend-up' : 'trend-down'}">
+              ${trendUp ? '↑' : '↓'} ${Math.abs(trend)}% vs last month
+            </div>` : ''}
+          <div class="metric-bar">
+            <div class="metric-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    const histEl = document.getElementById('metrics-history');
+    if (!history.length) {
+      histEl.innerHTML = '<div style="font-size:12px;color:var(--text3);">No history yet — log your first metric above</div>';
+    } else {
+      const sorted = [...history].sort((a,b) =>
+        new Date(b.period_month) - new Date(a.period_month));
+      histEl.innerHTML = `<div class="card">` + sorted.map(e => `
+        <div class="log-row">
+          <div style="flex:1;">
+            <span style="font-size:12px;font-weight:500;">${e.metric_label || e.metric_key}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:8px;">
+              ${e.period_label || e.period_month}
+            </span>
+          </div>
+          <div style="font-size:13px;font-weight:600;">${e.value}</div>
+        </div>`).join('') + `</div>`;
+    }
+  } catch(e) { console.error('[metrics]', e.message); }
+}
+
+function openMetricEntry() {
+  document.getElementById('metric-entry-modal').classList.add('open');
+}
+function closeMetricEntry() {
+  document.getElementById('metric-entry-modal').classList.remove('open');
+}
+
+async function submitMetricEntry() {
+  const key = document.getElementById('me-key').value;
+  const value = parseFloat(document.getElementById('me-value').value);
+  const period = document.getElementById('me-period').value;
+  const notes = document.getElementById('me-notes').value;
+  if (!key || isNaN(value) || !period) {
+    showToast('Please fill in metric, value and period');
+    return;
+  }
+  try {
+    const res = await api('/api/pipeline?action=hub-log-metric', {
+      method: 'POST',
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        metric_key: key,
+        value,
+        period_label: new Date(period + '-01').toLocaleDateString('en-US',
+          {month:'long',year:'numeric'}),
+        period_month: period + '-01',
+        notes
+      })
+    });
+    if (res.success) {
+      closeMetricEntry();
+      document.getElementById('me-value').value = '';
+      document.getElementById('me-notes').value = '';
+      showToast('Metric logged');
+      logAction(`Logged ${key}`, `Value: ${value}`);
+      await loadMetrics();
+    } else {
+      showToast('Error: ' + (res.error || 'Failed'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+// ── Strategy ──────────────────────────────────────────
+async function loadStrategy() {
+  const el = document.getElementById('strategy-body');
+  const rm = _clientData.roadmap;
+  if (!rm) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No roadmap configured for this client.</div>';
+    return;
+  }
+  const nodes = [rm.milestone_1, rm.milestone_2, rm.milestone_3].filter(Boolean);
+  const current = rm.current_node || 1;
+  el.innerHTML = `
+    <div class="sec-label">Strategy &amp; Methodology</div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+        ${rm.methodology || '<span style="color:var(--text3);">No methodology documented yet</span>'}
+      </div>
+      ${rm.estimated_duration ? `
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);">
+          Estimated duration: ${rm.estimated_duration}
+        </div>` : ''}
+    </div>
+    <div class="sec-label">Milestones</div>
+    ${nodes.map((ms, i) => {
+      const num = i + 1;
+      const statusColor = num < current ? 'var(--success)'
+        : num === current ? 'var(--info)' : 'var(--text3)';
+      const statusLabel = num < current ? 'Complete'
+        : num === current ? 'Active' : 'Pending';
+      const steps = rm[`milestone_${num}_steps`] || [];
+      const support = rm[`milestone_${num}_support`] || [];
+      const criteria = rm[`milestone_${num}_criteria`] || '';
+      return `
+        <div class="card" style="margin-bottom:12px;
+          border-color:${num === current ? 'rgba(55,138,221,.3)' : 'var(--border)'};">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="width:28px;height:28px;border-radius:50%;
+              background:${statusColor};display:flex;align-items:center;
+              justify-content:center;color:#fff;font-size:11px;
+              font-weight:700;flex-shrink:0;">${num}</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;">${ms.title}</div>
+              <div style="font-size:11px;color:${statusColor};font-weight:500;">${statusLabel}</div>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">
+            ${ms.description || ''}
+          </div>
+          ${steps.length ? `
+            <div style="font-size:11px;font-weight:600;color:var(--text3);
+              text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+              Projected Steps
+            </div>
+            <ul class="step-list">
+              ${steps.map((s, si) => `
+                <li class="step-item">
+                  <span class="step-num">${si+1}</span>
+                  <span>${s.step}</span>
+                </li>`).join('')}
+            </ul>` : ''}
+          ${support.length ? `
+            <div style="font-size:11px;font-weight:600;color:var(--text3);
+              text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px;">
+              Support Measures
+            </div>
+            <ul class="step-list">
+              ${support.map(s => `
+                <li class="step-item">
+                  <span class="step-num">✓</span>
+                  <span>${s.measure}</span>
+                </li>`).join('')}
+            </ul>` : ''}
+          ${criteria ? `
+            <div style="margin-top:12px;padding:10px;background:var(--bg2);
+              border-radius:var(--radius-md);font-size:12px;color:var(--text2);">
+              <span style="font-weight:600;color:var(--success);">Success Criteria: </span>
+              ${criteria}
+            </div>` : ''}
+        </div>`;
+    }).join('')}
+    ${rm.agent_notes ? `
+      <div class="sec-label">Agent Notes (Internal)</div>
+      <div class="card" style="border-color:rgba(239,159,39,.2);background:rgba(239,159,39,.04);">
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;">${rm.agent_notes}</div>
+      </div>` : ''}
+    ${rm.escalation_triggers?.length ? `
+      <div class="sec-label">Escalation Triggers</div>
+      <div class="card">
+        <ul class="step-list">
+          ${rm.escalation_triggers.map(t => `
+            <li class="step-item">
+              <span class="step-num" style="background:rgba(226,75,74,.12);
+                color:var(--danger);">!</span>
+              <span>${t}</span>
+            </li>`).join('')}
+        </ul>
+      </div>` : ''}
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="advanceMilestone()">
+        Advance to Milestone ${Math.min(current+1,3)}
+      </button>
+      <button class="btn btn-muted" onclick="editStrategy()">Edit Strategy</button>
+    </div>`;
+}
+
+async function advanceMilestone() {
+  const rm = _clientData.roadmap;
+  if (!rm) return;
+  const current = rm.current_node || 1;
+  if (current >= 3) { showToast('Already on final milestone'); return; }
+  if (!confirm(`Advance ${CLIENT_ID} to Milestone ${current+1}?`)) return;
+  const res = await api('/api/pipeline?action=hub-advance-milestone', {
+    method: 'POST',
+    body: JSON.stringify({ client_id: CLIENT_ID, current_node: current })
+  });
+  if (res.success) {
+    _clientData.roadmap = { ...rm, current_node: current + 1 };
+    showToast(`Advanced to Milestone ${current+1}`);
+    logAction('Advanced milestone', `Phase ${current} → ${current+1}`);
+    loadStrategy();
+  } else {
+    showToast('Failed: ' + (res.error || 'Unknown'));
+  }
+}
+
+function editStrategy() { showToast('Strategy editor coming soon'); }
+
+// ── Automations ───────────────────────────────────────
+async function loadAutomations() {
+  try {
+    const detail = await api(
+      `/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}`
+    );
+    const scenarios = detail.make_health || [];
+    const logs = detail.logs || [];
+    const opps = detail.opportunities || [];
+
+    const healthEl = document.getElementById('auto-health');
+    healthEl.innerHTML = scenarios.length
+      ? scenarios.map(s => {
+          const color = s.status === 'active' ? 'var(--success)'
+            : s.status === 'error' ? 'var(--danger)' : 'var(--text3)';
+          return `<div class="auto-row">
+            <div class="auto-dot" style="background:${color};"></div>
+            <div class="auto-name">${s.scenario_name || s.scenario_id}</div>
+            <div class="auto-stat">${s.success_rate || 0}% success</div>
+            <div class="auto-stat">${s.total_runs || 0} runs</div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No scenarios connected</div>';
+
+    const runsEl = document.getElementById('auto-runs');
+    runsEl.innerHTML = logs.slice(0,10).length
+      ? logs.slice(0,10).map(l => {
+          const color = l.status === 'success' ? 'log-success'
+            : l.status === 'error' ? 'log-error' : 'log-info';
+          return `<div class="log-row">
+            <span class="log-dot ${color}"></span>
+            <div style="flex:1;font-size:12px;">${l.scenario_name || 'Automation'}</div>
+            <span class="log-time">
+              ${new Date(l.ran_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+            </span>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No runs logged</div>';
+
+    const oppsEl = document.getElementById('auto-opps');
+    oppsEl.innerHTML = opps.length
+      ? opps.map(o => `
+        <div class="card" style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="font-size:13px;font-weight:500;flex:1;">${o.title}</div>
+            <div style="font-size:11px;color:var(--success);">
+              $${Math.round(o.estimated_cost_saving || 0).toLocaleString()}/yr
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text2);">${o.description}</div>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No opportunities identified</div>';
+  } catch(e) { console.error('[automations]', e.message); }
+}
+
+// ── Connections ───────────────────────────────────────
+async function loadConnections() {
+  const ALL = [
+    {key:'google_search_console', name:'Google Search Console', cat:'Authority'},
+    {key:'google_analytics',      name:'Google Analytics 4',    cat:'Marketing'},
+    {key:'stripe',                name:'Stripe',                cat:'Finance'},
+    {key:'mailchimp',             name:'Mailchimp',             cat:'Marketing'},
+    {key:'quickbooks',            name:'QuickBooks Online',     cat:'Finance'},
+    {key:'square',                name:'Square',                cat:'Finance'},
+    {key:'google_ads',            name:'Google Ads',            cat:'Marketing'},
+  ];
+  const sources = _clientData.sources || [];
+  const el = document.getElementById('conn-body');
+  el.innerHTML = ALL.map(c => {
+    const src = sources.find(s => s.connector_key === c.key);
+    const connected = !!src;
+    const lastSync = src?.last_sync_at
+      ? new Date(src.last_sync_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : null;
+    return `<div class="auto-row">
+      <div class="auto-dot" style="background:${connected ? 'var(--success)' : 'var(--text3)'};"></div>
+      <div class="auto-name">${c.name}</div>
+      <div class="auto-stat" style="font-size:10px;">${c.cat}</div>
+      <div class="auto-stat">${connected ? (lastSync || 'Connected') : 'Not connected'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Settings & Logs ───────────────────────────────────
+async function loadSettings() {
+  try {
+    const res = await api(
+      `/api/pipeline?action=hub-client-settings&client_id=${CLIENT_ID}`
+    );
+    const settings = res.settings || {};
+    const meta = res.meta || {};
+
+    document.getElementById('settings-body').innerHTML = `
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Plan Tier</div>
+        <div style="font-size:12px;font-weight:500;">${settings.plan_tier || 'starter'}</div>
+      </div>
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Timezone</div>
+        <div style="font-size:12px;">${settings.timezone || '—'}</div>
+      </div>
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Report Day</div>
+        <div style="font-size:12px;">
+          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][settings.report_day] || '—'}
+        </div>
+      </div>
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Advisor</div>
+        <div style="font-size:12px;">${settings.advisor_name || '—'}</div>
+      </div>
+      <div class="log-row" style="border:none;">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Onboarded</div>
+        <div style="font-size:12px;">
+          ${settings.onboarded_at ? new Date(settings.onboarded_at).toLocaleDateString() : '—'}
+        </div>
+      </div>`;
+
+    document.getElementById('meta-body').innerHTML = `
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Client ID</div>
+        <div style="font-size:11px;font-family:monospace;
+          background:var(--bg2);padding:2px 6px;border-radius:4px;">${CLIENT_ID}</div>
+      </div>
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Profile</div>
+        <div style="font-size:12px;">${meta.profile_count || 0} user(s)</div>
+      </div>
+      <div class="log-row">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Snapshots</div>
+        <div style="font-size:12px;">${meta.snapshot_count || 0}</div>
+      </div>
+      <div class="log-row" style="border:none;">
+        <div style="flex:1;font-size:12px;color:var(--text2);">Keywords</div>
+        <div style="font-size:12px;">${meta.keyword_count || 0}</div>
+      </div>`;
+
+    const logsRes = await api(
+      `/api/pipeline?action=hub-agent-logs&client_id=${CLIENT_ID}&limit=20`
+    );
+    const logs = logsRes.logs || [];
+    document.getElementById('agent-logs-body').innerHTML = logs.length
+      ? logs.map(l => `
+        <div class="log-row">
+          <span class="log-dot log-info"></span>
+          <div style="flex:1;">
+            <div style="font-size:12px;">${l.action}</div>
+            <div style="font-size:11px;color:var(--text3);">${l.detail || ''}</div>
+          </div>
+          <span class="log-time">
+            ${new Date(l.created_at).toLocaleDateString('en-US',
+              {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+          </span>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No agent logs yet</div>';
+  } catch(e) { console.error('[settings]', e.message); }
+}
+
+// ── CMNDR Chat ────────────────────────────────────────
+async function sendCmndr() {
+  const input = document.getElementById('cmndr-input');
+  const question = input?.value?.trim();
+  if (!question) return;
+  input.value = '';
+  const thread = document.getElementById('cmndr-thread');
+  thread.innerHTML += `<div class="cmndr-msg-user">${question}</div>`;
+  thread.innerHTML += `<div class="cmndr-msg-ai" id="cmndr-typing">
+    <div class="cmndr-msg-lbl">CMNDR</div>
+    <span class="spinner"></span>
+  </div>`;
+  thread.scrollTop = thread.scrollHeight;
+  try {
+    const res = await api('/api/ask', {
+      method: 'POST',
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        page: _currentPanel,
+        question,
+        context: 'advisor_workbench'
+      })
+    });
+    const typing = document.getElementById('cmndr-typing');
+    if (typing) {
+      typing.id = '';
+      typing.innerHTML = `<div class="cmndr-msg-lbl">CMNDR</div>${res.answer || 'No response'}`;
+    }
+    thread.scrollTop = thread.scrollHeight;
+  } catch(e) {
+    const typing = document.getElementById('cmndr-typing');
+    if (typing) {
+      typing.id = '';
+      typing.innerHTML = `<div class="cmndr-msg-lbl">CMNDR</div>Error: ${e.message}`;
+    }
+  }
+}
+
+// ── Quick Report ──────────────────────────────────────
+async function submitQuickReport() {
+  const title = document.getElementById('qr-title').value.trim();
+  const type = document.getElementById('qr-type').value;
+  const priority = document.getElementById('qr-priority').value;
+  const body = document.getElementById('qr-body').value.trim();
+  const metric = document.getElementById('qr-metric').value;
+  const milestone = document.getElementById('qr-milestone').value;
+  const visible = document.getElementById('qr-visible').checked;
+  if (!title || !body) { showToast('Title and notes are required'); return; }
+  try {
+    const res = await api('/api/pipeline?action=hub-save-quick-report', {
+      method: 'POST',
+      body: JSON.stringify({
+        client_id: CLIENT_ID, title, report_type: type, priority, body,
+        linked_metric: metric || null,
+        linked_milestone: milestone ? parseInt(milestone) : null,
+        visible_to_client: visible
+      })
+    });
+    if (res.success) {
+      document.getElementById('qr-title').value = '';
+      document.getElementById('qr-body').value = '';
+      showToast('Quick report saved');
+      logAction('Quick report: ' + type, title);
+      loadRecentQR();
+    } else {
+      showToast('Error: ' + (res.error || 'Failed'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+async function loadRecentQR() {
+  try {
+    const res = await api(
+      `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=5`
+    );
+    const qrs = res.reports || [];
+    const el = document.getElementById('qr-recent');
+    el.innerHTML = qrs.length
+      ? qrs.map(q => `
+        <div style="padding:8px 0;border-bottom:0.5px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span style="font-size:12px;font-weight:500;">${q.title}</span>
+            <span style="font-size:9px;padding:1px 5px;border-radius:6px;
+              background:var(--bg2);color:var(--text3);">${q.report_type}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);">
+            ${new Date(q.created_at).toLocaleDateString()}
+          </div>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);">None yet</div>';
+  } catch(e) {}
+}
+
+async function loadNotes() {
+  try {
+    const res = await api(
+      `/api/pipeline?action=hub-quick-reports&client_id=${CLIENT_ID}&limit=20`
+    );
+    const qrs = res.reports || [];
+    const el = document.getElementById('notes-list');
+    const typeColors = {
+      win:'var(--success)', concern:'var(--warning)',
+      escalation:'var(--danger)', check_in:'var(--info)',
+      action_item:'var(--info)', note:'var(--text3)'
+    };
+    el.innerHTML = qrs.length
+      ? qrs.map(q => `
+        <div style="padding:10px 0;border-bottom:0.5px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
+              background:${typeColors[q.report_type] || 'var(--text3)'};"></div>
+            <span style="font-size:13px;font-weight:500;">${q.title}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px;">
+            ${q.body.slice(0,150)}${q.body.length > 150 ? '…' : ''}
+          </div>
+          <div style="font-size:10px;color:var(--text3);">
+            ${q.report_type} · ${q.priority} · ${new Date(q.created_at).toLocaleDateString()}
+          </div>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);">No notes yet</div>';
+  } catch(e) {}
+}
+
+// ── Agent log helper ──────────────────────────────────
+async function logAction(action, detail) {
+  try {
+    await api('/api/pipeline?action=hub-log-action', {
+      method: 'POST',
+      body: JSON.stringify({ client_id: CLIENT_ID, action, detail })
+    });
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
