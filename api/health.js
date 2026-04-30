@@ -89,6 +89,32 @@ module.exports = async function handler(req, res) {
   const client = req.query.client || 'peak-flow';
   const action = req.query.action;
 
+  // ── GET ?action=entropy ────────────────────────────────────────────────
+  if (req.method === 'GET' && action === 'entropy') {
+    try {
+      const r = await fetch(
+        `${SB_URL}/rest/v1/refinery_scan_results?select=*&order=created_at.desc&limit=1`,
+        { headers: HEADERS }
+      );
+      if (!r.ok) return res.status(200).json({ score: null, message: 'Supabase error' });
+      const rows = await r.json();
+      if (!rows || !rows.length) return res.status(200).json({ score: null, message: 'No scan results found' });
+      const row = rows[0];
+      const scores = row.scores || {};
+      return res.status(200).json({
+        score: scores.composite ?? null,
+        completeness: scores.completeness_score ?? null,
+        variance: scores.variance_score ?? null,
+        fragmentation: scores.fragmentation_score ?? null,
+        enrichment: scores.enrichment_score ?? null,
+        scan_id: row.scan_id,
+        created_at: row.created_at
+      });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   // ── POST ?action=recalculate (called by Make nightly schedule) ────────
   if (req.method === 'POST' && action === 'recalculate') {
     try {

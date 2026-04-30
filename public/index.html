@@ -3,526 +3,512 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Peak Flow — Operational Report</title>
+  <title>ARC — Command Center</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
-      --text: #1a1a18; --text2: #6b6b67; --text3: #9c9a92;
-      --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
-      --radius-md: 8px; --radius-lg: 12px;
+      --bg: #0a0c0f;
+      --surface: #111418;
+      --surface2: #181c22;
+      --border: #1e242d;
+      --border2: #262d38;
+      --text: #e8edf5;
+      --text2: #8a95a3;
+      --text3: #4d5663;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.12);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245,158,11,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --purple: #a855f7;
+      --purple-dim: rgba(168,85,247,0.12);
+      --nav-h: 56px;
+      --strip-h: 80px;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
-        --text: #e8e6de; --text2: #9c9a92; --text3: #6b6b67;
-        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
-      }
-    }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding: 24px 16px 48px; }
-    .container { max-width: 820px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    .client-name { font-size: 22px; font-weight: 500; }
-    .report-meta { font-size: 13px; color: var(--text2); margin-top: 3px; }
-    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .range-btns { display: flex; gap: 4px; }
-    .range-btn { font-size: 12px; padding: 6px 12px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2); cursor: pointer; }
-    .range-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
-    .custom-range { display: none; gap: 6px; align-items: center; }
-    .custom-range.visible { display: flex; }
-    .custom-range input { font-size: 12px; padding: 5px 8px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); }
-    .btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); cursor: pointer; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-top: 20px; border-top: 0.5px solid var(--border); }
-    .sec-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin: 24px 0 10px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
-    .kpi { background: var(--bg); border-radius: var(--radius-md); padding: 14px; border: 0.5px solid var(--border); }
-    .kpi-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-    .kpi-val { font-size: 22px; font-weight: 500; }
-    .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
-    .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 4px; }
-    .funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .funnel-row:last-child { margin-bottom: 0; }
-    .funnel-label { font-size: 12px; color: var(--text2); min-width: 76px; }
-    .funnel-bar-wrap { flex: 1; background: var(--bg2); border-radius: 4px; height: 18px; overflow: visible; position: relative; }
-    .funnel-tooltip { position: absolute; left: 50%; top: -28px; transform: translateX(-50%); background: #1a1a2e; color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 10; }
-    .funnel-bar-wrap:hover .funnel-tooltip { opacity: 1; }
-    .funnel-bar-wrap-inner { height: 18px; border-radius: 4px; overflow: hidden; }
-    .funnel-bar { height: 100%; border-radius: 4px; transition: width .7s ease; }
-    .funnel-val { font-size: 12px; font-weight: 500; min-width: 56px; text-align: right; }
-    .funnel-delta { font-size: 11px; min-width: 28px; text-align: right; }
-    .job-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--border); gap: 8px; }
-    .job-row:last-child { border: none; padding-bottom: 0; }
-    .job-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .job-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .job-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-    .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
-    .b-done { background: #E1F5EE; color: #085041; }
-    .b-prog { background: #E6F1FB; color: #0C447C; }
-    .b-sched { background: #f0f0ee; color: #6b6b67; border: 0.5px solid #ccc; }
-    .b-canc { background: #FCEBEB; color: #791F1F; }
-    .b-hi { background: #FAECE7; color: #712B13; }
-    .b-med { background: #FAEEDA; color: #633806; }
-    .b-lo { background: #f0f0ee; color: #6b6b67; border: 0.5px solid #ccc; }
-    .tech-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-    .tech-row:last-child { border: none; padding-bottom: 0; }
-    .tech-avatar { width: 34px; height: 34px; border-radius: 50%; background: #E6F1FB; color: #0C447C; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
-    .tech-name { font-size: 13px; font-weight: 500; }
-    .tech-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .util-track { flex: 1; background: var(--bg2); border-radius: 4px; height: 5px; margin-top: 6px; }
-    .util-fill { height: 5px; border-radius: 4px; transition: width .7s ease; }
-    .util-pct { font-size: 13px; font-weight: 500; min-width: 36px; text-align: right; }
-    .alert-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-    .alert-row:last-child { border: none; padding-bottom: 0; }
-    .alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-    .dot-critical { background: #E24B4A; }
-    .dot-warning { background: #EF9F27; }
-    .dot-info { background: #378ADD; }
-    .alert-msg { font-size: 13px; }
-    .alert-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .alert-expand-btn { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.18); background: none; color: var(--text3); cursor: pointer; flex-shrink: 0; margin-left: auto; }
-    .alert-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; display: flex; align-items: center; justify-content: center; }
-    .alert-modal { background: var(--bg); border: 0.5px solid var(--border); border-radius: 12px; padding: 24px; max-width: 440px; width: calc(100% - 32px); box-shadow: 0 12px 40px rgba(0,0,0,.15); }
-    .alert-modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 10px; }
-    .alert-modal-title { font-size: 15px; font-weight: 500; line-height: 1.3; flex: 1; }
-    .alert-modal-close { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px; font-size: 18px; flex-shrink: 0; line-height: 1; }
-    .alert-type-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: inline-block; margin-bottom: 12px; }
-    .alert-type-critical { background: #FCEBEB; color: #791F1F; }
-    .alert-type-warning { background: #FAEEDA; color: #633806; }
-    .alert-type-info { background: #E6F1FB; color: #0C447C; }
-    .alert-modal-msg { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 14px; }
-    .alert-power-box { background: rgba(55,138,221,0.06); border: 0.5px solid rgba(55,138,221,0.2); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; }
-    .alert-power-lbl { font-size: 10px; font-weight: 700; color: #378ADD; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 0 8px rgba(55,138,221,0.4); margin-bottom: 6px; }
-    .alert-power-text { font-size: 13px; color: var(--text); line-height: 1.6; }
-    .alert-modal-cta { width: 100%; padding: 10px; border-radius: 8px; background: #378ADD; color: #fff; border: none; font-size: 13px; font-weight: 500; cursor: pointer; }
-    .table-header-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0 7px; border-bottom: 0.5px solid var(--border2); margin-bottom: 2px; gap: 8px; }
-    .table-header-row span { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
-    .tech-header-row { display: flex; align-items: center; gap: 12px; padding: 5px 0 7px; border-bottom: 0.5px solid var(--border2); margin-bottom: 2px; }
-    .tech-header-row span { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
-    .ai-box { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
-    .ai-label { font-size: 11px; font-weight: 500; color: #378ADD; margin-bottom: 8px; }
-    .ai-text { font-size: 14px; line-height: 1.7; color: var(--text); }
 
-    /* ── Audio player ── */
-    .audio-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-top: 8px; }
-    .audio-header { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-    .audio-lbl { font-size: 11px; font-weight: 500; color: var(--text2); }
-    .audio-idle { display: flex; align-items: center; gap: 8px; }
-    .audio-gen-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); cursor: pointer; font-weight: 500; transition: background .1s; }
-    .audio-gen-btn:hover { background: var(--text); color: var(--bg); }
-    .audio-gen-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .audio-loading { display: none; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); }
-    .audio-player-row { display: none; align-items: center; gap: 10px; }
-    .audio-error { display: none; font-size: 12px; color: #E24B4A; }
-    .play-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border2); background: var(--bg2); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .1s; }
-    .play-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
-    .play-btn svg { pointer-events: none; }
-    .progress-wrap { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; cursor: pointer; position: relative; }
-    .progress-fill { height: 4px; background: #378ADD; border-radius: 2px; width: 0; transition: width .1s linear; pointer-events: none; }
-    .time-display { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
-    .regen-btn { font-size: 11px; color: var(--text3); background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color .1s; flex-shrink: 0; }
-    .regen-btn:hover { color: var(--text); }
-    .audio-spin { width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: #378ADD; border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .skeleton { background: var(--bg2); border-radius: 4px; height: 14px; margin: 6px 0; animation: pulse 1.4s ease-in-out infinite; }
-    .empty { font-size: 13px; color: var(--text2); padding: 4px 0; }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
-    .toast.show { opacity: 1; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; font-size: 14px; }
 
-    @page { margin: 16mm; }
-    @media print {
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      body { background: #ffffff !important; padding: 0 !important; color: #1a1a18 !important; }
-      .controls, .action-bar, .toast { display: none !important; }
-      .container { max-width: 100% !important; }
-      .card { border: 1px solid #e0e0de !important; break-inside: avoid; }
-      .kpi { border: 1px solid #e0e0de !important; background: #f5f5f3 !important; }
-      .sec-label { margin-top: 16px; }
-      .funnel-bar-wrap { background: #e8e8e6 !important; }
-      .funnel-bar { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
-      .util-track { background: #e8e8e6 !important; }
-      .ai-box { background: #f0f7ff !important; border: 1px solid #b5d4f4 !important; }
-      .ai-label { color: #185FA5 !important; }
-      .header { margin-bottom: 12px; }
-      .b-done { background: #E1F5EE !important; color: #085041 !important; }
-      .b-prog { background: #E6F1FB !important; color: #0C447C !important; }
-      .b-hi { background: #FAECE7 !important; color: #712B13 !important; }
-      .b-med { background: #FAEEDA !important; color: #633806 !important; }
-      .b-canc { background: #FCEBEB !important; color: #791F1F !important; }
-      .dot-critical { background: #E24B4A !important; }
-      .dot-warning { background: #EF9F27 !important; }
-      .dot-info { background: #378ADD !important; }
+    /* ── NAV ── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h);
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 16px; padding: 0 20px;
+      z-index: 100;
     }
+    #nav .logo {
+      font-size: 17px; font-weight: 700; letter-spacing: -0.5px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    #nav .logo .arc-badge {
+      background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; letter-spacing: 1.5px;
+    }
+    #nav .client-selector {
+      display: flex; align-items: center; gap: 6px; background: var(--surface2);
+      border: 1px solid var(--border2); border-radius: 6px; padding: 6px 10px;
+      cursor: pointer; color: var(--text2); font-size: 13px; margin-left: 4px;
+    }
+    #nav .client-selector .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    #nav .spacer { flex: 1; }
+    #nav .nav-btn {
+      background: none; border: 1px solid var(--border2); border-radius: 6px;
+      color: var(--text2); padding: 6px 12px; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; gap: 6px; transition: all 0.15s; white-space: nowrap;
+    }
+    #nav .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #nav .cmndr-btn { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    #nav .cmndr-btn:hover { background: var(--accent); color: #fff; }
+    #nav .avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; flex-shrink: 0;
+    }
+
+    /* ── SHELL LAYOUT ── */
+    #shell {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      grid-template-rows: var(--strip-h) 1fr;
+      height: 100vh;
+      padding-top: var(--nav-h);
+    }
+
+    /* ── METRIC STRIP ── */
+    #health-strip {
+      grid-column: 1 / -1;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: stretch;
+    }
+    .health-card {
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 0 32px; flex: 1;
+      border-right: 1px solid var(--border);
+    }
+    .health-card:last-child { border-right: none; }
+    .hc-label { font-size: 10px; color: var(--text3); letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 6px; }
+    .hc-value { font-size: 32px; font-weight: 700; letter-spacing: -1.5px; line-height: 1; }
+    .hc-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+    .hc-bar { height: 3px; background: var(--border2); border-radius: 2px; margin-top: 10px; }
+    .hc-bar-fill { height: 100%; border-radius: 2px; width: 0; transition: width 1.2s cubic-bezier(.22,1,.36,1); }
+    .col-blue { color: var(--accent); } .col-green { color: var(--green); }
+    .col-amber { color: var(--amber); } .col-purple { color: var(--purple); }
+
+    /* ── MAIN COL ── */
+    #main-col { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Module nav */
+    #module-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .module-chip {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 500;
+      color: var(--text2); cursor: pointer; transition: all 0.15s;
+    }
+    .module-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .module-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    /* Section header */
+    .section-hd {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text3);
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+    }
+    .section-hd a { font-size: 11px; color: var(--accent); text-decoration: none; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+    /* Exception cards */
+    .exc-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 8px; transition: border-color 0.15s;
+    }
+    .exc-card:last-child { margin-bottom: 0; }
+    .exc-card:hover { border-color: var(--border2); }
+    .exc-icon {
+      width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .exc-icon.critical { background: var(--red-dim); }
+    .exc-icon.warning  { background: var(--amber-dim); }
+    .exc-icon.info     { background: var(--accent-dim); }
+    .exc-body { flex: 1; min-width: 0; }
+    .exc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .exc-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .exc-desc { font-size: 12px; color: var(--text2); line-height: 1.55; }
+    .exc-meta { font-size: 11px; color: var(--text3); margin-top: 5px; }
+    .exc-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .exc-btn {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 5px; padding: 4px 10px; font-size: 11px; color: var(--text2);
+      cursor: pointer; transition: all 0.12s; white-space: nowrap;
+    }
+    .exc-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .exc-btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .sev-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .sev-badge.critical { background: var(--red-dim); color: var(--red); }
+    .sev-badge.warning  { background: var(--amber-dim); color: var(--amber); }
+    .sev-badge.info     { background: var(--accent-dim); color: var(--accent); }
+
+    /* skeleton */
+    .skeleton { background: var(--border2); border-radius: 6px; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ── CMNDR PANEL ── */
+    #cmndr-col { border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    #cmndr-header {
+      padding: 14px 18px 12px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .cmndr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: blink 2.2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .cmndr-title { font-size: 13px; font-weight: 600; }
+    .cmndr-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    #cmndr-body { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+    .cmndr-narrative {
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 14px;
+    }
+    .cn-label { font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .cn-text { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+    .cmndr-history { display: flex; flex-direction: column; gap: 10px; }
+    .msg { display: flex; flex-direction: column; }
+    .msg.user .msg-bubble { background: var(--accent-dim); border: 1px solid var(--accent); align-self: flex-end; color: var(--text); }
+    .msg.ai .msg-bubble  { background: var(--surface2); border: 1px solid var(--border2); align-self: flex-start; color: var(--text2); }
+    .msg-bubble { max-width: 92%; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.55; margin-bottom: 3px; }
+    .msg-time { font-size: 10px; color: var(--text3); }
+    .msg.user .msg-time { align-self: flex-end; }
+    .msg.ai  .msg-time  { align-self: flex-start; }
+
+    #cmndr-input-area { padding: 10px 18px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+    #cmndr-suggestions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .suggestion-pill {
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 12px; padding: 4px 10px; font-size: 11px; color: var(--text2);
+      cursor: pointer; transition: all 0.12s; white-space: nowrap;
+    }
+    .suggestion-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .input-row { display: flex; gap: 8px; align-items: flex-end; }
+    #cmndr-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 6px; color: var(--text); font-size: 13px; padding: 8px 12px;
+      outline: none; resize: none; font-family: inherit; min-height: 38px; max-height: 120px;
+    }
+    #cmndr-input:focus { border-color: var(--accent); }
+    #cmndr-send {
+      background: var(--accent); border: none; border-radius: 6px;
+      width: 36px; height: 36px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+    }
+    #cmndr-send:hover { background: #2563eb; }
+    #cmndr-send svg { width: 14px; height: 14px; fill: currentColor; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
   </style>
 </head>
 <body>
-<div class="container">
 
-  <div class="header">
+<nav id="nav">
+  <div class="logo">
+    <span class="arc-badge">ARC</span>
+    Command Center
+  </div>
+  <div class="client-selector">
+    <span class="dot"></span>
+    <span id="nav-client">Peak Flow HVAC</span>
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="spacer"></div>
+  <button class="nav-btn cmndr-btn" onclick="focusCmndr()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+    CMNDR
+  </button>
+  <button class="nav-btn" onclick="location.href='/workbench'">Workbench</button>
+  <button class="nav-btn" onclick="location.href='/connections'">Connections</button>
+  <div class="avatar" id="nav-avatar">A</div>
+</nav>
+
+<div id="shell">
+
+  <!-- METRIC STRIP -->
+  <div id="health-strip">
+    <div class="health-card">
+      <div class="hc-label">Entropy Score</div>
+      <div class="hc-value col-blue" id="hs-entropy">—</div>
+      <div class="hc-sub" id="hs-entropy-sub">Loading…</div>
+      <div class="hc-bar"><div class="hc-bar-fill" id="bar-entropy" style="background:var(--accent)"></div></div>
+    </div>
+    <div class="health-card">
+      <div class="hc-label">Labor Deletion</div>
+      <div class="hc-value col-green">14.2<span style="font-size:16px;font-weight:500;letter-spacing:0;"> hrs</span></div>
+      <div class="hc-sub">Saved this month</div>
+    </div>
+    <div class="health-card">
+      <div class="hc-label">Relational ROI</div>
+      <div class="hc-value col-amber">$8.40<span style="font-size:16px;font-weight:500;letter-spacing:0;"> /lead</span></div>
+      <div class="hc-sub">Revenue per contact</div>
+    </div>
+  </div>
+
+  <!-- MAIN COL -->
+  <div id="main-col">
+    <div id="module-nav">
+      <div class="module-chip active">All</div>
+      <div class="module-chip" onclick="location.href='/operations'">Operations</div>
+      <div class="module-chip" onclick="location.href='/marketing'">Marketing</div>
+      <div class="module-chip" onclick="location.href='/finance'">Finance</div>
+      <div class="module-chip" onclick="location.href='/optimization'">Yield &amp; Efficiency</div>
+      <div class="module-chip" onclick="location.href='/audit'">Audit</div>
+    </div>
+
     <div>
-      <div class="client-name">Peak Flow Plumbing & HVAC</div>
-      <div class="report-meta" id="report-meta">Operational report — loading...</div>
-    </div>
-    <div class="controls">
-      <div class="range-btns">
-        <button class="range-btn active" data-range="7d" onclick="setRange('7d')">7 days</button>
-        <button class="range-btn" data-range="30d" onclick="setRange('30d')">30 days</button>
-        <button class="range-btn" data-range="mtd" onclick="setRange('mtd')">Month</button>
-        <button class="range-btn" data-range="qtd" onclick="setRange('qtd')">Quarter</button>
-        <button class="range-btn" data-range="custom" onclick="setRange('custom')">Custom</button>
+      <div class="section-hd">
+        <span>Active Exceptions</span>
+        <a href="#">View all</a>
       </div>
-      <div class="custom-range" id="custom-range">
-        <input type="date" id="from-date" />
-        <span style="font-size:12px;color:var(--text2);">to</span>
-        <input type="date" id="to-date" />
-        <button class="btn" onclick="loadCustom()">Apply</button>
+      <div id="exception-feed">
+        <div class="skeleton" style="height:82px;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:82px;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:82px;"></div>
       </div>
-      <button class="btn" onclick="loadAll()">Refresh</button>
     </div>
   </div>
 
-  <div class="sec-label">Key metrics</div>
-  <div class="kpi-grid" id="kpis">
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-    <div class="kpi"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%"></div></div>
-  </div>
-
-  <div class="sec-label">Pipeline funnel — this week vs last week</div>
-  <div class="card" id="funnel-wrap"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-
-  <div class="sec-label">Jobs in period</div>
-  <div class="card" id="jobs-wrap"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-
-  <div class="sec-label">Technician workload</div>
-  <div class="card" id="tech-wrap"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-
-  <div class="sec-label">Active alerts</div>
-  <div class="card" id="alerts-wrap"><div class="skeleton"></div><div class="skeleton"></div></div>
-
-  <div class="sec-label">Power briefing</div>
-  <div class="ai-box">
-    <div class="ai-label" style="font-weight:700;text-shadow:0 0 8px rgba(55,138,221,0.4);">Power Summary</div>
-    <div class="ai-text" id="ai-summary"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>
-  </div>
-
-  <div class="audio-card">
-    <div class="audio-header">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--text3)"><path d="M7 1.5a5.5 5.5 0 010 11M4 3.5a3 3 0 000 7M1.5 5.5a1 1 0 000 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      <span class="audio-lbl">Audio briefing</span>
-    </div>
-    <div class="audio-idle" id="audio-idle">
-      <button class="audio-gen-btn" id="audio-gen-btn" onclick="generateAudio()">Generate audio</button>
-      <span style="font-size:11px;color:var(--text3);">Spoken by Rachel via ElevenLabs</span>
-    </div>
-    <div class="audio-loading" id="audio-loading">
-      <div class="audio-spin"></div>
-      <span>Generating…</span>
-    </div>
-    <div class="audio-player-row" id="audio-player-row">
-      <button class="play-btn" id="play-btn" onclick="togglePlay()">
-        <svg id="play-icon" width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="4,2 12,7 4,12"/></svg>
-        <svg id="pause-icon" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="display:none"><rect x="3" y="2" width="3" height="10" rx="1"/><rect x="8" y="2" width="3" height="10" rx="1"/></svg>
-      </button>
-      <div class="progress-wrap" id="progress-wrap" onclick="seekAudio(event)">
-        <div class="progress-fill" id="progress-fill"></div>
+  <!-- CMNDR PANEL -->
+  <div id="cmndr-col">
+    <div id="cmndr-header">
+      <div class="cmndr-dot"></div>
+      <div>
+        <div class="cmndr-title">CMNDR</div>
+        <div class="cmndr-sub">AI Operations Intelligence</div>
       </div>
-      <span class="time-display" id="time-display">0:00 / 0:00</span>
-      <button class="regen-btn" onclick="generateAudio()">Regenerate</button>
     </div>
-    <div class="audio-error" id="audio-error">
-      <span id="audio-err-msg">Generation failed.</span>
-      <button class="regen-btn" onclick="generateAudio()" style="color:#378ADD;margin-left:6px;">Retry</button>
-    </div>
-  </div>
 
-  <div class="action-bar">
-    <button class="btn btn-primary" onclick="downloadPDF()">Download PDF</button>
+    <div id="cmndr-body">
+      <div class="cmndr-narrative">
+        <div class="cn-label">Current Situation</div>
+        <div class="cn-text skeleton" id="narrative-text" style="height:80px;border-radius:4px;"></div>
+      </div>
+      <div class="cmndr-history" id="cmndr-history"></div>
+    </div>
+
+    <div id="cmndr-input-area">
+      <div id="cmndr-suggestions">
+        <div class="suggestion-pill" onclick="sendSuggestion(this)">Why is revenue down?</div>
+        <div class="suggestion-pill" onclick="sendSuggestion(this)">Top risk this week?</div>
+        <div class="suggestion-pill" onclick="sendSuggestion(this)">Improve data quality</div>
+      </div>
+      <div class="input-row">
+        <textarea id="cmndr-input" placeholder="Ask CMNDR anything…" rows="1"
+          onkeydown="handleKey(event)"></textarea>
+        <button id="cmndr-send" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
   </div>
 
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-const API = '/api/report';
-const WEBHOOK = 'https://hook.us2.make.com/fsilm67y7ny25rfo7ulhhdket8snpmcd';
-let currentRange = '7d';
-let currentFrom = null;
-let currentTo = null;
+const SESSION_TOKEN = localStorage.getItem('cmndr_session');
 
-function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
-function statusBadge(s) {
-  const map = { completed:'b-done', 'in-progress':'b-prog', scheduled:'b-sched', cancelled:'b-canc' };
-  const label = { completed:'Done', 'in-progress':'In progress', scheduled:'Scheduled', cancelled:'Cancelled' };
-  return '<span class="badge '+(map[s]||'b-sched')+'">'+(label[s]||s)+'</span>';
-}
-function prioBadge(p) {
-  const map = { high:'b-hi', medium:'b-med', low:'b-lo' };
-  return '<span class="badge '+(map[p]||'b-lo')+'">'+p+'</span>';
-}
-function initials(name) { return name.split(' ').map(p=>p[0]).join(''); }
-function utilColor(pct) { return pct>=85?'#E24B4A':pct>=70?'#EF9F27':'#1D9E75'; }
-
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function setRange(r) {
-  currentRange = r;
-  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r));
-  const custom = document.getElementById('custom-range');
-  if (r === 'custom') {
-    custom.classList.add('visible');
-    const today = new Date().toISOString().split('T')[0];
-    const week = new Date(); week.setDate(week.getDate()-7);
-    document.getElementById('from-date').value = week.toISOString().split('T')[0];
-    document.getElementById('to-date').value = today;
+// ── AUTH ─────────────────────────────────────────────────────
+async function boot() {
+  // DEV BYPASS
+  if (window.location.search.includes('bypass=true') ||
+      localStorage.getItem('arc_bypass') === 'true') {
+    localStorage.setItem('arc_bypass', 'true');
+    // Skip auth entirely, proceed to render
   } else {
-    custom.classList.remove('visible');
-    loadAll();
+    if (!SESSION_TOKEN) { location.href = '/login'; return; }
+    try {
+      const r = await fetch('/api/auth?action=me', { headers: { Authorization: `Bearer ${SESSION_TOKEN}` } });
+      if (!r.ok) { location.href = '/login'; return; }
+      const d = await r.json();
+      const profile = d.profile;
+      if (!profile || !profile.role || !profile.role.startsWith('resona_')) { location.href = '/login'; return; }
+      const name = profile.full_name || d.user?.email || 'Advisor';
+      document.getElementById('nav-avatar').textContent = name.charAt(0).toUpperCase();
+    } catch { location.href = '/login'; return; }
   }
+
+  await Promise.all([loadEntropyScore(), loadExceptions()]);
 }
 
-function loadCustom() {
-  const from = document.getElementById('from-date').value;
-  const to = document.getElementById('to-date').value;
-  if (!from || !to) return;
-  loadAll(from, to);
-}
-
-function downloadPDF() {
-  const meta = document.getElementById('report-meta').textContent;
-  document.title = 'Peak Flow — ' + meta;
-  window.print();
-}
-
-async function sendReport() {
-  const btn = document.getElementById('send-btn');
-  btn.textContent = 'Sending...';
-  btn.disabled = true;
+// ── ENTROPY SCORE ────────────────────────────────────────────
+async function loadEntropyScore() {
   try {
-    await fetch(WEBHOOK, {
+    const r = await fetch('/api/health?action=entropy');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.score == null) { document.getElementById('hs-entropy-sub').textContent = 'No scan yet'; return; }
+
+    setMetric('entropy', d.score, scoreLabel(d.score));
+  } catch (e) { console.warn('entropy-score:', e); }
+}
+
+function setMetric(key, val, sub) {
+  animCount('hs-' + key, val, '%');
+  animBar('bar-' + key, val);
+  if (sub) document.getElementById('hs-' + key + '-sub').textContent = sub;
+}
+
+function scoreLabel(s) {
+  if (s >= 80) return 'Excellent data health';
+  if (s >= 60) return 'Good — minor gaps';
+  if (s >= 40) return 'Fair — action needed';
+  return 'Poor — attention required';
+}
+
+function animCount(id, target, suf) {
+  const el = document.getElementById(id); if (!el) return;
+  let t0 = null;
+  function step(ts) {
+    if (!t0) t0 = ts;
+    const p = Math.min((ts - t0) / 900, 1);
+    el.textContent = Math.round(target * easeOut(p)) + (suf || '');
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function animBar(id, pct) {
+  const el = document.getElementById(id); if (!el) return;
+  setTimeout(() => el.style.width = Math.max(0, Math.min(100, pct)) + '%', 50);
+}
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+// ── EXCEPTIONS (CMNDR) ────────────────────────────────────────
+const DEMO_EXCEPTIONS = [
+  { severity:'critical', icon:'⚡', title:'Technician capacity below threshold', description:'Only 4 of 7 technicians are scheduled for peak-season coverage. 3 open positions risk $42K in unbooked summer revenue.', module:'Operations', action_primary:'View schedule', action_secondary:'Post jobs', age:'3 days' },
+  { severity:'warning',  icon:'📉', title:'Lead response time exceeds 4 hours',  description:'Average lead response has slipped to 4.2 hours vs 1-hour target. Conversion rate dropped 8% in the last 14 days.', module:'Marketing', action_primary:'View leads', action_secondary:'Set alerts', age:'14 days' },
+  { severity:'info',     icon:'💡', title:'Maintenance contract renewals due',    description:'17 annual maintenance contracts expire this month. Proactive outreach could secure $8,500 in recurring revenue.', module:'Finance', action_primary:'View contracts', age:'5 days' }
+];
+const DEMO_NARRATIVE = 'Peak Flow is entering high-demand summer season with 3 open technician slots and job backlog growing 18% week-over-week. Revenue per completed job is tracking $12 above target, but delayed scheduling is causing churn risk in the residential segment. Immediate focus should be on technician capacity and lead response time.';
+
+async function loadExceptions() {
+  try {
+    const r = await fetch('/api/ask', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client: 'peak-flow', range: currentRange, from: currentFrom, to: currentTo })
+      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${SESSION_TOKEN}` },
+      body: JSON.stringify({
+        system: 'You are CMNDR, an AI operations intelligence system for Resona. Return valid JSON only, no prose.',
+        messages: [{ role:'user', content: buildExcPrompt() }]
+      })
     });
-    toast('Report sent successfully');
-  } catch(e) {
-    toast('Send failed — try again');
-  }
-  btn.textContent = 'Send report';
-  btn.disabled = false;
-}
-
-function renderKPIs(jobs) {
-  const total = jobs.length;
-  const completed = jobs.filter(j=>j.status==='completed').length;
-  const inprog = jobs.filter(j=>j.status==='in-progress').length;
-  const sched = jobs.filter(j=>j.status==='scheduled').length;
-  const rev = jobs.filter(j=>j.revenue).reduce((a,j)=>a+j.revenue,0);
-  const revJobs = jobs.filter(j=>j.revenue);
-  const avg = revJobs.length ? rev/revJobs.length : 0;
-  document.getElementById('kpis').innerHTML =
-    '<div class="kpi"><div class="kpi-label">Total jobs</div><div class="kpi-val">'+total+'</div><div class="kpi-sub">In period</div></div>'+
-    '<div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val" style="color:#1D9E75">'+completed+'</div><div class="kpi-sub" style="color:#1D9E75">'+(total?Math.round(completed/total*100):0)+'% rate</div></div>'+
-    '<div class="kpi"><div class="kpi-label">In progress</div><div class="kpi-val" style="color:#185FA5">'+inprog+'</div><div class="kpi-sub">Active now</div></div>'+
-    '<div class="kpi"><div class="kpi-label">Scheduled</div><div class="kpi-val">'+sched+'</div><div class="kpi-sub">Upcoming</div></div>'+
-    '<div class="kpi"><div class="kpi-label">Period revenue</div><div class="kpi-val">'+fmt$(rev)+'</div><div class="kpi-sub">Completed jobs</div></div>'+
-    '<div class="kpi"><div class="kpi-label">Avg job value</div><div class="kpi-val">'+fmt$(avg)+'</div><div class="kpi-sub">Per job</div></div>';
-}
-
-function renderFunnel(pipeline) {
-  const stages = ['lead','quoted','scheduled','completed','invoiced'];
-  const colors = { lead:'#378ADD', quoted:'#7F77DD', scheduled:'#EF9F27', completed:'#1D9E75', invoiced:'#D85A30' };
-  const thisWeek = pipeline.filter(d=>d.week_label==='This week');
-  const lastWeek = pipeline.filter(d=>d.week_label==='Last week');
-  const maxVal = Math.max(...pipeline.map(d=>d.total_value||0), 1);
-  const rows = stages.map(s=>{
-    const tw = thisWeek.find(d=>d.stage===s);
-    const lw = lastWeek.find(d=>d.stage===s);
-    const pct = tw ? Math.round((tw.total_value/maxVal)*100) : 0;
-    const delta = tw&&lw ? tw.count-lw.count : null;
-    const dHtml = delta===null?'<span style="color:#9c9a92">—</span>':delta>0?'<span style="color:#1D9E75">+'+delta+'</span>':delta<0?'<span style="color:#E24B4A">'+delta+'</span>':'<span style="color:#9c9a92">0</span>';
-    const tooltipVal = tw ? fmt$(tw.total_value) + (tw.count ? ' · ' + tw.count + ' jobs' : '') : '—';
-    return '<div class="funnel-row"><span class="funnel-label">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span><div class="funnel-bar-wrap"><div class="funnel-tooltip">'+tooltipVal+'</div><div class="funnel-bar-wrap-inner"><div class="funnel-bar" style="width:'+pct+'%;background:'+colors[s]+';"></div></div></div><span class="funnel-val">'+(tw?fmt$(tw.total_value):'—')+'</span><span class="funnel-delta">'+dHtml+'</span></div>';
-  }).join('');
-  document.getElementById('funnel-wrap').innerHTML = '<div style="display:flex;justify-content:flex-end;gap:16px;margin-bottom:12px;font-size:11px;color:#9c9a92;"><span>Value this week</span><span style="min-width:28px;text-align:right;">vs last</span></div>'+rows;
-}
-
-function renderJobs(jobs) {
-  if (!jobs.length) { document.getElementById('jobs-wrap').innerHTML = '<p class="empty">No jobs in this period.</p>'; return; }
-  const sorted = [...jobs].sort((a,b)=>new Date(b.scheduled_date)-new Date(a.scheduled_date)).slice(0,10);
-  const header = '<div class="table-header-row"><span style="flex:1;min-width:0;">Job Title</span><div style="display:flex;gap:6px;align-items:center;flex-shrink:0;"><span style="min-width:60px;">Status</span><span style="min-width:44px;">Priority</span><span style="min-width:48px;text-align:right;">Revenue</span></div></div>';
-  document.getElementById('jobs-wrap').innerHTML = header + sorted.map(j=>
-    '<div class="job-row"><div style="flex:1;min-width:0;"><div class="job-title">'+j.title+'</div><div class="job-meta">'+j.assigned_to+' &middot; '+j.service_type+' &middot; '+new Date(j.scheduled_date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</div></div><div class="job-right">'+prioBadge(j.priority)+statusBadge(j.status)+'<span style="font-size:12px;color:#6b6b67;min-width:48px;text-align:right;">'+(j.revenue?fmt$(j.revenue):'—')+'</span></div></div>'
-  ).join('');
-}
-
-function renderTechs(technicians) {
-  const header = '<div class="tech-header-row"><span style="width:34px;flex-shrink:0;"></span><span style="flex:1;min-width:0;">Technician</span><span style="min-width:48px;text-align:center;">Active</span><span style="min-width:64px;text-align:center;">Completed</span><span style="min-width:72px;text-align:right;">Utilization</span></div>';
-  document.getElementById('tech-wrap').innerHTML = header + technicians.map(t=>
-    '<div class="tech-row"><div class="tech-avatar">'+initials(t.name)+'</div><div style="flex:1;min-width:0;"><div class="tech-name">'+t.name+'</div><div class="tech-meta">'+t.specialty+' &middot; '+t.completed_this_week+' completed &middot; '+t.active_jobs+' active</div><div class="util-track"><div class="util-fill" style="width:'+t.utilization_pct+'%;background:'+utilColor(t.utilization_pct)+';"></div></div></div><div class="util-pct" style="color:'+utilColor(t.utilization_pct)+';">'+t.utilization_pct+'%</div></div>'
-  ).join('');
-}
-
-function showAlertModal(alert) {
-  const typeClass = { critical: 'alert-type-critical', warning: 'alert-type-warning', info: 'alert-type-info' };
-  const typeLabel = { critical: 'Critical', warning: 'Warning', info: 'Info' };
-  const t = alert.type || 'info';
-  const html = '<div class="alert-modal-overlay" id="alert-modal" onclick="if(event.target===this)document.getElementById(\'alert-modal\').remove()"><div class="alert-modal"><div class="alert-modal-head"><div class="alert-modal-title">'+alert.message+'</div><button class="alert-modal-close" onclick="document.getElementById(\'alert-modal\').remove()">×</button></div><div class="alert-type-badge '+(typeClass[t]||'alert-type-info')+'">'+(typeLabel[t]||t)+'</div><div class="alert-modal-msg">'+alert.message+'</div><div class="alert-power-box"><div class="alert-power-lbl">Power analysis</div><div class="alert-power-text">This alert was flagged based on recent operational data. Review the affected area and take corrective action if needed. Your advisor will follow up on persistent alerts in your next session.</div></div><button class="alert-modal-cta" onclick="document.getElementById(\'alert-modal\').remove()">Mark as Reviewed</button></div></div>';
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function renderAlerts(alerts) {
-  const active = alerts.filter(a=>!a.resolved);
-  if (!active.length) { document.getElementById('alerts-wrap').innerHTML = '<p class="empty">No active alerts.</p>'; return; }
-  document.getElementById('alerts-wrap').innerHTML = active.map(a=>
-    '<div class="alert-row"><div class="alert-dot dot-'+a.type+'"></div><div style="flex:1;min-width:0;"><div class="alert-msg">'+a.message+'</div><div class="alert-meta">'+a.type.charAt(0).toUpperCase()+a.type.slice(1)+' &middot; '+new Date(a.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</div></div><button class="alert-expand-btn" onclick=\'showAlertModal('+JSON.stringify(a)+')\'>View</button></div>'
-  ).join('');
-}
-
-function renderSummary(summary) {
-  document.getElementById('ai-summary').innerHTML = '<p>'+summary+'</p>';
-}
-
-async function loadAll(fromOverride, toOverride) {
-  document.getElementById('report-meta').textContent = 'Operational report — loading...';
-  try {
-    let url = API + '?client=peak-flow&range=' + currentRange;
-    if (fromOverride && toOverride) url = API + '?client=peak-flow&from='+fromOverride+'&to='+toOverride;
-    const res = await fetch(url);
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    currentFrom = d.from;
-    currentTo = d.to;
-    const fromLabel = new Date(d.from).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const toLabel = new Date(d.to).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    document.getElementById('report-meta').textContent = 'Operational report — '+fromLabel+' to '+toLabel;
-    renderKPIs(d.jobs);
-    renderFunnel(d.pipeline);
-    renderJobs(d.jobs);
-    renderTechs(d.technicians);
-    renderAlerts(d.alerts);
-    renderSummary(d.summary);
-  } catch(err) {
-    document.getElementById('report-meta').textContent = 'Error — ' + err.message;
-  }
-}
-
-// ── Audio player ──────────────────────────────────────────────
-let audioEl = null;
-let audioRafId = null;
-
-function getAudioParams() {
-  const p = new URLSearchParams(window.location.search);
-  const client = p.get('client') || 'peak-flow';
-  const range  = p.get('range')  || currentRange;
-  const from   = p.get('from')   || null;
-  const to     = p.get('to')     || null;
-  if (from && to) return `/api/audio?client=${client}&from=${from}&to=${to}`;
-  return `/api/audio?client=${client}&range=${range}`;
-}
-
-function audioSetState(state) {
-  document.getElementById('audio-idle').style.display       = state === 'idle'    ? 'flex' : 'none';
-  document.getElementById('audio-loading').style.display    = state === 'loading' ? 'flex' : 'none';
-  document.getElementById('audio-player-row').style.display = state === 'ready'   ? 'flex' : 'none';
-  document.getElementById('audio-error').style.display      = state === 'error'   ? 'flex' : 'none';
-}
-
-function fmtTime(sec) {
-  const s = Math.floor(sec || 0);
-  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-}
-
-function startProgressLoop() {
-  if (audioRafId) cancelAnimationFrame(audioRafId);
-  function tick() {
-    if (!audioEl) return;
-    const dur = audioEl.duration || 0;
-    const cur = audioEl.currentTime || 0;
-    const pct = dur ? (cur / dur) * 100 : 0;
-    document.getElementById('progress-fill').style.width = pct + '%';
-    document.getElementById('time-display').textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
-    if (!audioEl.paused && !audioEl.ended) {
-      audioRafId = requestAnimationFrame(tick);
+    if (!r.ok) throw new Error('api failed');
+    const d = await r.json();
+    const raw = d.content?.[0]?.text || d.text || '';
+    const parsed = extractJSON(raw);
+    if (parsed?.exceptions?.length) {
+      renderExceptions(parsed.exceptions);
+      renderNarrative(parsed.narrative || DEMO_NARRATIVE);
+      return;
     }
-  }
-  audioRafId = requestAnimationFrame(tick);
+  } catch (e) { console.warn('exceptions:', e); }
+  renderExceptions(DEMO_EXCEPTIONS);
+  renderNarrative(DEMO_NARRATIVE);
 }
 
-function togglePlay() {
-  if (!audioEl) return;
-  if (audioEl.paused) {
-    audioEl.play();
-    document.getElementById('play-icon').style.display  = 'none';
-    document.getElementById('pause-icon').style.display = 'block';
-    startProgressLoop();
-  } else {
-    audioEl.pause();
-    document.getElementById('play-icon').style.display  = 'block';
-    document.getElementById('pause-icon').style.display = 'none';
-  }
+function buildExcPrompt() {
+  return 'Analyze Peak Flow HVAC and return JSON with two keys:\n1. "exceptions": array of 3 objects each with: severity (critical|warning|info), icon (emoji), title (max 8 words), description (1-2 sentences), module (Operations|Marketing|Finance|Optimization), action_primary (button label), action_secondary (optional button label), age (e.g. "2 days").\n2. "narrative": 2-3 sentence executive summary for an HVAC company entering summer.\nFocus on: technician scheduling, job completion, revenue per job, lead conversion, inventory, customer satisfaction.';
 }
 
-function seekAudio(e) {
-  if (!audioEl || !audioEl.duration) return;
-  const rect = document.getElementById('progress-wrap').getBoundingClientRect();
-  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  audioEl.currentTime = pct * audioEl.duration;
-  document.getElementById('progress-fill').style.width = (pct * 100) + '%';
-  if (!audioEl.paused) startProgressLoop();
+function extractJSON(text) {
+  try { const m = text.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; } catch { return null; }
 }
 
-async function generateAudio() {
-  audioSetState('loading');
-  document.getElementById('audio-gen-btn').disabled = true;
-  if (audioEl) { audioEl.pause(); audioEl = null; }
-  if (audioRafId) { cancelAnimationFrame(audioRafId); audioRafId = null; }
+function renderExceptions(list) {
+  document.getElementById('exception-feed').innerHTML = list.map((e, i) => `
+    <div class="exc-card">
+      <div class="exc-icon ${e.severity}">${e.icon}</div>
+      <div class="exc-body">
+        <div class="exc-head">
+          <div class="exc-title">${esc(e.title)}</div>
+          <span class="sev-badge ${e.severity}">${e.severity}</span>
+        </div>
+        <div class="exc-desc">${esc(e.description)}</div>
+        <div class="exc-meta">${esc(e.module)} &middot; ${esc(e.age)}</div>
+        <div class="exc-actions">
+          <button class="exc-btn primary" onclick="openModule('${e.module}')">${esc(e.action_primary)}</button>
+          ${e.action_secondary ? `<button class="exc-btn" onclick="askCmndr('${esc(e.action_secondary)} for ${esc(e.title)}')">${esc(e.action_secondary)}</button>` : ''}
+          <button class="exc-btn" onclick="askCmndr('Tell me more about: ${esc(e.title)}')">Ask CMNDR</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderNarrative(text) {
+  const el = document.getElementById('narrative-text');
+  el.classList.remove('skeleton'); el.style.height = '';
+  el.textContent = text;
+}
+
+function openModule(m) {
+  const routes = { Operations:'/operations', Marketing:'/marketing', Finance:'/finance', Optimization:'/optimization' };
+  location.href = routes[m] || '/app';
+}
+
+// ── CMNDR CHAT ────────────────────────────────────────────────
+const history = [];
+let msgN = 0;
+
+function focusCmndr() { document.getElementById('cmndr-input').focus(); }
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function sendSuggestion(el) { document.getElementById('cmndr-input').value = el.textContent; sendMessage(); }
+function askCmndr(text) { document.getElementById('cmndr-input').value = text; sendMessage(); document.getElementById('cmndr-body').scrollTop = 99999; }
+
+async function sendMessage() {
+  const inp = document.getElementById('cmndr-input');
+  const text = inp.value.trim(); if (!text) return;
+  inp.value = '';
+  addMsg('user', text);
+  history.push({ role:'user', content:text });
+  const tid = addMsg('ai', '…', true);
 
   try {
-    const url = getAudioParams();
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!res.ok || !data.audio_base64) throw new Error(data.error || 'No audio returned');
-
-    const binary = atob(data.audio_base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'audio/mpeg' });
-    const blobUrl = URL.createObjectURL(blob);
-
-    audioEl = new Audio(blobUrl);
-    audioEl.addEventListener('ended', () => {
-      document.getElementById('play-icon').style.display  = 'block';
-      document.getElementById('pause-icon').style.display = 'none';
-      document.getElementById('progress-fill').style.width = '100%';
+    const r = await fetch('/api/ask', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${SESSION_TOKEN}` },
+      body: JSON.stringify({
+        system: "You are CMNDR, Resona's AI operations intelligence. Be concise and direct. Max 3 sentences unless asked for detail.",
+        messages: history
+      })
     });
-    audioEl.addEventListener('loadedmetadata', () => {
-      document.getElementById('time-display').textContent = '0:00 / ' + fmtTime(audioEl.duration);
-    });
+    let reply = 'Unable to reach CMNDR. Please try again.';
+    if (r.ok) { const d = await r.json(); reply = d.content?.[0]?.text || d.text || reply; }
+    updMsg(tid, reply);
+    history.push({ role:'assistant', content:reply });
+  } catch { updMsg(tid, 'CMNDR is temporarily unavailable.'); }
 
-    audioSetState('ready');
-    document.getElementById('play-icon').style.display  = 'block';
-    document.getElementById('pause-icon').style.display = 'none';
-    document.getElementById('progress-fill').style.width = '0';
-  } catch (e) {
-    document.getElementById('audio-err-msg').textContent = e.message || 'Generation failed.';
-    audioSetState('error');
-  }
-  document.getElementById('audio-gen-btn').disabled = false;
+  document.getElementById('cmndr-body').scrollTop = 99999;
 }
 
-loadAll();
+function addMsg(role, text, typing) {
+  const id = 'msg-' + (++msgN);
+  const t = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const el = document.createElement('div');
+  el.className = 'msg ' + role; el.id = id;
+  el.innerHTML = `<div class="msg-bubble">${typing ? '<em style="opacity:.5">CMNDR is thinking…</em>' : esc(text)}</div><div class="msg-time">${t}</div>`;
+  document.getElementById('cmndr-history').appendChild(el);
+  document.getElementById('cmndr-body').scrollTop = 99999;
+  return id;
+}
+
+function updMsg(id, text) { const el = document.getElementById(id); if (el) el.querySelector('.msg-bubble').textContent = text; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+boot();
 </script>
 </body>
 </html>

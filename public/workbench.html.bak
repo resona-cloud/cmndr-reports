@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CMNDR Workbench</title>
+<style>
+:root{--bg:#0d0f14;--surface:#161820;--card:#1e2028;--border:#2a2d38;--text:#e8eaf0;--muted:#8b8fa8;--info:#4dabf7;--success:#51cf66;--warning:#fcc419;--danger:#ff6b6b;--primary:#7950f2;--radius-md:10px;font-size:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.wb-top{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+.wb-top-logo{font-weight:700;font-size:16px;color:var(--primary);letter-spacing:-0.5px}
+.wb-top-client{display:flex;align-items:center;gap:10px;margin-left:8px}
+.wb-top-avatar{width:30px;height:30px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.wb-top-name{font-weight:600;font-size:15px}
+.wb-top-health{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(81,207,102,.15);color:var(--success)}
+.wb-top-spacer{flex:1}
+.wb-top-back{font-size:12px;color:var(--muted);cursor:pointer;text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:6px}
+.wb-top-back:hover{color:var(--text)}
+.wb-body{display:flex;flex:1;overflow:hidden}
+.wb-left{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.wb-client-info{padding:16px;border-bottom:1px solid var(--border)}
+.wb-client-avatar{width:44px;height:44px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin-bottom:8px}
+.wb-client-name{font-weight:600;font-size:14px;margin-bottom:2px}
+.wb-client-goal{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:8px}
+.wb-score{display:flex;align-items:center;gap:6px}
+.wb-score-badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px}
+.wb-score-label{font-size:11px;color:var(--muted)}
+.wb-nav{padding:8px 0;flex:1}
+.wb-nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;border-left:3px solid transparent}
+.wb-nav-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.wb-nav-item.active{color:var(--primary);background:rgba(121,80,242,.08);border-left-color:var(--primary)}
+.wb-nav-icon{font-size:15px;width:18px;text-align:center}
+.wb-milestone{padding:12px 16px;border-top:1px solid var(--border)}
+.wb-milestone-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.wb-milestone-text{font-size:12px;color:var(--text);font-weight:500;margin-bottom:6px}
+.wb-milestone-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.wb-milestone-fill{height:100%;background:var(--primary);border-radius:2px;transition:width .4s}
+.wb-center{flex:1;overflow-y:auto;padding:24px}
+.wb-panel{display:none}
+.wb-panel.active{display:block}
+.wb-panel-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.wb-panel-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.wb-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:16px}
+.wb-card-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.wb-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.wb-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px}
+.wb-kpi-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.wb-kpi-value{font-size:22px;font-weight:700;margin-bottom:2px}
+.wb-kpi-delta{font-size:11px}
+.up{color:var(--success)}.down{color:var(--danger)}.flat{color:var(--muted)}
+.wb-table{width:100%;border-collapse:collapse;font-size:13px}
+.wb-table th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--border)}
+.wb-table td{padding:10px;border-bottom:1px solid var(--border)}
+.wb-table tr:last-child td{border-bottom:none}
+.wb-table tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-success{background:rgba(81,207,102,.15);color:var(--success)}
+.badge-warning{background:rgba(252,196,25,.15);color:var(--warning)}
+.badge-danger{background:rgba(255,107,107,.15);color:var(--danger)}
+.badge-info{background:rgba(77,171,247,.15);color:var(--info)}
+.badge-muted{background:rgba(139,143,168,.15);color:var(--muted)}
+.badge-primary{background:rgba(121,80,242,.15);color:var(--primary)}
+.wbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.wbtn-primary{background:var(--primary);color:#fff}.wbtn-primary:hover{opacity:.9}
+.wbtn-secondary{background:var(--border);color:var(--text)}.wbtn-secondary:hover{background:#333}
+.wbtn-sm{padding:4px 10px;font-size:12px}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.metric-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px}
+.metric-card-name{font-size:11px;color:var(--muted);margin-bottom:4px}
+.metric-card-value{font-size:24px;font-weight:700;margin-bottom:4px}
+.metric-card-unit{font-size:12px;color:var(--muted)}
+.metric-card-actions{display:flex;gap:6px;margin-top:10px}
+.roadmap-steps{display:flex;flex-direction:column;gap:10px}
+.roadmap-step{display:flex;gap:12px;align-items:flex-start}
+.step-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:2px}
+.step-done{background:rgba(81,207,102,.2);color:var(--success);border:1px solid rgba(81,207,102,.4)}
+.step-active{background:rgba(121,80,242,.2);color:var(--primary);border:1px solid rgba(121,80,242,.4)}
+.step-pending{background:var(--border);color:var(--muted)}
+.step-body{flex:1}
+.step-title{font-size:13px;font-weight:600}
+.step-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.conn-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.conn-row:last-child{border-bottom:none}
+.conn-left{display:flex;align-items:center;gap:10px}
+.conn-icon{width:32px;height:32px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:16px}
+.conn-name{font-size:13px;font-weight:500}
+.conn-detail{font-size:11px;color:var(--muted)}
+.wb-right{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.wb-chat-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.wb-chat-thread{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.wb-msg{max-width:90%;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5}
+.wb-msg-user{align-self:flex-end;background:rgba(121,80,242,.25);border-bottom-right-radius:4px}
+.wb-msg-ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.wb-msg-ai b{display:block;font-size:11px;color:var(--primary);margin-bottom:4px}
+.wb-chat-input{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
+.wb-chat-input textarea{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 10px;resize:none;font-family:inherit;height:60px}
+.wb-chat-input textarea:focus{outline:none;border-color:var(--primary)}
+.wb-chat-send{background:var(--primary);border:none;border-radius:8px;color:#fff;cursor:pointer;padding:0 14px;font-size:16px;align-self:flex-end;height:60px}
+.qr-form{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.qr-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.qr-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;padding:9px 12px;font-family:inherit}
+.qr-input:focus{outline:none;border-color:var(--primary)}
+.qr-textarea{height:100px;resize:vertical}
+.qr-row{display:flex;gap:10px}
+.qr-row>*{flex:1}
+.qr-note{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;margin-bottom:10px}
+.qr-note-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.qr-note-title{font-size:13px;font-weight:600}
+.qr-note-date{font-size:11px;color:var(--muted)}
+.qr-note-body{font-size:13px;color:var(--muted);line-height:1.5}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:13px;font-weight:500}
+.settings-value{font-size:13px;color:var(--muted)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;width:420px;max-width:95vw}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px}
+.modal-body{display:flex;flex-direction:column;gap:12px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.arch-item{padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.arch-item:hover{border-color:var(--primary)}
+.arch-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.arch-item-title{font-size:13px;font-weight:600}
+.arch-item-meta{font-size:11px;color:var(--muted)}
+.log-entry{padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;font-size:12px}
+.log-entry:last-child{border-bottom:none}
+.log-ts{color:var(--muted);flex-shrink:0;width:90px}
+.log-text{color:var(--text);flex:1}
+.log-agent{color:var(--primary)}
+.loading{color:var(--muted);font-size:13px;padding:20px;text-align:center}
+.empty{color:var(--muted);font-size:13px;padding:20px;text-align:center}
+.ext-report-body{font-size:13px;color:var(--muted);line-height:1.7;white-space:pre-wrap}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wb-top">
+  <div class="wb-top-logo">CMNDR</div>
+  <div class="wb-top-client">
+    <div class="wb-top-avatar" id="top-avatar">—</div>
+    <div class="wb-top-name" id="top-name">Loading…</div>
+    <div class="wb-top-health" id="top-health">—</div>
+  </div>
+  <div class="wb-top-spacer"></div>
+  <a class="wb-top-back" href="/hub.html">← Hub</a>
+</div>
+<div class="wb-body">
+  <div class="wb-left">
+    <div class="wb-client-info">
+      <div class="wb-client-avatar" id="left-avatar">—</div>
+      <div class="wb-client-name" id="left-name">…</div>
+      <div class="wb-client-goal" id="left-goal">Loading…</div>
+      <div class="wb-score">
+        <div class="wb-score-badge badge badge-success" id="left-score">—</div>
+        <div class="wb-score-label">Health Score</div>
+      </div>
+    </div>
+    <nav class="wb-nav">
+      <div class="wb-nav-item active" onclick="showPanel('overview')" id="nav-overview"><span class="wb-nav-icon">📊</span>Overview</div>
+      <div class="wb-nav-item" onclick="showPanel('reports')" id="nav-reports"><span class="wb-nav-icon">📄</span>Reports</div>
+      <div class="wb-nav-item" onclick="showPanel('metrics')" id="nav-metrics"><span class="wb-nav-icon">⚡</span>Power Metrics</div>
+      <div class="wb-nav-item" onclick="showPanel('strategy')" id="nav-strategy"><span class="wb-nav-icon">🗺️</span>Strategy</div>
+      <div class="wb-nav-item" onclick="showPanel('automations')" id="nav-automations"><span class="wb-nav-icon">⚙️</span>Automations</div>
+      <div class="wb-nav-item" onclick="showPanel('connections')" id="nav-connections"><span class="wb-nav-icon">🔗</span>Connections</div>
+      <div class="wb-nav-item" onclick="showPanel('quickreport')" id="nav-quickreport"><span class="wb-nav-icon">✏️</span>Quick Report</div>
+      <div class="wb-nav-item" onclick="showPanel('settings')" id="nav-settings"><span class="wb-nav-icon">🛠</span>Settings</div>
+    </nav>
+    <div class="wb-milestone">
+      <div class="wb-milestone-label">Current Milestone</div>
+      <div class="wb-milestone-text" id="milestone-text">—</div>
+      <div class="wb-milestone-bar"><div class="wb-milestone-fill" id="milestone-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="wb-center">
+    <!-- OVERVIEW -->
+    <div class="wb-panel active" id="panel-overview">
+      <div class="wb-panel-title">Overview</div>
+      <div class="wb-panel-sub" id="ov-period">Loading…</div>
+      <div class="wb-kpi-grid" id="ov-kpis"><div class="loading">Loading KPIs…</div></div>
+      <div class="wb-card">
+        <div class="wb-card-title">Goal Progress</div>
+        <div id="ov-goal">—</div>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Recent Reports</div>
+        <div id="ov-snaps"><div class="loading">Loading…</div></div>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Recent Notes</div>
+        <div id="ov-notes"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="wb-panel" id="panel-reports">
+      <div class="wb-panel-title">Reports</div>
+      <div class="wb-panel-sub">Report archive and extended reports</div>
+      <div class="wb-card">
+        <div class="wb-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          Report Archive
+          <button class="wbtn wbtn-primary wbtn-sm" onclick="generateExtendedReport()">+ Extended Report</button>
+        </div>
+        <div id="rep-archive"><div class="loading">Loading…</div></div>
+      </div>
+      <div class="wb-card" id="ext-report-card" style="display:none">
+        <div class="wb-card-title">Extended Report</div>
+        <div id="ext-report-content"></div>
+      </div>
+    </div>
+
+    <!-- POWER METRICS -->
+    <div class="wb-panel" id="panel-metrics">
+      <div class="wb-panel-title">Power Metrics</div>
+      <div class="wb-panel-sub">Custom KPIs tracked manually or via integrations</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="wbtn wbtn-primary" onclick="openLogMetricModal()">+ Log Metric</button>
+      </div>
+      <div class="metric-grid" id="met-cards"><div class="loading">Loading…</div></div>
+      <div class="wb-card" style="margin-top:16px">
+        <div class="wb-card-title">Metric History</div>
+        <table class="wb-table">
+          <thead><tr><th>Metric</th><th>Value</th><th>Date</th><th>Note</th></tr></thead>
+          <tbody id="met-history-body"><tr><td colspan="4" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STRATEGY -->
+    <div class="wb-panel" id="panel-strategy">
+      <div class="wb-panel-title">Strategy</div>
+      <div class="wb-panel-sub">Roadmap phases and AI agent activity</div>
+      <div class="wb-card">
+        <div class="wb-card-title">Roadmap</div>
+        <div class="roadmap-steps" id="str-roadmap"><div class="loading">Loading…</div></div>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Agent Logs</div>
+        <div id="str-logs"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- AUTOMATIONS -->
+    <div class="wb-panel" id="panel-automations">
+      <div class="wb-panel-title">Automations</div>
+      <div class="wb-panel-sub">Make.com scenario health and run history</div>
+      <div class="wb-card">
+        <div class="wb-card-title">Scenario Health</div>
+        <table class="wb-table">
+          <thead><tr><th>Scenario</th><th>Status</th><th>Last Run</th><th>Runs (7d)</th></tr></thead>
+          <tbody id="auto-scenarios"><tr><td colspan="4" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Run Log</div>
+        <div id="auto-log"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- CONNECTIONS -->
+    <div class="wb-panel" id="panel-connections">
+      <div class="wb-panel-title">Connections</div>
+      <div class="wb-panel-sub">Data source connector status</div>
+      <div class="wb-card"><div id="conn-list"><div class="loading">Loading…</div></div></div>
+    </div>
+
+    <!-- QUICK REPORT -->
+    <div class="wb-panel" id="panel-quickreport">
+      <div class="wb-panel-title">Quick Report</div>
+      <div class="wb-panel-sub">Log notes, wins, blockers, and updates</div>
+      <div class="wb-card">
+        <div class="wb-card-title">New Entry</div>
+        <div class="qr-form">
+          <div class="qr-row">
+            <div>
+              <div class="qr-label">Type</div>
+              <select class="qr-input" id="qr-type">
+                <option value="win">Win</option>
+                <option value="blocker">Blocker</option>
+                <option value="note" selected>Note</option>
+                <option value="update">Update</option>
+                <option value="action">Action Item</option>
+              </select>
+            </div>
+            <div>
+              <div class="qr-label">Visibility</div>
+              <select class="qr-input" id="qr-visibility">
+                <option value="internal">Internal</option>
+                <option value="client">Client-facing</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="qr-label">Title</div>
+            <input class="qr-input" id="qr-title" type="text" placeholder="Brief headline…">
+          </div>
+          <div>
+            <div class="qr-label">Body</div>
+            <textarea class="qr-input qr-textarea" id="qr-body" placeholder="Details, context, next steps…"></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="wbtn wbtn-primary" onclick="saveQuickReport()">Save Entry</button>
+          </div>
+        </div>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Recent Entries</div>
+        <div id="qr-list"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="wb-panel" id="panel-settings">
+      <div class="wb-panel-title">Settings</div>
+      <div class="wb-panel-sub">Client metadata and configuration</div>
+      <div class="wb-card">
+        <div class="wb-card-title">Client Info</div>
+        <div id="set-meta"><div class="loading">Loading…</div></div>
+      </div>
+      <div class="wb-card">
+        <div class="wb-card-title">Configuration</div>
+        <div id="set-config"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT RAIL -->
+  <div class="wb-right">
+    <div class="wb-chat-header"><span>🤖</span> CMNDR AI</div>
+    <div class="wb-chat-thread" id="chat-thread">
+      <div class="wb-msg wb-msg-ai"><b>CMNDR AI</b>Ask me anything about this client — reports, strategy, metrics, or next steps.</div>
+    </div>
+    <div class="wb-chat-input">
+      <textarea id="chat-input" placeholder="Ask about this client…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button class="wb-chat-send" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG METRIC MODAL -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal">
+    <div class="modal-title">Log Metric</div>
+    <div class="modal-body">
+      <div>
+        <div class="qr-label">Metric Name</div>
+        <input class="qr-input" id="lm-name" type="text" placeholder="e.g. Monthly Revenue, Lead Count…">
+      </div>
+      <div class="qr-row">
+        <div>
+          <div class="qr-label">Value</div>
+          <input class="qr-input" id="lm-value" type="number" placeholder="0">
+        </div>
+        <div>
+          <div class="qr-label">Unit</div>
+          <input class="qr-input" id="lm-unit" type="text" placeholder="$, %, leads…">
+        </div>
+      </div>
+      <div>
+        <div class="qr-label">Note (optional)</div>
+        <input class="qr-input" id="lm-note" type="text" placeholder="Context or source…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wbtn wbtn-secondary" onclick="closeLogModal()">Cancel</button>
+      <button class="wbtn wbtn-primary" onclick="submitLogMetric()">Log Metric</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const CLIENT_ID = params.get('client') || '';
+let SESSION_TOKEN = localStorage.getItem('SESSION_TOKEN') || '';
+let clientData = {};
+
+if (!SESSION_TOKEN) location.href = '/hub.html';
+if (!CLIENT_ID) location.href = '/hub.html';
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SESSION_TOKEN}`, ...(opts.headers || {}) }
+  });
+  if (r.status === 401) { location.href = '/hub.html'; }
+  return r.json();
+}
+
+async function loadClientData() {
+  try {
+    const d = await api(`/api/pipeline?action=hub-client-detail&client_id=${CLIENT_ID}`);
+    clientData = d;
+    const name = d.client_name || d.business_name || CLIENT_ID;
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const score = d.health_score || 0;
+    const scoreClass = score >= 70 ? 'badge-success' : score >= 40 ? 'badge-warning' : 'badge-danger';
+    document.getElementById('top-avatar').textContent = initials;
+    document.getElementById('top-name').textContent = name;
+    document.getElementById('top-health').textContent = score + ' Health';
+    document.getElementById('left-avatar').textContent = initials;
+    document.getElementById('left-name').textContent = name;
+    document.getElementById('left-goal').textContent = d.primary_goal || 'No goal set';
+    const sb = document.getElementById('left-score');
+    sb.textContent = score;
+    sb.className = 'wb-score-badge badge ' + scoreClass;
+    const ms = (d.milestones || [])[0] || {};
+    document.getElementById('milestone-text').textContent = ms.title || 'No milestone set';
+    document.getElementById('milestone-fill').style.width = (ms.progress || 0) + '%';
+    loadOverviewData();
+  } catch(e) { console.error(e); }
+}
+
+function showPanel(name) {
+  document.querySelectorAll('.wb-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.wb-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  const loaders = { reports: loadArchive, metrics: loadMetrics, strategy: loadStrategy, automations: loadAutomations, connections: loadConnections, quickreport: loadQuickReports, settings: loadSettings };
+  if (loaders[name]) loaders[name]();
+}
+
+async function loadOverviewData() {
+  try {
+    const now = new Date(), weekAgo = new Date(now - 7 * 86400000);
+    document.getElementById('ov-period').textContent = weekAgo.toLocaleDateString() + ' – ' + now.toLocaleDateString();
+    const [mData, aData, nData] = await Promise.all([
+      api('/api/pipeline?action=hub-power-metrics&client_id=' + CLIENT_ID),
+      api('/api/pipeline?action=hub-archive&client_id=' + CLIENT_ID + '&limit=5'),
+      api('/api/pipeline?action=hub-quick-reports&client_id=' + CLIENT_ID + '&limit=3')
+    ]);
+    const metrics = mData.metrics || [];
+    document.getElementById('ov-kpis').innerHTML = metrics.length
+      ? metrics.slice(0, 6).map(m => '<div class="wb-kpi"><div class="wb-kpi-label">' + m.metric_name + '</div><div class="wb-kpi-value">' + (m.unit === '$' ? '$' : '') + Number(m.latest_value || 0).toLocaleString() + (m.unit !== '$' ? ' ' + (m.unit || '') : '') + '</div><div class="wb-kpi-delta flat">—</div></div>').join('')
+      : '<div class="empty" style="grid-column:1/-1">No metrics tracked yet.</div>';
+    const snaps = aData.snapshots || [];
+    document.getElementById('ov-snaps').innerHTML = snaps.length
+      ? snaps.map(s => '<div class="arch-item" onclick="showPanel(\'reports\')"><div class="arch-item-header"><span class="arch-item-title">' + (s.page || 'report') + '</span><span class="badge badge-muted">' + (s.period_from || '') + '</span></div><div class="arch-item-meta">' + new Date(s.created_at).toLocaleDateString() + '</div></div>').join('')
+      : '<div class="empty">No reports yet.</div>';
+    const notes = nData.reports || [];
+    document.getElementById('ov-notes').innerHTML = notes.length
+      ? notes.map(n => '<div class="qr-note"><div class="qr-note-header"><span class="qr-note-title">' + (n.title || 'Note') + '</span><span class="badge badge-muted">' + (n.entry_type || 'note') + '</span></div><div class="qr-note-body">' + (n.body || '') + '</div></div>').join('')
+      : '<div class="empty">No notes yet.</div>';
+    const goal = clientData.primary_goal;
+    document.getElementById('ov-goal').innerHTML = goal
+      ? '<div style="font-size:15px;font-weight:600;margin-bottom:4px">' + goal + '</div><div style="font-size:12px;color:var(--muted)">Progress tracked via health score and milestones</div>'
+      : '<div class="empty">No goal defined.</div>';
+  } catch(e) { console.error(e); }
+}
+
+async function loadArchive() {
+  document.getElementById('rep-archive').innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const d = await api('/api/pipeline?action=hub-archive&client_id=' + CLIENT_ID);
+    const snaps = d.snapshots || [];
+    document.getElementById('rep-archive').innerHTML = snaps.length
+      ? snaps.map(s => '<div class="arch-item"><div class="arch-item-header"><span class="arch-item-title">' + (s.page || 'report') + '</span><span class="badge ' + (s.is_current ? 'badge-success' : 'badge-muted') + '">' + (s.is_current ? 'current' : 'archived') + '</span></div><div class="arch-item-meta">' + (s.period_from || '') + ' – ' + (s.period_to || '') + ' · ' + new Date(s.created_at).toLocaleDateString() + '</div></div>').join('')
+      : '<div class="empty">No reports in archive.</div>';
+  } catch(e) { document.getElementById('rep-archive').innerHTML = '<div class="empty">Error loading reports.</div>'; }
+}
+
+async function generateExtendedReport() {
+  document.getElementById('ext-report-card').style.display = 'block';
+  document.getElementById('ext-report-content').innerHTML = '<div class="loading">Generating with AI… this may take 30–60 seconds.</div>';
+  try {
+    const d = await api('/api/pipeline?action=hub-extended-report', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID }) });
+    document.getElementById('ext-report-content').innerHTML = '<div><div style="display:flex;justify-content:space-between;margin-bottom:12px"><span class="badge badge-success">Ready</span><span style="font-size:11px;color:var(--muted)">' + new Date().toLocaleString() + '</span></div><div class="ext-report-body">' + (d.summary || d.message || 'Report queued. Check back shortly.') + '</div></div>';
+  } catch(e) { document.getElementById('ext-report-content').innerHTML = '<div class="empty">Error generating report.</div>'; }
+}
+
+async function loadMetrics() {
+  document.getElementById('met-cards').innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const [mData, hData] = await Promise.all([
+      api('/api/pipeline?action=hub-power-metrics&client_id=' + CLIENT_ID),
+      api('/api/pipeline?action=hub-metric-history&client_id=' + CLIENT_ID + '&limit=20')
+    ]);
+    const metrics = mData.metrics || [];
+    document.getElementById('met-cards').innerHTML = metrics.length
+      ? metrics.map(m => '<div class="metric-card"><div class="metric-card-name">' + m.metric_name + '</div><div class="metric-card-value">' + (m.unit === '$' ? '$' : '') + Number(m.latest_value || 0).toLocaleString() + '</div><div class="metric-card-unit">' + (m.unit || '') + ' · ' + (m.cadence || 'manual') + '</div><div class="metric-card-actions"><button class="wbtn wbtn-secondary wbtn-sm" onclick="openLogMetricModal(\'' + m.metric_name + '\')">Log</button></div></div>').join('')
+      : '<div class="empty" style="grid-column:1/-1">No metrics configured yet.</div>';
+    const entries = hData.entries || [];
+    document.getElementById('met-history-body').innerHTML = entries.length
+      ? entries.map(e => '<tr><td>' + (e.metric_name || '—') + '</td><td>' + e.value + '</td><td>' + new Date(e.logged_at || e.created_at).toLocaleDateString() + '</td><td style="color:var(--muted)">' + (e.note || '—') + '</td></tr>').join('')
+      : '<tr><td colspan="4" class="empty">No history yet.</td></tr>';
+  } catch(e) { console.error(e); }
+}
+
+async function loadStrategy() {
+  try {
+    const [dData, lData] = await Promise.all([
+      api('/api/pipeline?action=hub-client-detail&client_id=' + CLIENT_ID),
+      api('/api/pipeline?action=hub-agent-logs&client_id=' + CLIENT_ID + '&limit=20')
+    ]);
+    const roadmap = dData.roadmap || [];
+    document.getElementById('str-roadmap').innerHTML = roadmap.length
+      ? roadmap.map((step, i) => {
+          const cls = step.status === 'done' ? 'step-done' : step.status === 'active' ? 'step-active' : 'step-pending';
+          const icon = step.status === 'done' ? '✓' : step.status === 'active' ? '▶' : (i + 1);
+          return '<div class="roadmap-step"><div class="step-dot ' + cls + '">' + icon + '</div><div class="step-body"><div class="step-title">' + (step.title || step.milestone || 'Step ' + (i + 1)) + '</div><div class="step-desc">' + (step.description || step.kpis || '') + '</div></div></div>';
+        }).join('')
+      : '<div class="empty">No roadmap steps defined.</div>';
+    const logs = lData.logs || [];
+    document.getElementById('str-logs').innerHTML = logs.length
+      ? logs.map(l => '<div class="log-entry"><span class="log-ts">' + new Date(l.created_at).toLocaleDateString() + '</span><span class="log-text"><span class="log-agent">[' + (l.agent || 'CMNDR') + ']</span> ' + (l.action || l.message || '') + '</span></div>').join('')
+      : '<div class="empty">No agent activity yet.</div>';
+  } catch(e) { console.error(e); }
+}
+
+async function loadAutomations() {
+  try {
+    const [sData, lData] = await Promise.all([
+      api('/api/pipeline?action=hub-client-settings&client_id=' + CLIENT_ID),
+      api('/api/pipeline?action=hub-agent-logs&client_id=' + CLIENT_ID + '&type=automation&limit=10')
+    ]);
+    const scenarios = sData.make_scenarios || [];
+    document.getElementById('auto-scenarios').innerHTML = scenarios.length
+      ? scenarios.map(s => { const cls = s.status === 'active' ? 'badge-success' : s.status === 'error' ? 'badge-danger' : 'badge-warning'; return '<tr><td>' + (s.name || s.scenario_id || '—') + '</td><td><span class="badge ' + cls + '">' + (s.status || 'unknown') + '</span></td><td>' + (s.last_run ? new Date(s.last_run).toLocaleDateString() : '—') + '</td><td>' + (s.runs_7d || 0) + '</td></tr>'; }).join('')
+      : '<tr><td colspan="4" class="empty">No scenarios configured.</td></tr>';
+    const logs = lData.logs || [];
+    document.getElementById('auto-log').innerHTML = logs.length
+      ? logs.map(l => '<div class="log-entry"><span class="log-ts">' + new Date(l.created_at).toLocaleDateString() + '</span><span class="log-text">' + (l.action || l.message || '—') + '</span></div>').join('')
+      : '<div class="empty">No automation runs logged.</div>';
+  } catch(e) { console.error(e); }
+}
+
+async function loadConnections() {
+  try {
+    const d = await api('/api/pipeline?action=hub-client-settings&client_id=' + CLIENT_ID);
+    const conns = d.connections || {};
+    const CONNECTORS = [
+      { key: 'google_analytics', name: 'Google Analytics', icon: '📊' },
+      { key: 'google_search_console', name: 'Search Console', icon: '🔍' },
+      { key: 'google_ads', name: 'Google Ads', icon: '📢' },
+      { key: 'stripe', name: 'Stripe', icon: '💳' },
+      { key: 'quickbooks', name: 'QuickBooks', icon: '📒' },
+      { key: 'mailchimp', name: 'Mailchimp', icon: '🐵' },
+      { key: 'square', name: 'Square', icon: '⬛' }
+    ];
+    document.getElementById('conn-list').innerHTML = CONNECTORS.map(c => {
+      const connected = conns[c.key];
+      return '<div class="conn-row"><div class="conn-left"><div class="conn-icon">' + c.icon + '</div><div><div class="conn-name">' + c.name + '</div><div class="conn-detail">' + (connected ? 'Sync active' : 'Not configured') + '</div></div></div><span class="badge ' + (connected ? 'badge-success' : 'badge-muted') + '">' + (connected ? 'Connected' : 'Not Connected') + '</span></div>';
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadQuickReports() {
+  document.getElementById('qr-list').innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const d = await api('/api/pipeline?action=hub-quick-reports&client_id=' + CLIENT_ID);
+    const reports = d.reports || [];
+    document.getElementById('qr-list').innerHTML = reports.length
+      ? reports.map(n => '<div class="qr-note"><div class="qr-note-header"><span class="qr-note-title">' + (n.title || 'Note') + '</span><div style="display:flex;gap:6px;align-items:center"><span class="badge badge-info">' + (n.entry_type || 'note') + '</span><span class="qr-note-date">' + new Date(n.created_at).toLocaleDateString() + '</span></div></div><div class="qr-note-body">' + (n.body || '') + '</div></div>').join('')
+      : '<div class="empty">No entries yet.</div>';
+  } catch(e) { document.getElementById('qr-list').innerHTML = '<div class="empty">Error loading entries.</div>'; }
+}
+
+async function saveQuickReport() {
+  const title = document.getElementById('qr-title').value.trim();
+  const body = document.getElementById('qr-body').value.trim();
+  const entry_type = document.getElementById('qr-type').value;
+  const visibility = document.getElementById('qr-visibility').value;
+  if (!title) { alert('Please enter a title.'); return; }
+  try {
+    await api('/api/pipeline?action=hub-save-quick-report', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, title, body, entry_type, visibility }) });
+    document.getElementById('qr-title').value = '';
+    document.getElementById('qr-body').value = '';
+    loadQuickReports();
+  } catch(e) { alert('Error saving entry.'); }
+}
+
+async function loadSettings() {
+  try {
+    const d = await api('/api/pipeline?action=hub-client-settings&client_id=' + CLIENT_ID);
+    const metaFields = ['client_name', 'business_name', 'industry', 'website', 'primary_goal', 'health_score'];
+    document.getElementById('set-meta').innerHTML = metaFields.map(f => '<div class="settings-row"><span class="settings-label">' + f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + '</span><span class="settings-value">' + (d[f] || '—') + '</span></div>').join('');
+    const cfgFields = ['report_cadence', 'timezone', 'currency', 'notify_email'];
+    document.getElementById('set-config').innerHTML = cfgFields.map(f => '<div class="settings-row"><span class="settings-label">' + f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + '</span><span class="settings-value">' + (d[f] || '—') + '</span></div>').join('');
+  } catch(e) { console.error(e); }
+}
+
+function openLogMetricModal(name) {
+  document.getElementById('lm-name').value = name || '';
+  document.getElementById('lm-value').value = '';
+  document.getElementById('lm-unit').value = '';
+  document.getElementById('lm-note').value = '';
+  document.getElementById('log-modal').classList.add('open');
+}
+
+function closeLogModal() {
+  document.getElementById('log-modal').classList.remove('open');
+}
+
+async function submitLogMetric() {
+  const metric_name = document.getElementById('lm-name').value.trim();
+  const value = document.getElementById('lm-value').value;
+  const unit = document.getElementById('lm-unit').value.trim();
+  const note = document.getElementById('lm-note').value.trim();
+  if (!metric_name || value === '') { alert('Metric name and value are required.'); return; }
+  try {
+    await api('/api/pipeline?action=hub-log-metric', { method: 'POST', body: JSON.stringify({ client_id: CLIENT_ID, metric_name, value: parseFloat(value), unit, note }) });
+    closeLogModal();
+    if (document.getElementById('panel-metrics').classList.contains('active')) loadMetrics();
+  } catch(e) { alert('Error logging metric.'); }
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  const thread = document.getElementById('chat-thread');
+  thread.innerHTML += '<div class="wb-msg wb-msg-user">' + msg + '</div>';
+  thread.scrollTop = thread.scrollHeight;
+  const thinking = document.createElement('div');
+  thinking.className = 'wb-msg wb-msg-ai';
+  thinking.innerHTML = '<b>CMNDR AI</b>Thinking…';
+  thread.appendChild(thinking);
+  thread.scrollTop = thread.scrollHeight;
+  try {
+    const r = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION_TOKEN }, body: JSON.stringify({ message: msg, client_id: CLIENT_ID, type: 'workbench', context: clientData }) });
+    const d = await r.json();
+    thinking.innerHTML = '<b>CMNDR AI</b>' + (d.reply || d.message || '…');
+  } catch(e) { thinking.innerHTML = '<b>CMNDR AI</b>Error contacting AI. Please try again.'; }
+  thread.scrollTop = thread.scrollHeight;
+}
+
+loadClientData();
+</script>
+</body>
+</html>
